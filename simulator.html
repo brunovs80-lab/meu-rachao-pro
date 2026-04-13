@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Rachão Pro - Simulador Mobile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+
+    .simulator-container {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+    }
+
+    /* Phone Frame */
+    .phone-frame {
+      position: relative;
+      width: 380px;
+      height: 780px;
+      background: #1a1a1a;
+      border-radius: 50px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 2px #333,
+        0 0 0 4px #1a1a1a,
+        0 0 60px rgba(123, 44, 191, 0.3),
+        0 0 120px rgba(123, 44, 191, 0.1);
+      transition: box-shadow 0.3s;
+    }
+
+    .phone-frame:hover {
+      box-shadow:
+        0 0 0 2px #444,
+        0 0 0 4px #1a1a1a,
+        0 0 80px rgba(123, 44, 191, 0.4),
+        0 0 160px rgba(123, 44, 191, 0.15);
+    }
+
+    /* Notch */
+    .phone-notch {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 32px;
+      background: #1a1a1a;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .notch-camera {
+      width: 12px;
+      height: 12px;
+      background: #2a2a2a;
+      border-radius: 50%;
+      border: 2px solid #333;
+    }
+
+    .notch-speaker {
+      width: 50px;
+      height: 5px;
+      background: #2a2a2a;
+      border-radius: 3px;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      position: absolute;
+      top: 14px;
+      left: 30px;
+      right: 30px;
+      height: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 5;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 8px;
+    }
+
+    .status-time { font-size: 13px; font-weight: 700; }
+    .status-icons { display: flex; gap: 5px; align-items: center; font-size: 11px; }
+    .status-icons span { font-size: 13px; }
+
+    /* Screen */
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 40px;
+      overflow: hidden;
+      background: #121212;
+    }
+
+    .phone-screen iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 40px;
+    }
+
+    /* Side Buttons */
+    .btn-side {
+      position: absolute;
+      background: #2a2a2a;
+      border-radius: 2px;
+    }
+
+    .btn-power {
+      right: -3px;
+      top: 180px;
+      width: 4px;
+      height: 60px;
+    }
+
+    .btn-vol-up {
+      left: -3px;
+      top: 150px;
+      width: 4px;
+      height: 40px;
+    }
+
+    .btn-vol-down {
+      left: -3px;
+      top: 200px;
+      width: 4px;
+      height: 40px;
+    }
+
+    .btn-silent {
+      left: -3px;
+      top: 110px;
+      width: 4px;
+      height: 20px;
+    }
+
+    /* Control Panel */
+    .control-panel {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 24px;
+      width: 280px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .panel-title {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title span {
+      color: #7B2CBF;
+    }
+
+    .device-selector {
+      margin-bottom: 20px;
+    }
+
+    .device-selector label {
+      color: #888;
+      font-size: 12px;
+      display: block;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .device-selector select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #252525;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .device-selector select:focus {
+      border-color: #7B2CBF;
+    }
+
+    .panel-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .panel-btn {
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .panel-btn:hover { transform: translateY(-1px); }
+
+    .btn-reload {
+      background: #7B2CBF;
+      color: #fff;
+    }
+
+    .btn-rotate {
+      background: #252525;
+      color: #ddd;
+      border: 1px solid #333;
+    }
+
+    .btn-clear {
+      background: #FF7A00;
+      color: #fff;
+    }
+
+    .btn-screenshot {
+      background: #252525;
+      color: #ddd;
+      border: 1px solid #333;
+    }
+
+    /* Info */
+    .device-info {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 12px;
+    }
+
+    .info-label { color: #666; }
+    .info-value { color: #aaa; font-weight: 600; }
+
+    /* Landscape */
+    .phone-frame.landscape {
+      width: 780px;
+      height: 380px;
+    }
+
+    /* Responsive */
+    @media (max-width: 800px) {
+      .simulator-container {
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .phone-frame {
+        width: 340px;
+        height: 700px;
+      }
+
+      .control-panel {
+        width: 340px;
+      }
+    }
+
+    /* Scale animation */
+    .phone-frame {
+      animation: phoneAppear 0.6s ease;
+    }
+
+    @keyframes phoneAppear {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Watermark */
+    .watermark {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #333;
+      font-size: 11px;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="simulator-container">
+    <!-- Phone -->
+    <div class="phone-frame" id="phoneFrame">
+      <!-- Notch -->
+      <div class="phone-notch">
+        <div class="notch-camera"></div>
+        <div class="notch-speaker"></div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="status-time" id="statusTime">12:00</div>
+        <div class="status-icons">
+          <span>&#9679;&#9679;&#9679;&#9679;&#9675;</span>
+          <span>&#128267;</span>
+          <span>87%</span>
+        </div>
+      </div>
+
+      <!-- Side Buttons -->
+      <div class="btn-side btn-power"></div>
+      <div class="btn-side btn-vol-up"></div>
+      <div class="btn-side btn-vol-down"></div>
+      <div class="btn-side btn-silent"></div>
+
+      <!-- Screen -->
+      <div class="phone-screen">
+        <iframe id="appFrame" src="index.html"></iframe>
+      </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="panel-title">
+        <span>&#128241;</span> Simulador Mobile
+      </div>
+
+      <div class="device-selector">
+        <label>Dispositivo</label>
+        <select id="deviceSelect" onchange="changeDevice()">
+          <option value="iphone14" selected>iPhone 14 Pro</option>
+          <option value="iphone15">iPhone 15 Pro Max</option>
+          <option value="iphoneSE">iPhone SE</option>
+          <option value="pixel7">Google Pixel 7</option>
+          <option value="samsung23">Samsung Galaxy S23</option>
+          <option value="samsung23u">Samsung Galaxy S23 Ultra</option>
+          <option value="xiaomi">Xiaomi Redmi Note 12</option>
+          <option value="motoG">Moto G Power</option>
+        </select>
+      </div>
+
+      <div class="device-selector">
+        <label>Escala</label>
+        <select id="scaleSelect" onchange="changeScale()">
+          <option value="0.7">70%</option>
+          <option value="0.8">80%</option>
+          <option value="0.9">90%</option>
+          <option value="1" selected>100%</option>
+          <option value="1.1">110%</option>
+        </select>
+      </div>
+
+      <div class="panel-actions">
+        <button class="panel-btn btn-reload" onclick="reloadApp()">
+          &#8635; Recarregar App
+        </button>
+        <button class="panel-btn btn-clear" onclick="clearData()">
+          &#128465; Limpar Dados
+        </button>
+        <button class="panel-btn btn-rotate" onclick="toggleRotate()">
+          &#128260; Girar Tela
+        </button>
+      </div>
+
+      <div class="device-info">
+        <div class="info-row">
+          <span class="info-label">Resolução</span>
+          <span class="info-value" id="infoRes">390 x 844</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Plataforma</span>
+          <span class="info-value" id="infoPlatform">iOS 17</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Status</span>
+          <span class="info-value" style="color:#00C853">&#9679; Rodando</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="watermark">MEU RACHAO PRO &mdash; SIMULADOR</div>
+
+  <script>
+    const devices = {
+      iphone14:   { w: 380, h: 780, radius: 50, label: '390 x 844', platform: 'iOS 17' },
+      iphone15:   { w: 400, h: 830, radius: 55, label: '430 x 932', platform: 'iOS 17' },
+      iphoneSE:   { w: 340, h: 620, radius: 30, label: '375 x 667', platform: 'iOS 17' },
+      pixel7:     { w: 380, h: 800, radius: 40, label: '412 x 915', platform: 'Android 14' },
+      samsung23:  { w: 370, h: 790, radius: 38, label: '360 x 780', platform: 'Android 14' },
+      samsung23u: { w: 400, h: 840, radius: 42, label: '412 x 915', platform: 'Android 14' },
+      xiaomi:     { w: 380, h: 810, radius: 36, label: '393 x 873', platform: 'Android 13' },
+      motoG:      { w: 370, h: 780, radius: 34, label: '412 x 823', platform: 'Android 13' },
+    };
+
+    let isLandscape = false;
+
+    function changeDevice() {
+      const id = document.getElementById('deviceSelect').value;
+      const d = devices[id];
+      const frame = document.getElementById('phoneFrame');
+      const screen = frame.querySelector('.phone-screen');
+
+      if (isLandscape) {
+        frame.style.width = d.h + 'px';
+        frame.style.height = d.w + 'px';
+      } else {
+        frame.style.width = d.w + 'px';
+        frame.style.height = d.h + 'px';
+      }
+      frame.style.borderRadius = d.radius + 'px';
+      screen.style.borderRadius = (d.radius - 10) + 'px';
+      screen.querySelector('iframe').style.borderRadius = (d.radius - 10) + 'px';
+
+      document.getElementById('infoRes').textContent = d.label;
+      document.getElementById('infoPlatform').textContent = d.platform;
+    }
+
+    function changeScale() {
+      const scale = document.getElementById('scaleSelect').value;
+      document.getElementById('phoneFrame').style.transform = `scale(${scale})`;
+    }
+
+    function reloadApp() {
+      document.getElementById('appFrame').src = 'index.html';
+    }
+
+    function clearData() {
+      const frame = document.getElementById('appFrame');
+      // Clear localStorage in the iframe
+      try {
+        const keys = Object.keys(frame.contentWindow.localStorage);
+        keys.forEach(k => {
+          if (k.startsWith('rachao_')) {
+            frame.contentWindow.localStorage.removeItem(k);
+          }
+        });
+        reloadApp();
+      } catch(e) {
+        // Fallback
+        localStorage.clear();
+        reloadApp();
+      }
+    }
+
+    function toggleRotate() {
+      isLandscape = !isLandscape;
+      changeDevice();
+    }
+
+    // Update clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('statusTime').textContent =
+        now.getHours().toString().padStart(2,'0') + ':' +
+        now.getMinutes().toString().padStart(2,'0');
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+  </script>
+</body>
+</html>

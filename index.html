@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#121212">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Meu Rachão Pro</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+  <!-- ========== TELA DE LOGIN ========== -->
+  <div id="page-login" class="page active">
+    <div class="login-bg">
+      <div class="login-content">
+        <div class="logo-container">
+          <img src="assets/logo.png" alt="Meu Rachão Pro" class="logo-image">
+        </div>
+        <h2 class="login-welcome">Bem-vindo ao<br><strong>MEU RACHÃO PRO!</strong></h2>
+        <div class="phone-input-group">
+          <div class="country-code">
+            <span class="flag">🇧🇷</span>
+            <span>+55</span>
+          </div>
+          <input type="tel" id="phone-input" placeholder="Digite seu celular" maxlength="15">
+        </div>
+        <button id="btn-login" class="btn-primary btn-large">ENTRAR</button>
+        <p class="login-terms">Ao continuar, você concorda com os<br><a href="#">Termos de Uso</a> e <a href="#">Política de Privacidade</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== VERIFICAÇÃO SMS ========== -->
+  <div id="page-verify" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('login')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Verificação</h2>
+    </div>
+    <div class="page-body center-content">
+      <i class="fas fa-shield-halved verify-icon"></i>
+      <h3>Código de verificação</h3>
+      <p class="text-muted">Enviamos um SMS para<br><span id="verify-phone"></span></p>
+      <div class="code-inputs">
+        <input type="text" maxlength="1" class="code-digit" data-index="0">
+        <input type="text" maxlength="1" class="code-digit" data-index="1">
+        <input type="text" maxlength="1" class="code-digit" data-index="2">
+        <input type="text" maxlength="1" class="code-digit" data-index="3">
+      </div>
+      <button id="btn-verify" class="btn-primary">VERIFICAR</button>
+      <p class="text-muted">Não recebeu? <a href="#" id="resend-code">Reenviar código</a></p>
+    </div>
+  </div>
+
+  <!-- ========== CADASTRO ========== -->
+  <div id="page-register" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('verify')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Cadastro</h2>
+    </div>
+    <div class="page-body center-content">
+      <div class="avatar-placeholder"><i class="fas fa-user"></i></div>
+      <h3>Como podemos te chamar?</h3>
+      <input type="text" id="register-name" class="input-field" placeholder="Seu nome ou apelido">
+      <select id="register-position" class="input-field">
+        <option value="">Posição preferida</option>
+        <option value="Goleiro">Goleiro</option>
+        <option value="Zagueiro">Zagueiro</option>
+        <option value="Lateral">Lateral</option>
+        <option value="Volante">Volante</option>
+        <option value="Meia">Meia</option>
+        <option value="Atacante">Atacante</option>
+      </select>
+      <button id="btn-register" class="btn-primary">COMEÇAR</button>
+    </div>
+  </div>
+
+  <!-- ========== DASHBOARD ========== -->
+  <div id="page-dashboard" class="page">
+    <div class="dash-header">
+      <div class="dash-user">
+        <div class="user-avatar-small"><i class="fas fa-user"></i></div>
+        <div>
+          <span class="dash-greeting">Olá,</span>
+          <span class="dash-name" id="dash-username"></span>
+        </div>
+      </div>
+      <div class="dash-actions">
+        <span class="offline-badge" id="offline-badge" style="display:none"><i class="fas fa-wifi-slash"></i> Offline</span>
+        <button class="btn-icon" onclick="navigateTo('notifications')"><i class="fas fa-bell"></i><span class="notif-dot" id="notif-dot" style="display:none"></span></button>
+        <button class="btn-icon" onclick="navigateTo('settings')"><i class="fas fa-gear"></i></button>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="card card-highlight" id="next-match-card">
+        <div class="card-badge">PRÓXIMA PELADA</div>
+        <h3 id="next-match-title">Nenhuma pelada agendada</h3>
+        <p id="next-match-info" class="text-muted"></p>
+        <div class="card-actions" id="next-match-actions" style="display:none">
+          <button class="btn-primary btn-sm" onclick="navigateTo('match-detail')">VER DETALHES</button>
+          <button class="btn-outline btn-sm" id="btn-confirm-presence">CONFIRMAR</button>
+        </div>
+      </div>
+
+      <div class="menu-grid">
+        <div class="menu-item" onclick="navigateTo('matches')">
+          <div class="menu-icon"><i class="fas fa-calendar-days"></i></div>
+          <span>Peladas</span>
+        </div>
+        <div class="menu-item" onclick="navigateTo('rotation')">
+          <div class="menu-icon" style="background:linear-gradient(135deg,#E06800,var(--orange))"><i class="fas fa-rotate"></i></div>
+          <span>Rotação</span>
+        </div>
+        <div class="menu-item" onclick="navigateTo('payments')">
+          <div class="menu-icon" style="background:linear-gradient(135deg,#00C853,#009624)"><i class="fas fa-money-bill-wave"></i></div>
+          <span>Pagamentos</span>
+        </div>
+        <div class="menu-item" onclick="navigateTo('stats')">
+          <div class="menu-icon"><i class="fas fa-chart-line"></i></div>
+          <span>Estatísticas</span>
+        </div>
+        <div class="menu-item" onclick="navigateTo('fantasy')">
+          <div class="menu-icon fantasy-icon"><i class="fas fa-trophy"></i></div>
+          <span>Fantasy</span>
+        </div>
+        <div class="menu-item" onclick="navigateTo('players')">
+          <div class="menu-icon"><i class="fas fa-users"></i></div>
+          <span>Jogadores</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <h3><i class="fas fa-ranking-star" style="color:var(--orange);margin-right:6px"></i>Ranking</h3>
+          <a href="#" onclick="navigateTo('stats')" class="link-more">Ver tudo</a>
+        </div>
+        <div id="dash-ranking"></div>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item active" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
+      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
+      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
+    </nav>
+  </div>
+
+  <!-- ========== PELADAS ========== -->
+  <div id="page-matches" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Peladas</h2>
+      <button class="btn-icon" onclick="navigateTo('match-create')"><i class="fas fa-plus"></i></button>
+    </div>
+    <div class="page-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="upcoming">Próximas</button>
+        <button class="tab" data-tab="past">Anteriores</button>
+      </div>
+      <div id="matches-list" class="list"></div>
+      <div id="matches-empty" class="empty-state" style="display:none">
+        <i class="fas fa-calendar-plus"></i>
+        <p>Nenhuma pelada agendada</p>
+        <button class="btn-primary btn-sm" onclick="navigateTo('match-create')">CRIAR PELADA</button>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
+      <button class="nav-item active" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
+      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
+      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
+    </nav>
+  </div>
+
+  <!-- ========== CRIAR PELADA ========== -->
+  <div id="page-match-create" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Nova Pelada</h2>
+    </div>
+    <div class="page-body">
+      <div class="form-group">
+        <label>Nome da Pelada</label>
+        <input type="text" id="match-name" class="input-field" placeholder="Ex: Rachão de Quinta">
+      </div>
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" id="match-date" class="input-field">
+      </div>
+      <div class="form-group">
+        <label>Horário</label>
+        <input type="time" id="match-time" class="input-field">
+      </div>
+      <div class="form-group">
+        <label>Local</label>
+        <input type="text" id="match-location" class="input-field" placeholder="Ex: Quadra do Parque">
+      </div>
+      <div class="form-group">
+        <label>Jogadores de linha por time</label>
+        <div class="number-input">
+          <button onclick="adjustNumber('match-players', -1)">-</button>
+          <input type="number" id="match-players" value="5" min="3" max="11" class="input-field">
+          <button onclick="adjustNumber('match-players', 1)">+</button>
+        </div>
+        <p class="text-muted hint">+ 1 goleiro dedicado por time = <strong id="total-per-team">6</strong> por time</p>
+      </div>
+      <div class="form-group">
+        <label>Regra de Empate (Rotação)</label>
+        <select id="match-tie-rule" class="input-field">
+          <option value="playing_leaves">Sai quem estava jogando</option>
+          <option value="newest_leaves">Sai quem entrou depois</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de cobrança</label>
+        <select id="match-payment-type" class="input-field">
+          <option value="per_match">Avulso (por pelada)</option>
+          <option value="monthly">Mensalidade</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Valor (R$)</label>
+        <input type="number" id="match-price" class="input-field" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Chave Pix</label>
+        <input type="text" id="match-pix" class="input-field" placeholder="CPF, email ou telefone">
+      </div>
+      <button id="btn-create-match" class="btn-primary btn-large">CRIAR PELADA</button>
+    </div>
+  </div>
+
+  <!-- ========== DETALHE DA PELADA ========== -->
+  <div id="page-match-detail" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
+      <h2 id="detail-match-title">Pelada</h2>
+      <button class="btn-icon" onclick="showMatchMenu()"><i class="fas fa-ellipsis-vertical"></i></button>
+    </div>
+    <div class="page-body">
+      <div class="match-info-bar">
+        <div class="info-item"><i class="fas fa-calendar"></i><span id="detail-date"></span></div>
+        <div class="info-item"><i class="fas fa-clock"></i><span id="detail-time"></span></div>
+        <div class="info-item"><i class="fas fa-location-dot"></i><span id="detail-location"></span></div>
+        <div class="info-item"><i class="fas fa-users"></i><span id="detail-format"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <h3>Confirmados (<span id="confirmed-count">0</span>/<span id="max-players">10</span>)</h3>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="confirmed-progress"></div></div>
+        <div id="confirmed-list" class="player-list"></div>
+        <button id="btn-toggle-presence" class="btn-primary" style="margin-top:12px">CONFIRMAR PRESENÇA</button>
+      </div>
+
+      <div class="card" id="waiting-list-card" style="display:none">
+        <h3><i class="fas fa-clock" style="color:var(--orange);margin-right:6px"></i>Lista de Espera</h3>
+        <div id="waiting-list" class="player-list"></div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn-orange btn-large" id="btn-draw-teams" onclick="drawTeams()">
+          <i class="fas fa-shuffle"></i> SORTEAR TIMES
+        </button>
+      </div>
+
+      <div id="teams-result" style="display:none">
+        <h3 style="margin-bottom:12px"><i class="fas fa-shirt" style="color:var(--purple-light)"></i> Times Sorteados</h3>
+        <div class="teams-container" id="teams-container"></div>
+        <div class="action-buttons" style="margin-top:12px">
+          <button class="btn-outline" onclick="drawTeams()" style="width:100%"><i class="fas fa-shuffle"></i> SORTEAR NOVAMENTE</button>
+          <button class="btn-primary btn-large" onclick="startRotation()" style="margin-top:8px"><i class="fas fa-play"></i> INICIAR ROTAÇÃO</button>
+        </div>
+      </div>
+
+      <div class="action-buttons" style="margin-top:8px">
+        <button class="btn-outline" onclick="navigateTo('register-stats')" style="width:100%">
+          <i class="fas fa-chart-bar"></i> REGISTRAR ESTATÍSTICAS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ROTAÇÃO DE TIMES ========== -->
+  <div id="page-rotation" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Rotação de Times</h2>
+    </div>
+    <div class="page-body">
+      <div id="rotation-active" style="display:none">
+        <div class="card card-highlight">
+          <div class="card-badge">AO VIVO</div>
+          <h3 id="rotation-match-name"></h3>
+          <p class="text-muted" id="rotation-round-info">Rodada 1</p>
+        </div>
+
+        <div class="rotation-scoreboard">
+          <div class="rotation-team" id="rot-team-a">
+            <h4>Time A</h4>
+            <div class="rotation-score" id="rot-score-a">0</div>
+          </div>
+          <div class="rotation-vs">VS</div>
+          <div class="rotation-team" id="rot-team-b">
+            <h4>Time B</h4>
+            <div class="rotation-score" id="rot-score-b">0</div>
+          </div>
+        </div>
+
+        <div class="score-controls">
+          <div class="score-btn-group">
+            <span>Time A</span>
+            <div>
+              <button class="btn-score" onclick="addGoalRotation('a')"><i class="fas fa-plus"></i> GOL</button>
+            </div>
+          </div>
+          <div class="score-btn-group">
+            <span>Time B</span>
+            <div>
+              <button class="btn-score" onclick="addGoalRotation('b')"><i class="fas fa-plus"></i> GOL</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="rot-next-team-card" style="display:none">
+          <h3><i class="fas fa-arrow-right-arrow-left" style="color:var(--orange)"></i> Próximo Time</h3>
+          <div id="rot-next-team-list" class="player-list"></div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-list-ol" style="color:var(--purple-light)"></i> Fila de Espera</h3>
+          <div id="rot-queue" class="player-list"></div>
+        </div>
+
+        <button class="btn-orange btn-large" onclick="finishRound()"><i class="fas fa-flag-checkered"></i> FINALIZAR PARTIDA</button>
+        <button class="btn-outline" onclick="endRotation()" style="margin-top:8px;width:100%"><i class="fas fa-stop"></i> ENCERRAR PELADA</button>
+      </div>
+
+      <div id="rotation-empty" class="empty-state">
+        <i class="fas fa-rotate"></i>
+        <p>Nenhuma rotação ativa</p>
+        <p class="text-muted">Sorteie os times em uma pelada para começar</p>
+      </div>
+
+      <div class="card" style="margin-top:16px" id="rotation-history-card">
+        <h3>Histórico de Rodadas</h3>
+        <div id="rotation-history"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== PAGAMENTOS ========== -->
+  <div id="page-payments" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Pagamentos</h2>
+    </div>
+    <div class="page-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="pay-overview">Visão Geral</button>
+        <button class="tab" data-tab="pay-pix">Pagar via Pix</button>
+      </div>
+
+      <div id="pay-overview-content">
+        <div class="card card-highlight">
+          <div class="payment-summary">
+            <div>
+              <span class="text-muted">Total</span>
+              <h2 id="payment-total">R$ 0,00</h2>
+            </div>
+            <div>
+              <span class="text-muted">Recebido</span>
+              <h2 id="payment-received" class="text-green">R$ 0,00</h2>
+            </div>
+            <div>
+              <span class="text-muted">Pendente</span>
+              <h2 id="payment-pending" class="text-orange">R$ 0,00</h2>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Jogadores</h3>
+          <div id="payment-players-list" class="player-list"></div>
+        </div>
+      </div>
+
+      <div id="pay-pix-content" style="display:none">
+        <div class="card pix-card">
+          <div class="pix-header">
+            <i class="fas fa-qrcode pix-qr-icon"></i>
+            <h3>Pagar via Pix</h3>
+          </div>
+          <div class="pix-qr-container">
+            <canvas id="pix-qr-canvas" width="200" height="200"></canvas>
+            <p class="text-muted">Escaneie o QR Code</p>
+          </div>
+          <div class="pix-divider"><span>ou</span></div>
+          <div class="form-group">
+            <label>Pix Copia e Cola</label>
+            <div class="pix-copy-group">
+              <input type="text" id="pix-copy-text" class="input-field" readonly>
+              <button class="btn-primary btn-sm" onclick="copyPix()"><i class="fas fa-copy"></i></button>
+            </div>
+          </div>
+          <div class="pix-info">
+            <div class="info-item"><i class="fas fa-user"></i><span id="pix-recipient">-</span></div>
+            <div class="info-item"><i class="fas fa-money-bill"></i><span id="pix-amount">R$ 0,00</span></div>
+          </div>
+          <button class="btn-primary btn-large" onclick="notifyPayment()"><i class="fas fa-check"></i> JÁ PAGUEI</button>
+        </div>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
+      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
+      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
+    </nav>
+  </div>
+
+  <!-- ========== ESTATÍSTICAS ========== -->
+  <div id="page-stats" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Estatísticas</h2>
+    </div>
+    <div class="page-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="ranking">Ranking</button>
+        <button class="tab" data-tab="artilharia">Artilharia</button>
+        <button class="tab" data-tab="assists">Assist.</button>
+        <button class="tab" data-tab="desarmes">Desarmes</button>
+      </div>
+      <div id="stats-content" class="list"></div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
+      <button class="nav-item active" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
+      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
+    </nav>
+  </div>
+
+  <!-- ========== REGISTRAR STATS ========== -->
+  <div id="page-register-stats" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('match-detail')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Registrar Estatísticas</h2>
+    </div>
+    <div class="page-body">
+      <div class="card card-highlight">
+        <p><i class="fas fa-shield-halved" style="color:var(--purple-light)"></i> <strong>Sistema anti-fraude:</strong> Estatísticas vão para validação do admin antes de contarem.</p>
+      </div>
+      <div id="stats-register-list"></div>
+      <button class="btn-primary btn-large" onclick="saveMatchStats()"><i class="fas fa-paper-plane"></i> ENVIAR PARA VALIDAÇÃO</button>
+    </div>
+  </div>
+
+  <!-- ========== JOGADORES ========== -->
+  <div id="page-players" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Jogadores</h2>
+      <button class="btn-icon" onclick="navigateTo('player-add')"><i class="fas fa-user-plus"></i></button>
+    </div>
+    <div class="page-body">
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="search-players" placeholder="Buscar jogador..." oninput="filterPlayers()">
+      </div>
+      <div id="players-list" class="player-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== ADICIONAR JOGADOR ========== -->
+  <div id="page-player-add" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('players')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Adicionar Jogador</h2>
+    </div>
+    <div class="page-body">
+      <div class="form-group"><label>Nome</label><input type="text" id="player-add-name" class="input-field" placeholder="Nome do jogador"></div>
+      <div class="form-group"><label>Celular</label><input type="tel" id="player-add-phone" class="input-field" placeholder="(11) 99999-9999"></div>
+      <div class="form-group">
+        <label>Posição</label>
+        <select id="player-add-position" class="input-field">
+          <option value="Atacante">Atacante</option>
+          <option value="Meia">Meia</option>
+          <option value="Volante">Volante</option>
+          <option value="Zagueiro">Zagueiro</option>
+          <option value="Lateral">Lateral</option>
+          <option value="Goleiro">Goleiro</option>
+        </select>
+      </div>
+      <button class="btn-primary btn-large" onclick="addPlayer()">ADICIONAR</button>
+    </div>
+  </div>
+
+  <!-- ========== FANTASY ========== -->
+  <div id="page-fantasy" class="page">
+    <div class="page-header-fantasy">
+      <h2><i class="fas fa-trophy"></i> Liga do Meu Rachão</h2>
+    </div>
+    <div class="page-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="fantasy-ranking">Ranking</button>
+        <button class="tab" data-tab="fantasy-team">Meu Time</button>
+        <button class="tab" data-tab="fantasy-scoring">Pontos</button>
+        <button class="tab" data-tab="fantasy-prizes">Prêmios</button>
+      </div>
+
+      <!-- Ranking -->
+      <div id="fantasy-ranking-content">
+        <div class="fantasy-period-toggle">
+          <button class="pill active" data-period="daily">Diário</button>
+          <button class="pill" data-period="monthly">Mensal</button>
+          <button class="pill" data-period="alltime">Geral</button>
+        </div>
+        <div id="fantasy-ranking-list" class="list"></div>
+      </div>
+
+      <!-- Meu Time -->
+      <div id="fantasy-team-content" style="display:none">
+        <div class="card card-highlight">
+          <h3>Monte seu time</h3>
+          <p class="text-muted">Escolha <span id="fantasy-line-count">5</span> jogadores de linha + 1 goleiro confirmados</p>
+        </div>
+        <div class="fantasy-formation" id="fantasy-formation"></div>
+        <button class="btn-primary btn-large" onclick="saveFantasyTeam()"><i class="fas fa-save"></i> SALVAR TIME</button>
+      </div>
+
+      <!-- Pontuação -->
+      <div id="fantasy-scoring-content" style="display:none">
+        <div class="card">
+          <h3><i class="fas fa-shirt" style="color:var(--purple-light)"></i> Jogador de Linha</h3>
+          <div class="scoring-table">
+            <div class="score-row"><span>Gol</span><span class="text-green">+5</span></div>
+            <div class="score-row"><span>Assistência</span><span class="text-green">+3</span></div>
+            <div class="score-row"><span>Desarme</span><span class="text-green">+2</span></div>
+            <div class="score-row"><span>Vitória</span><span class="text-green">+2</span></div>
+            <div class="score-row"><span>Presença</span><span class="text-green">+1</span></div>
+            <div class="score-row"><span>Falta</span><span class="text-red">-1</span></div>
+            <div class="score-row"><span>Cartão Amarelo</span><span class="text-red">-2</span></div>
+            <div class="score-row"><span>Cartão Vermelho</span><span class="text-red">-4</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3><i class="fas fa-mitten" style="color:var(--orange)"></i> Goleiro</h3>
+          <div class="scoring-table">
+            <div class="score-row"><span>Defesa</span><span class="text-green">+1</span></div>
+            <div class="score-row"><span>Clean Sheet</span><span class="text-green">+5</span></div>
+            <div class="score-row"><span>Vitória</span><span class="text-green">+3</span></div>
+            <div class="score-row"><span>Presença</span><span class="text-green">+1</span></div>
+            <div class="score-row"><span>Gol Sofrido</span><span class="text-red">-0.5</span></div>
+            <div class="score-row highlight-row"><span>Multiplicador Final</span><span class="text-orange">x1.3</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prêmios -->
+      <div id="fantasy-prizes-content" style="display:none">
+        <div class="card">
+          <h3><i class="fas fa-medal" style="color:var(--yellow)"></i> Premiação</h3>
+          <div class="prize-list">
+            <div class="prize-item gold"><div class="prize-medal">1</div><span id="prize-display-1">-</span></div>
+            <div class="prize-item silver"><div class="prize-medal">2</div><span id="prize-display-2">-</span></div>
+            <div class="prize-item bronze"><div class="prize-medal">3</div><span id="prize-display-3">-</span></div>
+          </div>
+        </div>
+        <div class="card" id="admin-prizes-section">
+          <h3>Configurar Prêmios (Admin)</h3>
+          <div class="form-group">
+            <label>Tipo de Prêmio</label>
+            <select id="prize-type" class="input-field">
+              <option value="money">Dinheiro</option>
+              <option value="exemption">Isenção de Mensalidade</option>
+              <option value="custom">Personalizado</option>
+            </select>
+          </div>
+          <div class="form-group"><label>1º Lugar</label><input type="text" id="prize-1" class="input-field" placeholder="Ex: R$ 50 ou Isento no mês"></div>
+          <div class="form-group"><label>2º Lugar</label><input type="text" id="prize-2" class="input-field" placeholder="Ex: R$ 30 ou 50% desconto"></div>
+          <div class="form-group"><label>3º Lugar</label><input type="text" id="prize-3" class="input-field" placeholder="Ex: R$ 20 ou Escolhe o time"></div>
+          <button class="btn-primary" onclick="savePrizes()">SALVAR PRÊMIOS</button>
+        </div>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item active" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
+      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
+      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
+    </nav>
+  </div>
+
+  <!-- ========== MODAL PICKER ========== -->
+  <div id="modal-fantasy-picker" class="modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Escolher Jogador</h3>
+        <button class="btn-icon" onclick="closeModal('fantasy-picker')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div id="fantasy-picker-list" class="player-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== MODAL MATCH MENU ========== -->
+  <div id="modal-match-menu" class="modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header"><h3>Opções</h3><button class="btn-icon" onclick="closeModal('match-menu')"><i class="fas fa-xmark"></i></button></div>
+      <div class="modal-menu">
+        <button onclick="closeModal('match-menu');navigateTo('register-stats')"><i class="fas fa-chart-bar"></i> Registrar Estatísticas</button>
+        <button onclick="closeModal('match-menu');navigateTo('rotation')"><i class="fas fa-rotate"></i> Rotação de Times</button>
+        <button onclick="closeModal('match-menu');endMatch()"><i class="fas fa-flag-checkered"></i> Encerrar Pelada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MODAL LIBERAÇÃO ========== -->
+  <div id="modal-request-release" class="modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header"><h3>Solicitar Liberação</h3><button class="btn-icon" onclick="closeModal('request-release')"><i class="fas fa-xmark"></i></button></div>
+      <div class="center-content" style="padding:20px">
+        <i class="fas fa-lock" style="font-size:48px;color:var(--orange)"></i>
+        <p>Você está bloqueado por inadimplência.</p>
+        <p class="text-muted">Envie um pedido de liberação ao admin.</p>
+        <textarea id="release-message" class="input-field" placeholder="Mensagem (opcional)" rows="3"></textarea>
+        <button class="btn-primary" onclick="requestRelease()">SOLICITAR LIBERAÇÃO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== PERFIL ========== -->
+  <div id="page-profile" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Meu Perfil</h2>
+    </div>
+    <div class="page-body center-content">
+      <div class="profile-avatar"><i class="fas fa-user"></i></div>
+      <h2 id="profile-name"></h2>
+      <p class="text-muted" id="profile-phone"></p>
+      <p class="badge" id="profile-position"></p>
+      <div class="profile-stats">
+        <div class="pstat"><span class="pstat-value" id="profile-matches">0</span><span class="pstat-label">Peladas</span></div>
+        <div class="pstat"><span class="pstat-value" id="profile-goals">0</span><span class="pstat-label">Gols</span></div>
+        <div class="pstat"><span class="pstat-value" id="profile-assists">0</span><span class="pstat-label">Assist.</span></div>
+        <div class="pstat"><span class="pstat-value" id="profile-desarmes">0</span><span class="pstat-label">Desarmes</span></div>
+      </div>
+      <div class="profile-menu">
+        <button class="profile-menu-item" onclick="navigateTo('settings')"><i class="fas fa-gear"></i><span>Configurações</span><i class="fas fa-chevron-right"></i></button>
+        <button class="profile-menu-item" onclick="navigateTo('admin')"><i class="fas fa-shield"></i><span>Painel Admin</span><i class="fas fa-chevron-right"></i></button>
+        <button class="profile-menu-item text-red" onclick="logout()"><i class="fas fa-right-from-bracket"></i><span>Sair</span><i class="fas fa-chevron-right"></i></button>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
+      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
+      <button class="nav-item active" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
+    </nav>
+  </div>
+
+  <!-- ========== ADMIN ========== -->
+  <div id="page-admin" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('profile')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Painel Admin</h2>
+    </div>
+    <div class="page-body">
+      <div class="admin-menu">
+        <button class="card admin-card" onclick="navigateTo('admin-stats')"><i class="fas fa-chart-bar"></i><div><h4>Validar Estatísticas</h4><p class="text-muted">Aprovar gols, assistências e desarmes</p></div><span class="admin-badge" id="admin-pending-count"></span></button>
+        <button class="card admin-card" onclick="navigateTo('admin-payments')"><i class="fas fa-money-bill-wave"></i><div><h4>Gerenciar Pagamentos</h4><p class="text-muted">Confirmar e bloquear</p></div></button>
+        <button class="card admin-card" onclick="navigateTo('admin-blocked')"><i class="fas fa-ban"></i><div><h4>Jogadores Bloqueados</h4><p class="text-muted">Inadimplentes e pedidos de liberação</p></div><span class="admin-badge" id="admin-release-count"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ADMIN STATS ========== -->
+  <div id="page-admin-stats" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('admin')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Validar Estatísticas</h2>
+    </div>
+    <div class="page-body">
+      <div id="pending-stats-list" class="list"></div>
+      <div id="pending-stats-empty" class="empty-state"><i class="fas fa-check-circle"></i><p>Nenhuma estatística pendente</p></div>
+    </div>
+  </div>
+
+  <!-- ========== ADMIN PAYMENTS ========== -->
+  <div id="page-admin-payments" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('admin')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Gerenciar Pagamentos</h2>
+    </div>
+    <div class="page-body">
+      <div id="admin-payment-list" class="player-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== ADMIN BLOCKED ========== -->
+  <div id="page-admin-blocked" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('admin')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Bloqueados e Liberações</h2>
+    </div>
+    <div class="page-body">
+      <div class="card" id="release-requests-card" style="display:none">
+        <h3><i class="fas fa-hand" style="color:var(--orange)"></i> Pedidos de Liberação</h3>
+        <div id="release-requests-list" class="player-list"></div>
+      </div>
+      <div class="card">
+        <h3><i class="fas fa-ban" style="color:var(--red)"></i> Jogadores Bloqueados</h3>
+        <div id="blocked-players-list" class="player-list"></div>
+        <div id="blocked-empty" class="empty-state" style="padding:20px"><i class="fas fa-check-circle"></i><p>Nenhum jogador bloqueado</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CONFIGURAÇÕES ========== -->
+  <div id="page-settings" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('profile')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Configurações</h2>
+    </div>
+    <div class="page-body">
+      <div class="settings-section">
+        <h3>Notificações</h3>
+        <div class="setting-row"><span>Lembrete de pelada</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+        <div class="setting-row"><span>Resultado do sorteio</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+        <div class="setting-row"><span>Pagamento confirmado</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+      </div>
+      <div class="settings-section">
+        <h3>Dados</h3>
+        <div class="setting-row"><span>Modo offline</span><label class="toggle"><input type="checkbox" checked id="toggle-offline"><span class="toggle-slider"></span></label></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== NOTIFICAÇÕES ========== -->
+  <div id="page-notifications" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Notificações</h2>
+    </div>
+    <div class="page-body">
+      <div id="notifications-list" class="list"></div>
+      <div class="empty-state" id="notifications-empty"><i class="fas fa-bell-slash"></i><p>Nenhuma notificação</p></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/rotation.js"></script>
+  <script src="js/fantasy.js"></script>
+  <script src="js/offline.js"></script>
+</body>
+</html>
