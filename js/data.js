@@ -129,6 +129,7 @@ function seedDemoData() {
 
   const demoMatches = [{
     id: 'm1',
+    code: 'R4CH40',
     name: 'Rachão de Quinta',
     date: dateStr,
     time: '20:00',
@@ -139,6 +140,7 @@ function seedDemoData() {
     price: 25,
     pixKey: '11999990001',
     confirmed: ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18'],
+    participants: ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18'],
     waiting: [],
     teams: null,
     status: 'open',

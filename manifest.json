@@ -1,7 +1,7 @@
 {
   "name": "Meu Rachão Pro",
   "short_name": "Rachão Pro",
-  "description": "Gerenciamento completo de peladas",
+  "description": "Gerenciamento completo de rachões",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0D0D1A",

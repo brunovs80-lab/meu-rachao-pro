@@ -98,8 +98,8 @@
     </div>
     <div class="page-body">
       <div class="card card-highlight" id="next-match-card">
-        <div class="card-badge">PRÓXIMA PELADA</div>
-        <h3 id="next-match-title">Nenhuma pelada agendada</h3>
+        <div class="card-badge">PRÓXIMO RACHÃO</div>
+        <h3 id="next-match-title">Nenhum rachão agendado</h3>
         <p id="next-match-info" class="text-muted"></p>
         <div class="card-actions" id="next-match-actions" style="display:none">
           <button class="btn-primary btn-sm" onclick="navigateTo('match-detail')">VER DETALHES</button>
@@ -110,7 +110,7 @@
       <div class="menu-grid">
         <div class="menu-item" onclick="navigateTo('matches')">
           <div class="menu-icon"><i class="fas fa-calendar-days"></i></div>
-          <span>Peladas</span>
+          <span>Rachões</span>
         </div>
         <div class="menu-item" onclick="navigateTo('rotation')">
           <div class="menu-icon" style="background:linear-gradient(135deg,#E06800,var(--orange))"><i class="fas fa-rotate"></i></div>
@@ -144,50 +144,56 @@
     </div>
     <nav class="bottom-nav">
       <button class="nav-item active" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
       <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
       <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
       <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
     </nav>
   </div>
 
-  <!-- ========== PELADAS ========== -->
+  <!-- ========== RACHÕES ========== -->
   <div id="page-matches" class="page">
     <div class="page-header">
       <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Peladas</h2>
-      <button class="btn-icon" onclick="navigateTo('match-create')"><i class="fas fa-plus"></i></button>
+      <h2>Rachões</h2>
+      <div style="display:flex;gap:4px">
+        <button class="btn-icon" onclick="navigateTo('match-join')" title="Entrar no Rachão"><i class="fas fa-right-to-bracket"></i></button>
+        <button class="btn-icon" onclick="navigateTo('match-create')" title="Criar Rachão"><i class="fas fa-plus"></i></button>
+      </div>
     </div>
     <div class="page-body">
       <div class="tabs">
-        <button class="tab active" data-tab="upcoming">Próximas</button>
+        <button class="tab active" data-tab="upcoming">Próximos</button>
         <button class="tab" data-tab="past">Anteriores</button>
       </div>
       <div id="matches-list" class="list"></div>
       <div id="matches-empty" class="empty-state" style="display:none">
         <i class="fas fa-calendar-plus"></i>
-        <p>Nenhuma pelada agendada</p>
-        <button class="btn-primary btn-sm" onclick="navigateTo('match-create')">CRIAR PELADA</button>
+        <p>Nenhum rachão agendado</p>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-primary btn-sm" onclick="navigateTo('match-create')">CRIAR RACHÃO</button>
+          <button class="btn-orange btn-sm" onclick="navigateTo('match-join')">ENTRAR NO RACHÃO</button>
+        </div>
       </div>
     </div>
     <nav class="bottom-nav">
       <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item active" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item active" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
       <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
       <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
       <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
     </nav>
   </div>
 
-  <!-- ========== CRIAR PELADA ========== -->
+  <!-- ========== CRIAR RACHÃO ========== -->
   <div id="page-match-create" class="page">
     <div class="page-header">
       <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Nova Pelada</h2>
+      <h2>Novo Rachão</h2>
     </div>
     <div class="page-body">
       <div class="form-group">
-        <label>Nome da Pelada</label>
+        <label>Nome do Rachão</label>
         <input type="text" id="match-name" class="input-field" placeholder="Ex: Rachão de Quinta">
       </div>
       <div class="form-group">
@@ -221,7 +227,7 @@
       <div class="form-group">
         <label>Tipo de cobrança</label>
         <select id="match-payment-type" class="input-field">
-          <option value="per_match">Avulso (por pelada)</option>
+          <option value="per_match">Avulso (por rachão)</option>
           <option value="monthly">Mensalidade</option>
         </select>
       </div>
@@ -233,15 +239,35 @@
         <label>Chave Pix</label>
         <input type="text" id="match-pix" class="input-field" placeholder="CPF, email ou telefone">
       </div>
-      <button id="btn-create-match" class="btn-primary btn-large">CRIAR PELADA</button>
+      <button id="btn-create-match" class="btn-primary btn-large">CRIAR RACHÃO</button>
     </div>
   </div>
 
-  <!-- ========== DETALHE DA PELADA ========== -->
+  <!-- ========== ENTRAR NO RACHÃO ========== -->
+  <div id="page-match-join" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Entrar no Rachão</h2>
+    </div>
+    <div class="page-body">
+      <div class="card card-highlight" style="text-align:center">
+        <i class="fas fa-ticket" style="font-size:48px;color:var(--orange);margin-bottom:12px"></i>
+        <h3>Digite o código do Rachão</h3>
+        <p class="text-muted">Peça o código de 6 dígitos para quem criou o rachão</p>
+      </div>
+      <div class="form-group">
+        <label>Código do Rachão</label>
+        <input type="text" id="join-code" class="input-field" placeholder="Ex: 482A7F" maxlength="6" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;text-transform:uppercase">
+      </div>
+      <button class="btn-orange btn-large" onclick="joinMatchByCode()"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
+    </div>
+  </div>
+
+  <!-- ========== DETALHE DO RACHÃO ========== -->
   <div id="page-match-detail" class="page">
     <div class="page-header">
       <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
-      <h2 id="detail-match-title">Pelada</h2>
+      <h2 id="detail-match-title">Rachão</h2>
       <button class="btn-icon" onclick="showMatchMenu()"><i class="fas fa-ellipsis-vertical"></i></button>
     </div>
     <div class="page-body">
@@ -252,6 +278,16 @@
         <div class="info-item"><i class="fas fa-users"></i><span id="detail-format"></span></div>
       </div>
 
+      <div class="card" id="match-code-card" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <p class="text-muted" style="font-size:12px;margin-bottom:4px"><i class="fas fa-ticket"></i> Código do Rachão</p>
+            <span id="detail-match-code" style="font-size:28px;font-weight:900;letter-spacing:6px;color:var(--orange)"></span>
+          </div>
+          <button class="btn-outline btn-sm" onclick="shareMatchCode()" style="flex-shrink:0"><i class="fas fa-share-nodes"></i> Compartilhar</button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title-row">
           <h3>Confirmados (<span id="confirmed-count">0</span>/<span id="max-players">10</span>)</h3>
@@ -259,6 +295,11 @@
         <div class="progress-bar"><div class="progress-fill" id="confirmed-progress"></div></div>
         <div id="confirmed-list" class="player-list"></div>
         <button id="btn-toggle-presence" class="btn-primary" style="margin-top:12px">CONFIRMAR PRESENÇA</button>
+      </div>
+
+      <div class="card" id="participants-not-confirmed" style="display:none">
+        <h3><i class="fas fa-user-clock" style="color:var(--text-muted);margin-right:6px"></i>Aguardando Confirmação</h3>
+        <div id="participants-list" class="player-list"></div>
       </div>
 
       <div class="card" id="waiting-list-card" style="display:none">
@@ -341,13 +382,13 @@
         </div>
 
         <button class="btn-orange btn-large" onclick="finishRound()"><i class="fas fa-flag-checkered"></i> FINALIZAR PARTIDA</button>
-        <button class="btn-outline" onclick="endRotation()" style="margin-top:8px;width:100%"><i class="fas fa-stop"></i> ENCERRAR PELADA</button>
+        <button class="btn-outline" onclick="endRotation()" style="margin-top:8px;width:100%"><i class="fas fa-stop"></i> ENCERRAR RACHÃO</button>
       </div>
 
       <div id="rotation-empty" class="empty-state">
         <i class="fas fa-rotate"></i>
         <p>Nenhuma rotação ativa</p>
-        <p class="text-muted">Sorteie os times em uma pelada para começar</p>
+        <p class="text-muted">Sorteie os times em um rachão para começar</p>
       </div>
 
       <div class="card" style="margin-top:16px" id="rotation-history-card">
@@ -420,7 +461,7 @@
     </div>
     <nav class="bottom-nav">
       <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
       <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
       <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
       <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
@@ -444,7 +485,7 @@
     </div>
     <nav class="bottom-nav">
       <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
       <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
       <button class="nav-item active" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
       <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
@@ -629,7 +670,7 @@
     </div>
     <nav class="bottom-nav">
       <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
       <button class="nav-item active" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
       <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
       <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
@@ -654,7 +695,7 @@
       <div class="modal-menu">
         <button onclick="closeModal('match-menu');navigateTo('register-stats')"><i class="fas fa-chart-bar"></i> Registrar Estatísticas</button>
         <button onclick="closeModal('match-menu');navigateTo('rotation')"><i class="fas fa-rotate"></i> Rotação de Times</button>
-        <button onclick="closeModal('match-menu');endMatch()"><i class="fas fa-flag-checkered"></i> Encerrar Pelada</button>
+        <button onclick="closeModal('match-menu');endMatch()"><i class="fas fa-flag-checkered"></i> Encerrar Rachão</button>
       </div>
     </div>
   </div>
@@ -685,7 +726,7 @@
       <p class="text-muted" id="profile-phone"></p>
       <p class="badge" id="profile-position"></p>
       <div class="profile-stats">
-        <div class="pstat"><span class="pstat-value" id="profile-matches">0</span><span class="pstat-label">Peladas</span></div>
+        <div class="pstat"><span class="pstat-value" id="profile-matches">0</span><span class="pstat-label">Rachões</span></div>
         <div class="pstat"><span class="pstat-value" id="profile-goals">0</span><span class="pstat-label">Gols</span></div>
         <div class="pstat"><span class="pstat-value" id="profile-assists">0</span><span class="pstat-label">Assist.</span></div>
         <div class="pstat"><span class="pstat-value" id="profile-desarmes">0</span><span class="pstat-label">Desarmes</span></div>
@@ -698,7 +739,7 @@
     </div>
     <nav class="bottom-nav">
       <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Peladas</span></button>
+      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
       <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
       <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
       <button class="nav-item active" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
@@ -771,7 +812,7 @@
     <div class="page-body">
       <div class="settings-section">
         <h3>Notificações</h3>
-        <div class="setting-row"><span>Lembrete de pelada</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+        <div class="setting-row"><span>Lembrete de rachão</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
         <div class="setting-row"><span>Resultado do sorteio</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
         <div class="setting-row"><span>Pagamento confirmado</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
       </div>

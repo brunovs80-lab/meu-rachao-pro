@@ -135,20 +135,31 @@ function loadDashboard() {
   if (!user) return;
   document.getElementById('dash-username').textContent = user.name;
 
-  const matches = getMatches().filter(m => m.status !== 'done').sort((a,b) => a.date.localeCompare(b.date));
+  const allMatches = getMatches().filter(m => m.status !== 'done');
+  // Show only matches the user participates in
+  const matches = allMatches.filter(m => {
+    const parts = m.participants || m.confirmed || [];
+    return parts.includes(user.id) || m.createdBy === user.id;
+  }).sort((a,b) => a.date.localeCompare(b.date));
   if (matches.length > 0) {
     const next = matches[0];
     currentMatchId = next.id;
     document.getElementById('next-match-title').textContent = next.name;
     document.getElementById('next-match-info').textContent = `${formatDateBR(next.date)} às ${next.time} • ${next.location}`;
     document.getElementById('next-match-actions').style.display = 'flex';
+    const isParticipant = (next.participants || next.confirmed || []).includes(user.id);
     const isConf = next.confirmed.includes(user.id);
     const btn = document.getElementById('btn-confirm-presence');
-    btn.textContent = isConf ? '✓ CONFIRMADO' : 'CONFIRMAR';
-    btn.className = isConf ? 'btn-outline btn-sm confirmed-badge' : 'btn-outline btn-sm';
-    btn.onclick = () => togglePresence(next.id);
+    if (isParticipant) {
+      btn.style.display = '';
+      btn.textContent = isConf ? '✓ CONFIRMADO' : 'CONFIRMAR';
+      btn.className = isConf ? 'btn-outline btn-sm confirmed-badge' : 'btn-outline btn-sm';
+      btn.onclick = () => togglePresence(next.id);
+    } else {
+      btn.style.display = 'none';
+    }
   } else {
-    document.getElementById('next-match-title').textContent = 'Nenhuma pelada agendada';
+    document.getElementById('next-match-title').textContent = 'Nenhum rachão agendado';
     document.getElementById('next-match-info').textContent = '';
     document.getElementById('next-match-actions').style.display = 'none';
   }
@@ -206,7 +217,13 @@ function calcPlayerPoints(p) {
 
 // ===== MATCHES =====
 function loadMatches() {
-  const matches = getMatches();
+  const user = getCurrentUser();
+  const all = getMatches();
+  // Show only matches user participates in or created
+  const matches = all.filter(m => {
+    const parts = m.participants || m.confirmed || [];
+    return parts.includes(user.id) || m.createdBy === user.id;
+  });
   const list = document.getElementById('matches-list');
   const empty = document.getElementById('matches-empty');
   if (matches.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
@@ -216,10 +233,11 @@ function loadMatches() {
     const total = m.confirmed.length;
     const teamSize = m.playersPerTeam + 1;
     const statusClass = m.status === 'done' ? 'status-done' : total >= teamSize * 2 ? 'status-full' : 'status-open';
-    const statusText = m.status === 'done' ? 'Encerrada' : total >= teamSize * 2 ? `${Math.floor(total/teamSize)} times` : 'Aberta';
+    const statusText = m.status === 'done' ? 'Encerrado' : total >= teamSize * 2 ? `${Math.floor(total/teamSize)} times` : 'Aberto';
+    const codeTag = m.code ? `<span style="font-size:11px;color:var(--orange);font-weight:700">🔑 ${m.code}</span>` : '';
     return `<div class="match-list-item" onclick="openMatch('${m.id}')">
       <div class="match-date-box"><span class="day">${d.getDate()}</span><span class="month">${getMonthAbbr(d.getMonth())}</span></div>
-      <div class="match-list-info"><h4>${m.name}</h4><p>${m.time} • ${m.location}</p><p>${total} confirmados (${m.playersPerTeam}+1 por time)</p></div>
+      <div class="match-list-info"><h4>${m.name}</h4><p>${m.time} • ${m.location}</p><p>${total} confirmados • ${codeTag}</p></div>
       <span class="match-status ${statusClass}">${statusText}</span>
     </div>`;
   }).join('');
@@ -238,6 +256,16 @@ function updateTotalPerTeam() {
   document.getElementById('total-per-team').textContent = n + 1;
 }
 
+function generateMatchCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  // Ensure unique
+  const existing = getMatches().map(m => m.code);
+  if (existing.includes(code)) return generateMatchCode();
+  return code;
+}
+
 function createMatch() {
   const name = document.getElementById('match-name').value.trim();
   const date = document.getElementById('match-date').value;
@@ -250,16 +278,53 @@ function createMatch() {
   const pix = document.getElementById('match-pix').value.trim();
   if (!name || !date || !time || !location) { showToast('Preencha todos os campos'); return; }
   const user = getCurrentUser();
+  const code = generateMatchCode();
   const m = {
-    id: generateId(), name, date, time, location, playersPerTeam: players,
+    id: generateId(), code, name, date, time, location, playersPerTeam: players,
     tieRule, paymentType, price, pixKey: pix,
-    confirmed: [user.id], waiting: [], teams: null, status: 'open', createdBy: user.id
+    confirmed: [user.id], participants: [user.id], waiting: [], teams: null, status: 'open', createdBy: user.id
   };
   const ms = getMatches(); ms.push(m); saveMatches(ms);
-  addNotification({ type:'green', icon:'fa-calendar-plus', title:'Nova pelada!', text: name + ' em ' + formatDateBR(date) });
-  showToast('Pelada criada!');
+  addNotification({ type:'green', icon:'fa-calendar-plus', title:'Novo rachão!', text: name + ' em ' + formatDateBR(date) });
+  showToast('Rachão criado! Código: ' + code);
   currentMatchId = m.id;
   navigateTo('match-detail');
+}
+
+function joinMatchByCode() {
+  const codeInput = document.getElementById('join-code');
+  const code = codeInput.value.trim().toUpperCase();
+  if (code.length !== 6) { showToast('Digite o código de 6 dígitos'); return; }
+  const match = getMatches().find(m => m.code === code);
+  if (!match) { showToast('Código não encontrado'); return; }
+  const user = getCurrentUser();
+  if (!user) { showToast('Faça login primeiro'); return; }
+  // Add to participants (joined the rachão)
+  if (!match.participants) match.participants = [...(match.confirmed || [])];
+  if (match.participants.includes(user.id)) {
+    showToast('Você já está neste rachão');
+    currentMatchId = match.id;
+    navigateTo('match-detail');
+    return;
+  }
+  match.participants.push(user.id);
+  updateMatch(match.id, { participants: match.participants });
+  addNotification({ type:'green', icon:'fa-right-to-bracket', title:'Entrou no rachão!', text: user.name + ' entrou em ' + match.name });
+  showToast('Você entrou no rachão! Confirme sua presença.');
+  codeInput.value = '';
+  currentMatchId = match.id;
+  navigateTo('match-detail');
+}
+
+function shareMatchCode() {
+  const match = getMatchById(currentMatchId);
+  if (!match) return;
+  const text = `⚽ ${match.name}\n📅 ${formatDateBR(match.date)} às ${match.time}\n📍 ${match.location}\n\n🔑 Código: ${match.code}\n\nEntre no app Meu Rachão Pro e use o código acima para participar!`;
+  if (navigator.share) {
+    navigator.share({ title: match.name, text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('Código copiado!')).catch(() => showToast('Código: ' + match.code));
+  }
 }
 
 function adjustNumber(id, delta) {
@@ -281,6 +346,21 @@ function loadMatchDetail() {
   document.getElementById('detail-location').textContent = match.location;
   document.getElementById('detail-format').textContent = `${match.playersPerTeam} linha + 1 gol`;
 
+  // Show match code
+  const codeCard = document.getElementById('match-code-card');
+  if (match.code) {
+    codeCard.style.display = 'block';
+    document.getElementById('detail-match-code').textContent = match.code;
+  } else {
+    codeCard.style.display = 'none';
+  }
+
+  // Ensure participants array exists (backward compat)
+  if (!match.participants) {
+    match.participants = [...(match.confirmed || [])];
+    updateMatch(currentMatchId, { participants: match.participants });
+  }
+
   const teamSize = match.playersPerTeam + 1;
   const maxDisplay = teamSize * 2;
   document.getElementById('confirmed-count').textContent = match.confirmed.length;
@@ -300,6 +380,24 @@ function loadMatchDetail() {
     </div>`;
   }).join('');
 
+  // Show participants who haven't confirmed yet
+  const notConfirmed = (match.participants || []).filter(pid => !match.confirmed.includes(pid) && !match.waiting.includes(pid));
+  const participantsCard = document.getElementById('participants-not-confirmed');
+  if (participantsCard && notConfirmed.length > 0) {
+    participantsCard.style.display = 'block';
+    document.getElementById('participants-list').innerHTML = notConfirmed.map(pid => {
+      const p = getPlayerById(pid);
+      if (!p) return '';
+      const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+      return `<div class="player-item">
+        <div class="player-avatar" style="background:var(--text-muted)">${ini}</div>
+        <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position} • Aguardando confirmação</div></div>
+      </div>`;
+    }).join('');
+  } else if (participantsCard) {
+    participantsCard.style.display = 'none';
+  }
+
   const waitCard = document.getElementById('waiting-list-card');
   if (match.waiting.length > 0) {
     waitCard.style.display = 'block';
@@ -311,21 +409,27 @@ function loadMatchDetail() {
     }).join('');
   } else waitCard.style.display = 'none';
 
-  // Presence button
+  // Presence button — only show if user is a participant
   const btn = document.getElementById('btn-toggle-presence');
+  const isParticipant = (match.participants || []).includes(user.id);
   const isConf = match.confirmed.includes(user.id);
   const isWait = match.waiting.includes(user.id);
-  if (isConf) {
-    btn.textContent = 'CANCELAR PRESENÇA'; btn.className = 'btn-outline';
-    btn.style.borderColor = 'var(--red)'; btn.style.color = 'var(--red)';
-  } else if (isWait) {
-    btn.textContent = 'SAIR DA ESPERA'; btn.className = 'btn-outline';
-    btn.style.borderColor = 'var(--orange)'; btn.style.color = 'var(--orange)';
+  if (!isParticipant) {
+    btn.style.display = 'none';
   } else {
-    btn.textContent = 'CONFIRMAR PRESENÇA'; btn.className = 'btn-primary';
-    btn.style.borderColor = ''; btn.style.color = '';
+    btn.style.display = 'block';
+    if (isConf) {
+      btn.textContent = 'CANCELAR PRESENÇA'; btn.className = 'btn-outline';
+      btn.style.borderColor = 'var(--red)'; btn.style.color = 'var(--red)';
+    } else if (isWait) {
+      btn.textContent = 'SAIR DA ESPERA'; btn.className = 'btn-outline';
+      btn.style.borderColor = 'var(--orange)'; btn.style.color = 'var(--orange)';
+    } else {
+      btn.textContent = 'CONFIRMAR PRESENÇA'; btn.className = 'btn-primary';
+      btn.style.borderColor = ''; btn.style.color = '';
+    }
+    btn.onclick = () => { togglePresence(currentMatchId); loadMatchDetail(); };
   }
-  btn.onclick = () => { togglePresence(currentMatchId); loadMatchDetail(); };
 
   // Teams
   if (match.teams) {
@@ -422,7 +526,7 @@ function showMatchMenu() { document.getElementById('modal-match-menu').style.dis
 
 function endMatch() {
   const match = getMatchById(currentMatchId);
-  if (match) { updateMatch(currentMatchId, { status: 'done' }); showToast('Pelada encerrada'); navigateTo('matches'); }
+  if (match) { updateMatch(currentMatchId, { status: 'done' }); showToast('Rachão encerrado'); navigateTo('matches'); }
 }
 
 // ===== PAYMENTS =====
@@ -1097,8 +1201,8 @@ function endRotation() {
   if (!state) return;
   state.active = false;
   saveRotationState(state);
-  addNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Pelada encerrada!', text: `${state.rounds.length} rodadas jogadas` });
-  showToast('Pelada encerrada!');
+  addNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Rachão encerrado!', text: `${state.rounds.length} rodadas jogadas` });
+  showToast('Rachão encerrado!');
   loadRotation();
 }
 

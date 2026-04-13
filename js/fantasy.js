@@ -205,7 +205,7 @@ function loadPrizes() {
 
 function savePrizes() {
   const prizes = {
-    first: document.getElementById('prize-1').value.trim() || 'Não paga a próxima pelada',
+    first: document.getElementById('prize-1').value.trim() || 'Não paga o próximo rachão',
     second: document.getElementById('prize-2').value.trim() || '50% de desconto na próxima',
     third: document.getElementById('prize-3').value.trim() || 'Escolhe o time no sorteio'
   };
