@@ -8,7 +8,37 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initMatchForm();
   checkAuth();
+  registerSW();
+  initOfflineDetection();
 });
+
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
+
+function initOfflineDetection() {
+  const update = () => {
+    const badge = document.getElementById('offline-badge');
+    if (badge) badge.style.display = navigator.onLine ? 'none' : 'inline-flex';
+  };
+  window.addEventListener('online', () => { update(); processSyncQueue(); });
+  window.addEventListener('offline', update);
+  update();
+}
+
+function processSyncQueue() {
+  const queue = getSyncQueue();
+  if (queue.length === 0) return;
+  // Process queued actions when back online
+  queue.forEach(action => {
+    if (action.type === 'notify_payment') notifyPayment();
+    if (action.type === 'confirm_presence') togglePresence(action.matchId);
+  });
+  clearSyncQueue();
+  showToast('Dados sincronizados!');
+}
 
 function checkAuth() {
   if (getCurrentUser()) navigateTo('dashboard');
@@ -301,8 +331,27 @@ function loadMatchDetail() {
   if (match.teams) {
     document.getElementById('teams-result').style.display = 'block';
     renderAllTeams(match.teams);
+    // Show rotation button if teams exist and match not done
+    const rotBtn = document.getElementById('btn-start-rotation');
+    if (rotBtn) {
+      const rotState = getRotationState();
+      if (rotState && rotState.active && rotState.matchId === currentMatchId) {
+        rotBtn.textContent = ' CONTINUAR ROTAÇÃO';
+        rotBtn.innerHTML = '<i class="fas fa-rotate"></i> CONTINUAR ROTAÇÃO';
+        rotBtn.onclick = () => navigateTo('rotation');
+        rotBtn.style.display = 'block';
+      } else if (match.status !== 'done') {
+        rotBtn.innerHTML = '<i class="fas fa-rotate"></i> INICIAR ROTAÇÃO';
+        rotBtn.onclick = () => startRotation(currentMatchId);
+        rotBtn.style.display = 'block';
+      } else {
+        rotBtn.style.display = 'none';
+      }
+    }
   } else {
     document.getElementById('teams-result').style.display = 'none';
+    const rotBtn = document.getElementById('btn-start-rotation');
+    if (rotBtn) rotBtn.style.display = 'none';
   }
 }
 
@@ -832,6 +881,280 @@ function initTabs() {
   });
 }
 
+// ===== ROTATION SYSTEM =====
+function loadRotation() {
+  const state = getRotationState();
+  const active = document.getElementById('rotation-active');
+  const empty = document.getElementById('rotation-empty');
+  const historyCard = document.getElementById('rotation-history-card');
+
+  if (state && state.active) {
+    active.style.display = 'block';
+    empty.style.display = 'none';
+    renderRotationState(state);
+  } else {
+    active.style.display = 'none';
+    empty.style.display = 'flex';
+  }
+
+  // Show history if any rounds played
+  if (state && state.rounds && state.rounds.length > 0) {
+    historyCard.style.display = 'block';
+    renderRotationHistory(state.rounds);
+  } else {
+    historyCard.style.display = 'none';
+  }
+}
+
+function startRotation(matchId) {
+  const match = getMatchById(matchId);
+  if (!match || !match.teams || match.teams.length < 2) {
+    showToast('Sorteie os times primeiro');
+    return;
+  }
+
+  const state = {
+    active: true,
+    matchId: matchId,
+    matchName: match.name,
+    tieRule: match.tieRule || 'playing_leaves',
+    playersPerTeam: match.playersPerTeam,
+    round: 1,
+    scoreA: 0,
+    scoreB: 0,
+    teamA: { name: match.teams[0].name, goalkeeper: match.teams[0].goalkeeper, players: match.teams[0].players },
+    teamB: { name: match.teams[1].name, goalkeeper: match.teams[1].goalkeeper, players: match.teams[1].players },
+    queue: [],
+    rounds: []
+  };
+
+  // Build queue from remaining teams + leftover
+  for (let i = 2; i < match.teams.length; i++) {
+    const t = match.teams[i];
+    const teamPlayers = [];
+    if (t.goalkeeper) teamPlayers.push(t.goalkeeper);
+    teamPlayers.push(...t.players);
+    state.queue.push({ name: t.name, players: teamPlayers });
+  }
+
+  // Add leftover players to queue as individuals
+  if (match.leftover && match.leftover.length > 0) {
+    const leftovers = match.leftover.map(id => getPlayerById(id)).filter(Boolean);
+    if (leftovers.length > 0) {
+      state.queue.push({ name: 'Reservas', players: leftovers });
+    }
+  }
+
+  saveRotationState(state);
+  addNotification({ type: 'orange', icon: 'fa-rotate', title: 'Rotação iniciada!', text: `${match.name} - ${state.teamA.name} vs ${state.teamB.name}` });
+  showToast('Rotação iniciada!');
+  navigateTo('rotation');
+}
+
+function renderRotationState(state) {
+  document.getElementById('rotation-match-name').textContent = state.matchName;
+  document.getElementById('rotation-round-info').textContent = `Rodada ${state.round}`;
+  document.getElementById('rot-score-a').textContent = state.scoreA;
+  document.getElementById('rot-score-b').textContent = state.scoreB;
+
+  // Team names
+  document.querySelector('#rot-team-a h4').textContent = state.teamA.name;
+  document.querySelector('#rot-team-b h4').textContent = state.teamB.name;
+
+  // Next team in queue
+  const nextCard = document.getElementById('rot-next-team-card');
+  if (state.queue.length > 0) {
+    nextCard.style.display = 'block';
+    const next = state.queue[0];
+    document.getElementById('rot-next-team-list').innerHTML = next.players.map(p => {
+      const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+      return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${ini}</div><div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position}</div></div></div>`;
+    }).join('');
+  } else {
+    nextCard.style.display = 'none';
+  }
+
+  // Queue
+  const queueEl = document.getElementById('rot-queue');
+  if (state.queue.length > 1) {
+    queueEl.innerHTML = state.queue.slice(1).map((team, i) =>
+      `<div class="player-item"><div class="player-avatar">${i + 2}</div><div class="player-info"><div class="player-name">${team.name}</div><div class="player-detail">${team.players.length} jogadores</div></div></div>`
+    ).join('');
+  } else if (state.queue.length === 0) {
+    queueEl.innerHTML = '<p class="text-muted" style="padding:8px;font-size:13px">Fila vazia — sem mais times</p>';
+  } else {
+    queueEl.innerHTML = '<p class="text-muted" style="padding:8px;font-size:13px">Sem times na espera</p>';
+  }
+}
+
+function addGoalRotation(team) {
+  const state = getRotationState();
+  if (!state || !state.active) return;
+  if (team === 'a') state.scoreA++;
+  else state.scoreB++;
+  saveRotationState(state);
+  document.getElementById('rot-score-' + team).textContent = team === 'a' ? state.scoreA : state.scoreB;
+}
+
+function finishRound() {
+  const state = getRotationState();
+  if (!state || !state.active) return;
+
+  const roundResult = {
+    round: state.round,
+    teamA: state.teamA.name,
+    teamB: state.teamB.name,
+    scoreA: state.scoreA,
+    scoreB: state.scoreB
+  };
+  state.rounds.push(roundResult);
+
+  // Determine winner/loser based on tie rule
+  let winner, loser;
+  if (state.scoreA > state.scoreB) {
+    winner = 'a'; loser = 'b';
+  } else if (state.scoreB > state.scoreA) {
+    winner = 'b'; loser = 'a';
+  } else {
+    // Tie
+    if (state.tieRule === 'playing_leaves') {
+      winner = null; loser = 'both';
+    } else if (state.tieRule === 'playing_stays') {
+      winner = 'both'; loser = null;
+    } else {
+      winner = null; loser = 'both';
+    }
+  }
+
+  if (state.queue.length === 0) {
+    // No more teams — just reset score for next round
+    state.round++;
+    state.scoreA = 0;
+    state.scoreB = 0;
+    saveRotationState(state);
+    showToast(`Rodada ${state.round - 1} encerrada! Sem times na fila.`);
+    renderRotationState(state);
+    renderRotationHistory(state.rounds);
+    document.getElementById('rotation-history-card').style.display = 'block';
+    return;
+  }
+
+  const nextTeamData = state.queue.shift();
+
+  if (loser === 'both') {
+    // Tie: both leave, next team + form new team from queue
+    const losingPlayers = [];
+    if (state.teamA.goalkeeper) losingPlayers.push(state.teamA.goalkeeper);
+    losingPlayers.push(...state.teamA.players);
+    if (state.teamB.goalkeeper) losingPlayers.push(state.teamB.goalkeeper);
+    losingPlayers.push(...state.teamB.players);
+
+    state.queue.push({ name: state.teamA.name, players: losingPlayers.slice(0, Math.ceil(losingPlayers.length / 2)) });
+    state.queue.push({ name: state.teamB.name, players: losingPlayers.slice(Math.ceil(losingPlayers.length / 2)) });
+
+    // Next team becomes team A, second from queue becomes team B
+    state.teamA = buildRotationTeam(nextTeamData);
+    if (state.queue.length > 0) {
+      const secondTeam = state.queue.shift();
+      state.teamB = buildRotationTeam(secondTeam);
+    }
+  } else if (winner === 'both') {
+    // Both stay: just continue, push next back
+    state.queue.push(nextTeamData);
+  } else {
+    // Normal: winner stays, loser goes to back of queue
+    const loserTeam = loser === 'a' ? state.teamA : state.teamB;
+    const loserPlayers = [];
+    if (loserTeam.goalkeeper) loserPlayers.push(loserTeam.goalkeeper);
+    loserPlayers.push(...loserTeam.players);
+    state.queue.push({ name: loserTeam.name, players: loserPlayers });
+
+    // Replace loser with next team
+    const newTeam = buildRotationTeam(nextTeamData);
+    if (loser === 'a') state.teamA = newTeam;
+    else state.teamB = newTeam;
+  }
+
+  state.round++;
+  state.scoreA = 0;
+  state.scoreB = 0;
+
+  saveRotationState(state);
+  renderRotationState(state);
+  renderRotationHistory(state.rounds);
+  document.getElementById('rotation-history-card').style.display = 'block';
+  showToast(`Rodada ${state.round - 1} encerrada! ${state.teamA.name} vs ${state.teamB.name}`);
+}
+
+function buildRotationTeam(teamData) {
+  const gk = teamData.players.find(p => p.position === 'Goleiro') || null;
+  const field = teamData.players.filter(p => p !== gk);
+  return { name: teamData.name, goalkeeper: gk, players: field };
+}
+
+function endRotation() {
+  const state = getRotationState();
+  if (!state) return;
+  state.active = false;
+  saveRotationState(state);
+  addNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Pelada encerrada!', text: `${state.rounds.length} rodadas jogadas` });
+  showToast('Pelada encerrada!');
+  loadRotation();
+}
+
+function renderRotationHistory(rounds) {
+  const container = document.getElementById('rotation-history');
+  container.innerHTML = rounds.map(r => {
+    const resultText = r.scoreA > r.scoreB ? `${r.teamA} venceu` : r.scoreB > r.scoreA ? `${r.teamB} venceu` : 'Empate';
+    return `<div class="rotation-round-item">
+      <div class="round-number">${r.round}</div>
+      <div class="round-result">${r.teamA} vs ${r.teamB} — <span class="round-score">${r.scoreA} x ${r.scoreB}</span> • ${resultText}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== FANTASY SCORE UPDATE FROM VALIDATED STAT =====
+function updateFantasyScoresFromStat(stat) {
+  const fantasyTeams = getFantasyTeams();
+  const scores = getFantasyScores();
+  const pts = POINTS;
+
+  fantasyTeams.forEach(team => {
+    const slots = Object.values(team.slots).filter(Boolean);
+    const hasPlayer = slots.find(p => p.id === stat.playerId);
+    if (!hasPlayer) return;
+
+    let points = 0;
+    if (stat.isGoalkeeper) {
+      points += (stat.saves || 0) * pts.goalkeeper.save;
+      points += (stat.cleanSheet || 0) * pts.goalkeeper.cleanSheet;
+      points -= (stat.goalsConceded || 0) * Math.abs(pts.goalkeeper.goalConceded);
+      points += pts.goalkeeper.presence;
+      points = Math.round(points * pts.goalkeeper.multiplier);
+    } else {
+      points += (stat.goals || 0) * pts.field.goal;
+      points += (stat.assists || 0) * pts.field.assist;
+      points += (stat.tackles || 0) * pts.field.tackle;
+      points -= (stat.fouls || 0) * Math.abs(pts.field.foul);
+      points -= (stat.yellows || 0) * Math.abs(pts.field.yellow);
+      points -= (stat.reds || 0) * Math.abs(pts.field.red);
+      points += pts.field.presence;
+    }
+
+    let scoreEntry = scores.find(s => s.userId === team.userId);
+    if (scoreEntry) {
+      scoreEntry.points = (scoreEntry.points || 0) + points;
+      scoreEntry.daily = (scoreEntry.daily || 0) + points;
+      scoreEntry.monthly = (scoreEntry.monthly || 0) + points;
+    } else {
+      scores.push({ userId: team.userId, name: team.name, points, daily: points, monthly: points });
+    }
+  });
+
+  saveFantasyScores(scores);
+}
+
+// ===== UTILITIES =====
 function show(id) { document.getElementById(id).style.display = 'block'; }
 function hide(id) { document.getElementById(id).style.display = 'none'; }
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
