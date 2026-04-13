@@ -535,7 +535,40 @@
           <h3>Monte seu time</h3>
           <p class="text-muted">Escolha <span id="fantasy-line-count">5</span> jogadores de linha + 1 goleiro confirmados</p>
         </div>
-        <div class="fantasy-formation" id="fantasy-formation"></div>
+        <div class="fantasy-formation" id="fantasy-formation">
+          <div class="formation-row">
+            <div class="formation-slot" data-pos="ATK1" onclick="openFantasyPicker('ATK1')">
+              <div class="slot-circle"><i class="fas fa-plus"></i></div>
+              <span>ATA</span>
+            </div>
+            <div class="formation-slot" data-pos="ATK2" onclick="openFantasyPicker('ATK2')">
+              <div class="slot-circle"><i class="fas fa-plus"></i></div>
+              <span>ATA</span>
+            </div>
+          </div>
+          <div class="formation-row">
+            <div class="formation-slot" data-pos="MID1" onclick="openFantasyPicker('MID1')">
+              <div class="slot-circle"><i class="fas fa-plus"></i></div>
+              <span>MEI</span>
+            </div>
+            <div class="formation-slot" data-pos="MID2" onclick="openFantasyPicker('MID2')">
+              <div class="slot-circle"><i class="fas fa-plus"></i></div>
+              <span>MEI</span>
+            </div>
+          </div>
+          <div class="formation-row">
+            <div class="formation-slot" data-pos="DEF1" onclick="openFantasyPicker('DEF1')">
+              <div class="slot-circle"><i class="fas fa-plus"></i></div>
+              <span>ZAG</span>
+            </div>
+          </div>
+          <div class="formation-row">
+            <div class="formation-slot" data-pos="GK" onclick="openFantasyPicker('GK')">
+              <div class="slot-circle"><i class="fas fa-plus"></i></div>
+              <span>GOL</span>
+            </div>
+          </div>
+        </div>
         <button class="btn-primary btn-large" onclick="saveFantasyTeam()"><i class="fas fa-save"></i> SALVAR TIME</button>
       </div>
 
