@@ -1,3 +1,6 @@
 .claude/
 node_modules/
 coverage/
+data/*.db
+data/*.db-wal
+data/*.db-shm

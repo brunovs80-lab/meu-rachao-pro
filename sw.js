@@ -1,10 +1,11 @@
-const CACHE_NAME = 'rachao-v5';
+const CACHE_NAME = 'rachao-v6';
 const ASSETS = [
   '/',
   '/index.html',
   '/css/style.css',
   '/css/pages.css',
   '/js/data.js',
+  '/js/api.js',
   '/js/app.js',
   '/js/fantasy.js',
   '/assets/logo.png'

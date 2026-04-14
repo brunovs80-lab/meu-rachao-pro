@@ -1,17 +1,15 @@
-// ========== MEU RACHÃO PRO - MAIN APP ==========
+// ========== MEU RACHÃO PRO - MAIN APP (API VERSION) ==========
 let currentRachaoId = null;
 let currentSessionId = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  migrateToRachaoModel();
-  seedDemoData();
+document.addEventListener('DOMContentLoaded', async () => {
   initPhoneInput();
   initCodeInputs();
   initTabs();
   initRachaoForm();
-  checkAuth();
   registerSW();
   initOfflineDetection();
+  await checkAuth();
 });
 
 function registerSW() {
@@ -30,8 +28,8 @@ function initOfflineDetection() {
   update();
 }
 
-function checkAuth() {
-  if (getCurrentUser()) navigateTo('dashboard');
+async function checkAuth() {
+  if (apiGetCurrentUser()) navigateTo('dashboard');
 }
 
 // ===== NAVIGATION =====
@@ -92,40 +90,46 @@ function initCodeInputs() {
   document.getElementById('resend-code').addEventListener('click', e => { e.preventDefault(); showToast('Código reenviado!'); });
 }
 
-function handleVerify() {
+async function handleVerify() {
   const code = Array.from(document.querySelectorAll('.code-digit')).map(d => d.value).join('');
   if (code.length < 4) { showToast('Digite o código completo'); return; }
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
-  const existing = getPlayers().find(p => p.phone === phone);
-  if (existing) { setCurrentUser(existing); navigateTo('dashboard'); showToast('Bem-vindo de volta, ' + existing.name + '!'); }
-  else navigateTo('register');
+  const existing = await apiLogin(phone);
+  if (existing) {
+    apiSetCurrentUser(existing);
+    navigateTo('dashboard');
+    showToast('Bem-vindo de volta, ' + existing.name + '!');
+  } else {
+    navigateTo('register');
+  }
 }
 
 // ===== REGISTER =====
-document.getElementById('btn-register').addEventListener('click', () => {
+document.getElementById('btn-register').addEventListener('click', async () => {
   const name = document.getElementById('register-name').value.trim().substring(0, 50);
   const position = document.getElementById('register-position').value;
   if (!name) { showToast('Digite seu nome'); return; }
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
-  const newUser = {
-    id: generateId(), name, phone, position: position || 'Meia',
-    goals:0, assists:0, tackles:0, fouls:0, yellows:0, reds:0, saves:0, cleanSheets:0,
-    matches:0, blocked:false, isAdmin: getPlayers().length === 0
-  };
-  const ps = getPlayers(); ps.push(newUser); savePlayers(ps);
-  setCurrentUser(newUser);
+
+  const allPlayers = await apiGetPlayers();
+  const newUser = await apiCreatePlayer({
+    name, phone, position: position || 'Meia',
+    isAdmin: allPlayers.length === 0
+  });
+
+  apiSetCurrentUser(newUser);
   navigateTo('dashboard');
   showToast('Conta criada!');
-  addNotification({ type:'purple', icon:'fa-user-plus', title:'Bem-vindo!', text:'Sua conta foi criada.' });
+  await apiAddNotification({ type:'purple', icon:'fa-user-plus', title:'Bem-vindo!', text:'Sua conta foi criada.' });
 });
 
 // ===== DASHBOARD =====
-function loadDashboard() {
-  const user = getCurrentUser();
+async function loadDashboard() {
+  const user = apiGetCurrentUser();
   if (!user) return;
   document.getElementById('dash-username').textContent = escapeHtml(user.name);
 
-  const rachaos = getRachaos().filter(r => r.status === 'active' && r.participants.includes(user.id));
+  const rachaos = (await apiGetRachaos()).filter(r => r.status === 'active' && r.participants.includes(user.id));
   const listEl = document.getElementById('dash-rachaos-list');
   const emptyEl = document.getElementById('dash-no-rachao');
 
@@ -134,8 +138,9 @@ function loadDashboard() {
     emptyEl.style.display = 'block';
   } else {
     emptyEl.style.display = 'none';
-    listEl.innerHTML = rachaos.map(r => {
-      const sessions = getSessionsByRachao(r.id).filter(s => s.status === 'open');
+    const sessionsAll = await Promise.all(rachaos.map(r => apiGetSessions(r.id)));
+    listEl.innerHTML = rachaos.map((r, idx) => {
+      const sessions = sessionsAll[idx].filter(s => s.status === 'open');
       const nextSession = sessions.sort((a,b) => a.date.localeCompare(b.date))[0];
       const nextInfo = nextSession ? `Próximo: ${formatDateBR(nextSession.date)} • ${nextSession.confirmed.length} confirmados` : `Todo ${getDayName(r.dayOfWeek)}`;
       return `<div class="card card-highlight" style="cursor:pointer;margin-bottom:12px" onclick="openRachao('${escapeHtml(r.id)}')">
@@ -147,11 +152,11 @@ function loadDashboard() {
     }).join('');
   }
 
-  loadDashRanking();
+  await loadDashRanking();
 }
 
-function loadDashRanking() {
-  const players = getPlayers().map(p => ({
+async function loadDashRanking() {
+  const players = (await apiGetPlayers()).map(p => ({
     ...p, totalPts: calcPlayerPoints(p)
   })).sort((a,b) => b.totalPts - a.totalPts).slice(0, 5);
 
@@ -173,19 +178,19 @@ function calcPlayerPoints(p) {
 }
 
 // ===== RACHÕES LIST =====
-function loadRachaos() {
-  const user = getCurrentUser();
-  const rachaos = getRachaos().filter(r => r.participants.includes(user.id) || r.createdBy === user.id);
+async function loadRachaos() {
+  const user = apiGetCurrentUser();
+  const rachaos = (await apiGetRachaos()).filter(r => r.participants.includes(user.id) || r.createdBy === user.id);
   const list = document.getElementById('matches-list');
   const empty = document.getElementById('matches-empty');
 
   if (rachaos.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
 
-  list.innerHTML = rachaos.map(r => {
+  const sessionsAll = await Promise.all(rachaos.map(r => apiGetSessions(r.id)));
+  list.innerHTML = rachaos.map((r, idx) => {
     const memberCount = r.participants.length;
-    const sessions = getSessionsByRachao(r.id);
-    const openSessions = sessions.filter(s => s.status === 'open').length;
+    const openSessions = sessionsAll[idx].filter(s => s.status === 'open').length;
     return `<div class="match-list-item" onclick="openRachao('${escapeHtml(r.id)}')">
       <div class="match-date-box"><span class="day">${getDayNameShort(r.dayOfWeek)}</span><span class="month">${escapeHtml(r.time)}</span></div>
       <div class="match-list-info">
@@ -206,13 +211,9 @@ function openRachao(id) {
 // ===== CREATE RACHÃO =====
 function generateRachaoCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const existing = new Set(getRachaos().map(r => r.code));
-  for (let attempt = 0; attempt < 100; attempt++) {
-    let code = '';
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    if (!existing.has(code)) return code;
-  }
-  return Date.now().toString(36).toUpperCase().slice(-6);
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
 
 function initRachaoForm() {
@@ -227,7 +228,7 @@ function updateTotalPerTeam() {
   document.getElementById('total-per-team').textContent = n + 1;
 }
 
-function createRachao() {
+async function createRachao() {
   const name = document.getElementById('rachao-name').value.trim().substring(0, 60);
   const dayOfWeek = parseInt(document.getElementById('rachao-day').value);
   const time = document.getElementById('rachao-time').value;
@@ -239,19 +240,18 @@ function createRachao() {
 
   if (!name || !time || !location) { showToast('Preencha todos os campos'); return; }
 
-  const user = getCurrentUser();
+  const user = apiGetCurrentUser();
   const code = generateRachaoCode();
-  const rachao = {
-    id: generateId(), code, name, location, dayOfWeek, time,
+  const result = await apiCreateRachao({
+    code, name, location, dayOfWeek, time,
     playersPerTeam: players, tieRule,
     monthlyVenueCost: venueCost, pixKey: pix,
-    participants: [user.id], createdBy: user.id, status: 'active'
-  };
+    createdBy: user.id, participants: [user.id]
+  });
 
-  const rs = getRachaos(); rs.push(rachao); saveRachaos(rs);
-  addNotification({ type:'green', icon:'fa-calendar-plus', title:'Novo rachão!', text: name + ' - ' + getDayName(dayOfWeek) });
+  await apiAddNotification({ type:'green', icon:'fa-calendar-plus', title:'Novo rachão!', text: name + ' - ' + getDayName(dayOfWeek) });
   showToast('Rachão criado! Código: ' + code);
-  currentRachaoId = rachao.id;
+  currentRachaoId = result.id;
   navigateTo('match-detail');
 }
 
@@ -264,13 +264,13 @@ function adjustNumber(id, delta) {
 }
 
 // ===== JOIN RACHÃO =====
-function joinRachaoByCode() {
+async function joinRachaoByCode() {
   const codeInput = document.getElementById('join-code');
   const code = codeInput.value.trim().toUpperCase();
   if (code.length !== 6) { showToast('Digite o código de 6 dígitos'); return; }
-  const rachao = getRachaos().find(r => r.code === code);
+  const rachao = await apiGetRachaoByCode(code);
   if (!rachao) { showToast('Código não encontrado'); return; }
-  const user = getCurrentUser();
+  const user = apiGetCurrentUser();
   if (!user) { showToast('Faça login primeiro'); return; }
   if (rachao.participants.includes(user.id)) {
     showToast('Você já está neste rachão');
@@ -278,17 +278,16 @@ function joinRachaoByCode() {
     navigateTo('match-detail');
     return;
   }
-  rachao.participants.push(user.id);
-  updateRachao(rachao.id, { participants: rachao.participants });
-  addNotification({ type:'green', icon:'fa-right-to-bracket', title:'Entrou no rachão!', text: user.name + ' entrou em ' + rachao.name });
+  await apiJoinRachao(rachao.id, user.id);
+  await apiAddNotification({ type:'green', icon:'fa-right-to-bracket', title:'Entrou no rachão!', text: user.name + ' entrou em ' + rachao.name });
   showToast('Você entrou no rachão!');
   codeInput.value = '';
   currentRachaoId = rachao.id;
   navigateTo('match-detail');
 }
 
-function shareRachaoCode() {
-  const rachao = getRachaoById(currentRachaoId);
+async function shareRachaoCode() {
+  const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao) return;
   const text = `⚽ ${rachao.name}\n📅 ${getDayName(rachao.dayOfWeek)} às ${rachao.time}\n📍 ${rachao.location}\n\n🔑 Código: ${rachao.code}\n\nEntre no app Meu Rachão Pro e use o código acima para participar!`;
   if (navigator.share) {
@@ -299,10 +298,10 @@ function shareRachaoCode() {
 }
 
 // ===== RACHÃO DETAIL =====
-function loadRachaoDetail() {
-  const rachao = getRachaoById(currentRachaoId);
+async function loadRachaoDetail() {
+  const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao) return;
-  const user = getCurrentUser();
+  const user = apiGetCurrentUser();
 
   document.getElementById('detail-rachao-title').textContent = rachao.name;
   document.getElementById('detail-day').textContent = getDayName(rachao.dayOfWeek);
@@ -311,16 +310,15 @@ function loadRachaoDetail() {
   document.getElementById('detail-members-count').textContent = rachao.participants.length + ' jogadores';
   document.getElementById('detail-rachao-code').textContent = rachao.code;
 
-  // Load session tab
-  loadRachaoGameTab(rachao, user);
-  // Load members tab
-  loadRachaoMembersTab(rachao);
-  // Load finance tab
-  loadRachaoFinanceTab(rachao, user);
+  await Promise.all([
+    loadRachaoGameTab(rachao, user),
+    loadRachaoMembersTab(rachao),
+    loadRachaoFinanceTab(rachao, user)
+  ]);
 }
 
-function loadRachaoGameTab(rachao, user) {
-  const sessions = getSessionsByRachao(rachao.id);
+async function loadRachaoGameTab(rachao, user) {
+  const sessions = await apiGetSessions(rachao.id);
   const openSession = sessions.filter(s => s.status === 'open').sort((a,b) => a.date.localeCompare(b.date))[0];
   const doneSessions = sessions.filter(s => s.status === 'done').sort((a,b) => b.date.localeCompare(a.date));
 
@@ -334,7 +332,7 @@ function loadRachaoGameTab(rachao, user) {
     document.getElementById('session-info').textContent = openSession.confirmed.length + ' confirmados';
     createBtn.style.display = 'none';
     activeArea.style.display = 'block';
-    loadSessionPresence(openSession, rachao, user);
+    await loadSessionPresence(openSession, rachao, user);
     loadSessionTeams(openSession);
   } else {
     currentSessionId = null;
@@ -345,7 +343,6 @@ function loadRachaoGameTab(rachao, user) {
     activeArea.style.display = 'none';
   }
 
-  // History
   const historyList = document.getElementById('sessions-history-list');
   const historyEmpty = document.getElementById('sessions-history-empty');
   if (doneSessions.length > 0) {
@@ -363,7 +360,7 @@ function loadRachaoGameTab(rachao, user) {
   }
 }
 
-function loadSessionPresence(session, rachao, user) {
+async function loadSessionPresence(session, rachao, user) {
   const teamSize = rachao.playersPerTeam + 1;
   const maxDisplay = teamSize * 2;
   document.getElementById('confirmed-count').textContent = session.confirmed.length;
@@ -371,9 +368,10 @@ function loadSessionPresence(session, rachao, user) {
   const pct = Math.min(100, (session.confirmed.length / maxDisplay) * 100);
   document.getElementById('confirmed-progress').style.width = pct + '%';
 
-  document.getElementById('confirmed-list').innerHTML = session.confirmed.map(pid => {
-    const p = getPlayerById(pid);
-    if (!p) return '';
+  const playerPromises = session.confirmed.map(pid => apiGetPlayerById(pid).catch(() => null));
+  const confirmedPlayers = (await Promise.all(playerPromises)).filter(Boolean);
+
+  document.getElementById('confirmed-list').innerHTML = confirmedPlayers.map(p => {
     const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     return `<div class="player-item">
       <div class="player-avatar">${ini}</div>
@@ -382,19 +380,16 @@ function loadSessionPresence(session, rachao, user) {
     </div>`;
   }).join('');
 
-  // Waiting
   const waitCard = document.getElementById('waiting-list-card');
   if (session.waiting && session.waiting.length > 0) {
     waitCard.style.display = 'block';
-    document.getElementById('waiting-list').innerHTML = session.waiting.map((pid, i) => {
-      const p = getPlayerById(pid);
-      if (!p) return '';
+    const waitPlayers = (await Promise.all(session.waiting.map(pid => apiGetPlayerById(pid).catch(() => null)))).filter(Boolean);
+    document.getElementById('waiting-list').innerHTML = waitPlayers.map((p, i) => {
       return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${i+1}</div>
         <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
     }).join('');
   } else { waitCard.style.display = 'none'; }
 
-  // Presence button
   const btn = document.getElementById('btn-toggle-presence');
   const isParticipant = rachao.participants.includes(user.id);
   const isConf = session.confirmed.includes(user.id);
@@ -414,16 +409,16 @@ function loadSessionPresence(session, rachao, user) {
       btn.textContent = 'CONFIRMAR PRESENÇA'; btn.className = 'btn-primary';
       btn.style.borderColor = ''; btn.style.color = '';
     }
-    btn.onclick = () => { togglePresence(); loadRachaoDetail(); };
+    btn.onclick = async () => { await togglePresence(); await loadRachaoDetail(); };
   }
 }
 
-function loadSessionTeams(session) {
+async function loadSessionTeams(session) {
   if (session.teams) {
     document.getElementById('teams-result').style.display = 'block';
     renderAllTeams(session.teams);
     const rotBtn = document.getElementById('btn-start-rotation');
-    const rotState = getRotationState();
+    const rotState = await apiGetRotationState();
     if (rotState && rotState.active && rotState.sessionId === session.id) {
       rotBtn.innerHTML = '<i class="fas fa-rotate"></i> CONTINUAR ROTAÇÃO';
       rotBtn.onclick = () => navigateTo('rotation');
@@ -440,21 +435,20 @@ function loadSessionTeams(session) {
   }
 }
 
-function loadRachaoMembersTab(rachao) {
+async function loadRachaoMembersTab(rachao) {
   document.getElementById('members-total').textContent = rachao.participants.length + ' participantes';
-  document.getElementById('rachao-members-list').innerHTML = rachao.participants.map(pid => {
-    const p = getPlayerById(pid);
-    if (!p) return '';
-    const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
-    const isCreator = pid === rachao.createdBy;
+  const players = (await Promise.all(rachao.participants.map(pid => apiGetPlayerById(pid).catch(() => null)))).filter(Boolean);
+  document.getElementById('rachao-members-list').innerHTML = players.map(p => {
+    const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
+    const isCreator = p.id === rachao.createdBy;
     return `<div class="player-item">
-      <div class="player-avatar">${escapeHtml(ini)}</div>
+      <div class="player-avatar">${ini}</div>
       <div class="player-info"><div class="player-name">${escapeHtml(p.name)} ${isCreator ? '<span style="color:var(--orange);font-size:10px">ADMIN</span>' : ''}</div><div class="player-detail">${escapeHtml(p.position)} • ${p.goals}G ${p.assists}A</div></div>
     </div>`;
   }).join('');
 }
 
-function loadRachaoFinanceTab(rachao, user) {
+async function loadRachaoFinanceTab(rachao, user) {
   const cost = rachao.monthlyVenueCost || 0;
   const members = rachao.participants.length;
   const perPerson = members > 0 ? Math.ceil(cost / members * 100) / 100 : 0;
@@ -468,62 +462,54 @@ function loadRachaoFinanceTab(rachao, user) {
   const [y, m] = month.split('-');
   document.getElementById('finance-month').textContent = monthNames[parseInt(m)] + ' ' + y;
 
-  // Get or create billing
-  let billing = getOrCreateBilling(rachao, month, perPerson);
+  let billing = await apiGetBilling(rachao.id, month);
+  if (!billing) {
+    await apiCreateBilling({
+      rachaoId: rachao.id, month, totalCost: cost,
+      participantCount: members, perPerson,
+      payments: rachao.participants.map(pid => ({ playerId: pid, status: 'pending' }))
+    });
+    billing = await apiGetBilling(rachao.id, month);
+  }
+  if (!billing || !billing.payments) { billing = { payments: [] }; }
 
   const paid = billing.payments.filter(p => p.status === 'paid').length;
   const pending = billing.payments.filter(p => p.status !== 'paid').length;
   document.getElementById('finance-paid-count').textContent = paid;
   document.getElementById('finance-pending-count').textContent = pending;
 
-  document.getElementById('finance-payments-list').innerHTML = billing.payments.map(pay => {
-    const p = getPlayerById(pay.playerId);
+  const billingId = billing.id;
+  const playerPromises = billing.payments.map(async pay => {
+    const p = await apiGetPlayerById(pay.player_id || pay.playerId).catch(() => null);
+    return { pay, p };
+  });
+  const paymentData = await Promise.all(playerPromises);
+
+  document.getElementById('finance-payments-list').innerHTML = paymentData.map(({ pay, p }) => {
     if (!p) return '';
-    const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+    const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     const statusLabel = pay.status === 'paid' ? 'Pago' : pay.status === 'awaiting_confirmation' ? 'Aguardando' : 'Pendente';
     const statusClass = pay.status === 'paid' ? 'badge-paid' : 'badge-pending';
     const isAdmin = rachao.createdBy === user.id;
+    const pid = pay.player_id || pay.playerId;
     const adminBtn = isAdmin && pay.status !== 'paid'
-      ? `<button class="btn-success btn-sm" onclick="confirmBillingPayment('${billing.id}','${pay.playerId}')">✓</button>` : '';
+      ? `<button class="btn-success btn-sm" onclick="confirmBillingPayment('${billingId}','${pid}')">✓</button>` : '';
     return `<div class="player-item">
-      <div class="player-avatar">${escapeHtml(ini)}</div>
+      <div class="player-avatar">${ini}</div>
       <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(perPerson)}</div></div>
       <span class="payment-badge ${statusClass}">${statusLabel}</span>
       ${adminBtn}
     </div>`;
   }).join('');
 
-  // Pix
   document.getElementById('finance-pix-amount').textContent = 'Valor: ' + formatCurrency(perPerson);
   document.getElementById('finance-pix-key').value = rachao.pixKey || '';
 }
 
-function getOrCreateBilling(rachao, month, perPerson) {
-  let allBilling = getMonthlyBilling();
-  let billing = allBilling.find(b => b.rachaoId === rachao.id && b.month === month);
-  if (!billing) {
-    billing = {
-      id: generateId(), rachaoId: rachao.id, month,
-      totalCost: rachao.monthlyVenueCost,
-      participantCount: rachao.participants.length,
-      perPerson,
-      payments: rachao.participants.map(pid => ({ playerId: pid, status: 'pending', paidAt: null }))
-    };
-    allBilling.push(billing);
-    saveMonthlyBilling(allBilling);
-  }
-  return billing;
-}
-
-function confirmBillingPayment(billingId, playerId) {
-  const allBilling = getMonthlyBilling();
-  const billing = allBilling.find(b => b.id === billingId);
-  if (!billing) return;
-  const pay = billing.payments.find(p => p.playerId === playerId);
-  if (pay) { pay.status = 'paid'; pay.paidAt = new Date().toISOString(); }
-  saveMonthlyBilling(allBilling);
+async function confirmBillingPayment(billingId, playerId) {
+  await apiConfirmPayment(billingId, playerId, 'paid');
   showToast('Pagamento confirmado!');
-  loadRachaoDetail();
+  await loadRachaoDetail();
 }
 
 function copyFinancePix() {
@@ -531,76 +517,61 @@ function copyFinancePix() {
   navigator.clipboard.writeText(text).then(() => showToast('Chave Pix copiada!')).catch(() => showToast('Copie manualmente'));
 }
 
-function notifyPayment() {
-  const user = getCurrentUser();
-  const rachao = getRachaoById(currentRachaoId);
+async function notifyPayment() {
+  const user = apiGetCurrentUser();
+  const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao || !user) return;
   const month = getCurrentMonth();
-  const allBilling = getMonthlyBilling();
-  const billing = allBilling.find(b => b.rachaoId === rachao.id && b.month === month);
+  const billing = await apiGetBilling(rachao.id, month);
   if (!billing) return;
-  const pay = billing.payments.find(p => p.playerId === user.id);
-  if (pay) pay.status = 'awaiting_confirmation';
-  saveMonthlyBilling(allBilling);
-  addNotification({ type:'green', icon:'fa-money-bill-wave', title:'Pagamento informado', text: user.name + ' informou pagamento' });
+  await apiConfirmPayment(billing.id, user.id, 'awaiting_confirmation');
+  await apiAddNotification({ type:'green', icon:'fa-money-bill-wave', title:'Pagamento informado', text: user.name + ' informou pagamento' });
   showToast('Pagamento informado! Admin será notificado.');
-  loadRachaoDetail();
+  await loadRachaoDetail();
 }
 
 // ===== SESSIONS =====
-function createSession() {
-  const rachao = getRachaoById(currentRachaoId);
+async function createSession() {
+  const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao) return;
   const nextDate = getNextDayOfWeek(rachao.dayOfWeek);
-  const session = {
-    id: generateId(), rachaoId: rachao.id, date: nextDate,
-    confirmed: [], waiting: [], teams: null, leftover: [], status: 'open'
-  };
-  const ss = getSessions(); ss.push(session); saveSessions(ss);
-  currentSessionId = session.id;
+  const result = await apiCreateSession({ rachaoId: rachao.id, date: nextDate });
+  currentSessionId = result.id;
   showToast('Jogo criado para ' + formatDateBR(nextDate));
-  loadRachaoDetail();
+  await loadRachaoDetail();
 }
 
-function togglePresence() {
-  const user = getCurrentUser();
-  const session = getSessionById(currentSessionId);
-  if (!session || !user) return;
+async function togglePresence() {
+  const user = apiGetCurrentUser();
+  if (!user || !currentSessionId) return;
 
   if (user.blocked) {
     document.getElementById('modal-request-release').style.display = 'flex';
     return;
   }
 
+  const session = await apiGetSessionById(currentSessionId);
   const isConf = session.confirmed.includes(user.id);
+
   if (isConf) {
-    session.confirmed = session.confirmed.filter(id => id !== user.id);
-    if (session.waiting && session.waiting.length > 0) {
-      const nextId = session.waiting.find(id => { const p = getPlayerById(id); return !p || !p.blocked; });
-      if (nextId) { session.waiting = session.waiting.filter(id => id !== nextId); session.confirmed.push(nextId); }
-    }
-    updateSession(currentSessionId, session);
+    await apiTogglePresence(currentSessionId, user.id, 'cancel');
     showToast('Presença cancelada');
   } else {
-    session.confirmed.push(user.id);
-    updateSession(currentSessionId, session);
+    await apiTogglePresence(currentSessionId, user.id, 'confirm');
     showToast('Presença confirmada!');
   }
 }
 
-function endSession() {
-  const session = getSessionById(currentSessionId);
-  if (session) {
-    updateSession(currentSessionId, { status: 'done' });
-    showToast('Jogo encerrado');
-    loadRachaoDetail();
-  }
+async function endSession() {
+  await apiUpdateSession(currentSessionId, { status: 'done' });
+  showToast('Jogo encerrado');
+  await loadRachaoDetail();
 }
 
 // ===== DRAW TEAMS =====
-function drawTeams() {
-  const session = getSessionById(currentSessionId);
-  const rachao = getRachaoById(currentRachaoId);
+async function drawTeams() {
+  const session = await apiGetSessionById(currentSessionId);
+  const rachao = await apiGetRachaoById(currentRachaoId);
   if (!session || !rachao) return;
 
   const teamSize = rachao.playersPerTeam + 1;
@@ -609,9 +580,13 @@ function drawTeams() {
     return;
   }
 
-  const players = session.confirmed.map(id => getPlayerById(id)).filter(Boolean);
+  const playerPromises = session.confirmed.map(id => apiGetPlayerById(id).catch(() => null));
+  const players = (await Promise.all(playerPromises)).filter(Boolean);
+
+  // Fisher-Yates shuffle
   const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+
   const gks = shuffled.filter(p => p.position === 'Goleiro');
   const field = shuffled.filter(p => p.position !== 'Goleiro');
   const numTeams = Math.floor(shuffled.length / teamSize);
@@ -629,12 +604,16 @@ function drawTeams() {
 
   const leftover = field.filter(p => !teams.some(t => t.goalkeeper?.id === p.id || t.players.some(tp => tp.id === p.id)));
 
-  updateSession(currentSessionId, { teams, leftover: leftover.map(p => p.id) });
+  await apiUpdateSession(currentSessionId, {
+    teams, leftover: leftover.map(p => p.id),
+    confirmed: session.confirmed, waiting: session.waiting
+  });
+
   document.getElementById('teams-result').style.display = 'block';
   renderAllTeams(teams);
-  addNotification({ type:'orange', icon:'fa-shuffle', title:'Times sorteados!', text: `${numTeams} times formados` });
+  await apiAddNotification({ type:'orange', icon:'fa-shuffle', title:'Times sorteados!', text: `${numTeams} times formados` });
   showToast(`${numTeams} times sorteados!`);
-  loadRachaoDetail();
+  await loadRachaoDetail();
 }
 
 function getTeamName(idx) { return ['Time A','Time B','Time C','Time D','Time E','Time F'][idx] || 'Time ' + (idx+1); }
@@ -652,21 +631,23 @@ function renderAllTeams(teams) {
 
 function showMatchMenu() { document.getElementById('modal-match-menu').style.display = 'flex'; }
 
-// ===== PAYMENTS PAGE (lista de rachões com cobrança) =====
-function loadPayments() {
-  const user = getCurrentUser();
-  const rachaos = getRachaos().filter(r => r.participants.includes(user.id) && r.monthlyVenueCost > 0);
+// ===== PAYMENTS PAGE =====
+async function loadPayments() {
+  const user = apiGetCurrentUser();
+  const rachaos = (await apiGetRachaos()).filter(r => r.participants.includes(user.id) && r.monthlyVenueCost > 0);
   const listEl = document.getElementById('payments-rachao-list');
   const emptyEl = document.getElementById('payments-empty');
 
   if (rachaos.length === 0) { listEl.innerHTML = ''; emptyEl.style.display = 'flex'; return; }
   emptyEl.style.display = 'none';
 
-  listEl.innerHTML = rachaos.map(r => {
+  const month = getCurrentMonth();
+  const billingAll = await Promise.all(rachaos.map(r => apiGetBilling(r.id, month)));
+
+  listEl.innerHTML = rachaos.map((r, idx) => {
     const perPerson = r.participants.length > 0 ? Math.ceil(r.monthlyVenueCost / r.participants.length * 100) / 100 : 0;
-    const month = getCurrentMonth();
-    const billing = getMonthlyBilling().find(b => b.rachaoId === r.id && b.month === month);
-    const myPay = billing ? billing.payments.find(p => p.playerId === user.id) : null;
+    const billing = billingAll[idx];
+    const myPay = billing && billing.payments ? billing.payments.find(p => (p.player_id || p.playerId) === user.id) : null;
     const myStatus = myPay ? myPay.status : 'pending';
     const statusLabel = myStatus === 'paid' ? '✓ Pago' : myStatus === 'awaiting_confirmation' ? '⏳ Aguardando' : '⚠ Pendente';
     const statusColor = myStatus === 'paid' ? 'var(--green)' : 'var(--orange)';
@@ -683,127 +664,138 @@ function loadPayments() {
 }
 
 // ===== ADMIN PAYMENTS =====
-function loadAdminPayments() {
-  const user = getCurrentUser();
-  const rachaos = getRachaos().filter(r => r.createdBy === user.id && r.monthlyVenueCost > 0);
+async function loadAdminPayments() {
+  const user = apiGetCurrentUser();
+  const rachaos = (await apiGetRachaos()).filter(r => r.createdBy === user.id && r.monthlyVenueCost > 0);
   const list = document.getElementById('admin-payment-list');
   if (rachaos.length === 0) { list.innerHTML = '<p class="text-muted" style="padding:16px;text-align:center">Nenhum rachão com cobrança</p>'; return; }
 
-  list.innerHTML = rachaos.map(r => {
-    const month = getCurrentMonth();
+  const month = getCurrentMonth();
+  let html = '';
+  for (const r of rachaos) {
     const perPerson = r.participants.length > 0 ? Math.ceil(r.monthlyVenueCost / r.participants.length * 100) / 100 : 0;
-    const billing = getOrCreateBilling(r, month, perPerson);
+    let billing = await apiGetBilling(r.id, month);
+    if (!billing) {
+      await apiCreateBilling({ rachaoId: r.id, month, totalCost: r.monthlyVenueCost, participantCount: r.participants.length, perPerson, payments: r.participants.map(pid => ({ playerId: pid, status: 'pending' })) });
+      billing = await apiGetBilling(r.id, month);
+    }
+    if (!billing || !billing.payments) continue;
+
     const paid = billing.payments.filter(p => p.status === 'paid').length;
     const total = billing.payments.length;
-    return `<div class="card" style="margin-bottom:12px">
+
+    const payHtmls = await Promise.all(billing.payments.map(async pay => {
+      const pid = pay.player_id || pay.playerId;
+      const p = await apiGetPlayerById(pid).catch(() => null);
+      if (!p) return '';
+      const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
+      const statusLabel = pay.status === 'paid' ? 'Pago' : pay.status === 'awaiting_confirmation' ? 'Aguardando' : 'Pendente';
+      return `<div class="admin-pay-item">
+        <div class="player-avatar">${ini}</div>
+        <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(perPerson)} • ${statusLabel}</div></div>
+        <div class="admin-pay-actions">
+          ${pay.status !== 'paid' ? `<button class="btn-success" onclick="confirmBillingPayment('${billing.id}','${pid}')">✓ Pago</button>` : ''}
+          ${!p.blocked ? `<button class="btn-danger" onclick="blockPlayer('${p.id}')">Bloquear</button>` : `<button class="btn-success" onclick="unblockPlayer('${p.id}')">Liberar</button>`}
+        </div>
+      </div>`;
+    }));
+
+    html += `<div class="card" style="margin-bottom:12px">
       <h3>${escapeHtml(r.name)}</h3>
       <p class="text-muted" style="font-size:12px">${paid}/${total} pagos • ${formatCurrency(perPerson)}/pessoa</p>
-      <div style="margin-top:8px">${billing.payments.map(pay => {
-        const p = getPlayerById(pay.playerId);
-        if (!p) return '';
-        const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
-        const statusLabel = pay.status === 'paid' ? 'Pago' : pay.status === 'awaiting_confirmation' ? 'Aguardando' : 'Pendente';
-        return `<div class="admin-pay-item">
-          <div class="player-avatar">${ini}</div>
-          <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(perPerson)} • ${statusLabel}</div></div>
-          <div class="admin-pay-actions">
-            ${pay.status !== 'paid' ? `<button class="btn-success" onclick="confirmBillingPayment('${billing.id}','${pay.playerId}')">✓ Pago</button>` : ''}
-            ${!p.blocked ? `<button class="btn-danger" onclick="blockPlayer('${p.id}')">Bloquear</button>` : `<button class="btn-success" onclick="unblockPlayer('${p.id}')">Liberar</button>`}
-          </div>
-        </div>`;
-      }).join('')}</div>
+      <div style="margin-top:8px">${payHtmls.join('')}</div>
     </div>`;
-  }).join('');
+  }
+  list.innerHTML = html;
 }
 
 // ===== BLOCK/UNBLOCK =====
-function blockPlayer(pid) {
-  updatePlayer(pid, { blocked: true });
-  const b = getBlockedPlayers();
-  if (!b.includes(pid)) { b.push(pid); saveBlockedPlayers(b); }
-  const p = getPlayerById(pid);
-  addNotification({ type:'red', icon:'fa-ban', title:'Jogador bloqueado', text: p.name + ' bloqueado por inadimplência' });
+async function blockPlayer(pid) {
+  await apiBlockPlayer(pid);
+  const p = await apiGetPlayerById(pid);
+  await apiAddNotification({ type:'red', icon:'fa-ban', title:'Jogador bloqueado', text: p.name + ' bloqueado por inadimplência' });
   showToast('Jogador bloqueado');
-  loadAdminPayments();
+  await loadAdminPayments();
 }
 
-function unblockPlayer(pid) {
-  updatePlayer(pid, { blocked: false });
-  saveBlockedPlayers(getBlockedPlayers().filter(id => id !== pid));
+async function unblockPlayer(pid) {
+  await apiUnblockPlayer(pid);
   showToast('Jogador desbloqueado');
-  if (typeof loadAdminBlocked === 'function') loadAdminBlocked();
+  if (document.getElementById('page-admin-blocked').classList.contains('active')) await loadAdminBlocked();
 }
 
 // ===== BLOCKED / RELEASE =====
-function loadAdminBlocked() {
-  const blocked = getBlockedPlayers();
-  const releases = getReleaseRequests();
+async function loadAdminBlocked() {
+  const blocked = await apiGetBlockedPlayers();
+  const releases = await apiGetReleaseRequests();
   const reqCard = document.getElementById('release-requests-card');
 
   if (releases.length > 0) {
     reqCard.style.display = 'block';
-    document.getElementById('release-requests-list').innerHTML = releases.map(r => {
-      const p = getPlayerById(r.playerId);
+    const relHtml = await Promise.all(releases.map(async r => {
+      const p = await apiGetPlayerById(r.playerId).catch(() => null);
       if (!p) return '';
-      const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+      const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
       return `<div class="release-item">
-        <div class="player-avatar" style="background:var(--orange)">${escapeHtml(ini)}</div>
+        <div class="player-avatar" style="background:var(--orange)">${ini}</div>
         <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(r.message || 'Sem mensagem')}</div></div>
         <div class="admin-pay-actions">
           <button class="btn-success" onclick="approveRelease('${r.id}','${r.playerId}')">Liberar</button>
           <button class="btn-danger" onclick="denyRelease('${r.id}')">Negar</button>
         </div>
       </div>`;
-    }).join('');
+    }));
+    document.getElementById('release-requests-list').innerHTML = relHtml.join('');
   } else reqCard.style.display = 'none';
 
   const list = document.getElementById('blocked-players-list');
   const empty = document.getElementById('blocked-empty');
   if (blocked.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
-  list.innerHTML = blocked.map(pid => {
-    const p = getPlayerById(pid);
+
+  const blockedHtml = await Promise.all(blocked.map(async pid => {
+    const p = await apiGetPlayerById(pid).catch(() => null);
     if (!p) return '';
-    const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+    const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     return `<div class="blocked-item">
-      <div class="player-avatar" style="background:var(--red)">${escapeHtml(ini)}</div>
+      <div class="player-avatar" style="background:var(--red)">${ini}</div>
       <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)} • Bloqueado</div></div>
       <button class="btn-success" onclick="unblockPlayer('${pid}');loadAdminBlocked()">Desbloquear</button>
     </div>`;
-  }).join('');
+  }));
+  list.innerHTML = blockedHtml.join('');
 }
 
-function requestRelease() {
-  const user = getCurrentUser();
+async function requestRelease() {
+  const user = apiGetCurrentUser();
   if (!user) return;
   const msg = document.getElementById('release-message').value.trim();
-  const reqs = getReleaseRequests();
-  if (reqs.find(r => r.playerId === user.id)) { showToast('Pedido já enviado'); closeModal('request-release'); return; }
-  reqs.push({ id: generateId(), playerId: user.id, message: msg, timestamp: new Date().toISOString() });
-  saveReleaseRequests(reqs);
-  addNotification({ type:'orange', icon:'fa-hand', title:'Pedido de liberação', text: user.name + ' solicita liberação' });
-  showToast('Pedido enviado ao admin!');
+  try {
+    await apiCreateReleaseRequest(user.id, msg);
+    await apiAddNotification({ type:'orange', icon:'fa-hand', title:'Pedido de liberação', text: user.name + ' solicita liberação' });
+    showToast('Pedido enviado ao admin!');
+  } catch { showToast('Pedido já enviado'); }
   closeModal('request-release');
 }
 
-function approveRelease(reqId, playerId) {
-  unblockPlayer(playerId);
-  saveReleaseRequests(getReleaseRequests().filter(r => r.id !== reqId));
+async function approveRelease(reqId, playerId) {
+  await unblockPlayer(playerId);
+  await apiDeleteReleaseRequest(reqId);
   showToast('Jogador liberado!');
-  loadAdminBlocked();
+  await loadAdminBlocked();
 }
 
-function denyRelease(reqId) {
-  saveReleaseRequests(getReleaseRequests().filter(r => r.id !== reqId));
+async function denyRelease(reqId) {
+  await apiDeleteReleaseRequest(reqId);
   showToast('Pedido negado');
-  loadAdminBlocked();
+  await loadAdminBlocked();
 }
 
 // ===== STATS =====
-function loadStats() { renderStatsTab('ranking'); }
+async function loadStats() { await renderStatsTab('ranking'); }
 
-function renderStatsTab(tab) {
-  const players = getPlayers();
+async function renderStatsTab(tab) {
+  const players = await apiGetPlayers();
   const container = document.getElementById('stats-content');
   let sorted, valueLabel;
   if (tab === 'ranking') {
@@ -830,12 +822,11 @@ function renderStatsTab(tab) {
 }
 
 // ===== REGISTER STATS =====
-function loadRegisterStats() {
-  const session = getSessionById(currentSessionId);
+async function loadRegisterStats() {
+  const session = await apiGetSessionById(currentSessionId);
   if (!session) return;
-  document.getElementById('stats-register-list').innerHTML = session.confirmed.map(pid => {
-    const p = getPlayerById(pid);
-    if (!p) return '';
+  const players = (await Promise.all(session.confirmed.map(pid => apiGetPlayerById(pid).catch(() => null)))).filter(Boolean);
+  document.getElementById('stats-register-list').innerHTML = players.map(p => {
     const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     const isGK = p.position === 'Goleiro';
     return `<div class="stat-register-item">
@@ -845,38 +836,37 @@ function loadRegisterStats() {
       </div>
       <div class="stat-grid">
         ${isGK ? `
-          <div class="stat-input-group"><label>Defesas</label><input type="number" min="0" value="0" id="saves-${pid}"></div>
-          <div class="stat-input-group"><label>Gols Sofr.</label><input type="number" min="0" value="0" id="conceded-${pid}"></div>
-          <div class="stat-input-group"><label>Clean Sheet</label><input type="number" min="0" value="0" max="1" id="cs-${pid}"></div>
+          <div class="stat-input-group"><label>Defesas</label><input type="number" min="0" value="0" id="saves-${p.id}"></div>
+          <div class="stat-input-group"><label>Gols Sofr.</label><input type="number" min="0" value="0" id="conceded-${p.id}"></div>
+          <div class="stat-input-group"><label>Clean Sheet</label><input type="number" min="0" value="0" max="1" id="cs-${p.id}"></div>
         ` : `
-          <div class="stat-input-group"><label>Gols</label><input type="number" min="0" value="0" id="goals-${pid}"></div>
-          <div class="stat-input-group"><label>Assist.</label><input type="number" min="0" value="0" id="assists-${pid}"></div>
-          <div class="stat-input-group"><label>Desarmes</label><input type="number" min="0" value="0" id="tackles-${pid}"></div>
-          <div class="stat-input-group"><label>Faltas</label><input type="number" min="0" value="0" id="fouls-${pid}"></div>
-          <div class="stat-input-group"><label>Amarelo</label><input type="number" min="0" value="0" id="yellows-${pid}"></div>
-          <div class="stat-input-group"><label>Vermelho</label><input type="number" min="0" value="0" id="reds-${pid}"></div>
+          <div class="stat-input-group"><label>Gols</label><input type="number" min="0" value="0" id="goals-${p.id}"></div>
+          <div class="stat-input-group"><label>Assist.</label><input type="number" min="0" value="0" id="assists-${p.id}"></div>
+          <div class="stat-input-group"><label>Desarmes</label><input type="number" min="0" value="0" id="tackles-${p.id}"></div>
+          <div class="stat-input-group"><label>Faltas</label><input type="number" min="0" value="0" id="fouls-${p.id}"></div>
+          <div class="stat-input-group"><label>Amarelo</label><input type="number" min="0" value="0" id="yellows-${p.id}"></div>
+          <div class="stat-input-group"><label>Vermelho</label><input type="number" min="0" value="0" id="reds-${p.id}"></div>
         `}
       </div>
     </div>`;
   }).join('');
 }
 
-function saveMatchStats() {
-  const session = getSessionById(currentSessionId);
+async function saveMatchStats() {
+  const session = await apiGetSessionById(currentSessionId);
   if (!session) return;
-  const pending = getPendingStats();
-  let count = 0;
-  session.confirmed.forEach(pid => {
-    const p = getPlayerById(pid);
-    if (!p) return;
+  const stats = [];
+  for (const pid of session.confirmed) {
+    const p = await apiGetPlayerById(pid).catch(() => null);
+    if (!p) continue;
     const isGK = p.position === 'Goleiro';
-    const stat = { id: generateId(), sessionId: currentSessionId, rachaoId: currentRachaoId, playerId: pid, validated: false };
+    const stat = { sessionId: currentSessionId, rachaoId: currentRachaoId, playerId: pid };
     if (isGK) {
       stat.saves = parseInt(document.getElementById('saves-'+pid)?.value) || 0;
       stat.goalsConceded = parseInt(document.getElementById('conceded-'+pid)?.value) || 0;
       stat.cleanSheet = parseInt(document.getElementById('cs-'+pid)?.value) || 0;
       stat.isGoalkeeper = true;
-      if (stat.saves > 0 || stat.goalsConceded > 0 || stat.cleanSheet > 0) { pending.push(stat); count++; }
+      if (stat.saves > 0 || stat.goalsConceded > 0 || stat.cleanSheet > 0) stats.push(stat);
     } else {
       stat.goals = parseInt(document.getElementById('goals-'+pid)?.value) || 0;
       stat.assists = parseInt(document.getElementById('assists-'+pid)?.value) || 0;
@@ -885,25 +875,26 @@ function saveMatchStats() {
       stat.yellows = parseInt(document.getElementById('yellows-'+pid)?.value) || 0;
       stat.reds = parseInt(document.getElementById('reds-'+pid)?.value) || 0;
       stat.isGoalkeeper = false;
-      if (stat.goals > 0 || stat.assists > 0 || stat.tackles > 0 || stat.fouls > 0 || stat.yellows > 0 || stat.reds > 0) { pending.push(stat); count++; }
+      if (stat.goals > 0 || stat.assists > 0 || stat.tackles > 0 || stat.fouls > 0 || stat.yellows > 0 || stat.reds > 0) stats.push(stat);
     }
-  });
-  savePendingStats(pending);
-  showToast(`${count} estatísticas enviadas para validação!`);
-  addNotification({ type:'purple', icon:'fa-shield-halved', title:'Anti-fraude', text:`${count} stats pendentes de validação` });
+  }
+  if (stats.length > 0) await apiSubmitStats(stats);
+  showToast(`${stats.length} estatísticas enviadas para validação!`);
+  await apiAddNotification({ type:'purple', icon:'fa-shield-halved', title:'Anti-fraude', text:`${stats.length} stats pendentes de validação` });
   navigateTo('match-detail');
 }
 
 // ===== ADMIN STATS VALIDATION =====
-function loadAdminStats() {
-  const pending = getPendingStats().filter(s => !s.validated);
+async function loadAdminStats() {
+  const pending = await apiGetPendingStats();
   const list = document.getElementById('pending-stats-list');
   const empty = document.getElementById('pending-stats-empty');
   if (pending.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
-  list.innerHTML = pending.map(s => {
-    const p = getPlayerById(s.playerId);
-    const rachao = getRachaoById(s.rachaoId);
+
+  const html = await Promise.all(pending.map(async s => {
+    const p = await apiGetPlayerById(s.playerId).catch(() => null);
+    const rachao = s.rachaoId ? await apiGetRachaoById(s.rachaoId).catch(() => null) : null;
     if (!p) return '';
     let chips = '';
     if (s.isGoalkeeper) {
@@ -926,41 +917,25 @@ function loadAdminStats() {
         <button class="btn-danger" onclick="validateStat('${s.id}',false)"><i class="fas fa-xmark"></i> Rejeitar</button>
       </div>
     </div>`;
-  }).join('');
+  }));
+  list.innerHTML = html.join('');
 }
 
-function validateStat(statId, approved) {
-  const pending = getPendingStats();
-  const i = pending.findIndex(s => s.id === statId);
-  if (i === -1) return;
-  const stat = pending[i];
-  if (approved) {
-    const p = getPlayerById(stat.playerId);
-    if (p) {
-      if (stat.isGoalkeeper) {
-        updatePlayer(stat.playerId, { saves: (p.saves||0) + (stat.saves||0), cleanSheets: (p.cleanSheets||0) + (stat.cleanSheet||0) });
-      } else {
-        updatePlayer(stat.playerId, { goals: (p.goals||0) + (stat.goals||0), assists: (p.assists||0) + (stat.assists||0), tackles: (p.tackles||0) + (stat.tackles||0), fouls: (p.fouls||0) + (stat.fouls||0), yellows: (p.yellows||0) + (stat.yellows||0), reds: (p.reds||0) + (stat.reds||0) });
-      }
-    }
-    const vs = getValidatedStats(); stat.validated = true; vs.push(stat); saveValidatedStats(vs);
-    updateFantasyScoresFromStat(stat);
-    showToast('Estatística aprovada!');
-  } else showToast('Estatística rejeitada');
-  pending.splice(i, 1);
-  savePendingStats(pending);
-  loadAdminStats();
+async function validateStat(statId, approved) {
+  await apiValidateStat(statId, approved);
+  showToast(approved ? 'Estatística aprovada!' : 'Estatística rejeitada');
+  await loadAdminStats();
 }
 
-function loadAdminBadges() {
-  const pendingCount = getPendingStats().filter(s => !s.validated).length;
-  const releaseCount = getReleaseRequests().length;
-  document.getElementById('admin-pending-count').textContent = pendingCount > 0 ? pendingCount : '';
-  document.getElementById('admin-release-count').textContent = releaseCount > 0 ? releaseCount : '';
+async function loadAdminBadges() {
+  const pending = await apiGetPendingStats();
+  const releases = await apiGetReleaseRequests();
+  document.getElementById('admin-pending-count').textContent = pending.length > 0 ? pending.length : '';
+  document.getElementById('admin-release-count').textContent = releases.length > 0 ? releases.length : '';
 }
 
 // ===== PLAYERS =====
-function loadPlayers() { renderPlayerList(getPlayers()); }
+async function loadPlayers() { renderPlayerList(await apiGetPlayers()); }
 
 function renderPlayerList(players) {
   document.getElementById('players-list').innerHTML = players.map(p => {
@@ -974,28 +949,27 @@ function renderPlayerList(players) {
   }).join('');
 }
 
-function filterPlayers() {
+async function filterPlayers() {
   const q = document.getElementById('search-players').value.toLowerCase();
-  renderPlayerList(getPlayers().filter(p => p.name.toLowerCase().includes(q)));
+  const players = await apiGetPlayers();
+  renderPlayerList(players.filter(p => p.name.toLowerCase().includes(q)));
 }
 
-function addPlayer() {
+async function addPlayer() {
   const name = document.getElementById('player-add-name').value.trim();
   const phone = document.getElementById('player-add-phone').value.replace(/\D/g, '');
   const position = document.getElementById('player-add-position').value;
   if (!name) { showToast('Digite o nome'); return; }
-  const ps = getPlayers();
-  ps.push({ id: generateId(), name, phone, position, goals:0, assists:0, tackles:0, fouls:0, yellows:0, reds:0, saves:0, cleanSheets:0, matches:0, blocked:false });
-  savePlayers(ps);
+  await apiCreatePlayer({ name, phone, position });
   showToast('Jogador adicionado!');
   navigateTo('players');
 }
 
 // ===== PROFILE =====
-function loadProfile() {
-  const user = getCurrentUser();
+async function loadProfile() {
+  const user = apiGetCurrentUser();
   if (!user) return;
-  const fresh = getPlayerById(user.id) || user;
+  const fresh = await apiGetPlayerById(user.id).catch(() => user);
   document.getElementById('profile-name').textContent = fresh.name;
   document.getElementById('profile-phone').textContent = formatPhone(fresh.phone);
   document.getElementById('profile-position').textContent = fresh.position;
@@ -1005,11 +979,11 @@ function loadProfile() {
   document.getElementById('profile-desarmes').textContent = fresh.tackles || 0;
 }
 
-function logout() { DB.remove('currentUser'); navigateTo('login'); showToast('Até a próxima!'); }
+function logout() { apiLogout(); navigateTo('login'); showToast('Até a próxima!'); }
 
 // ===== NOTIFICATIONS =====
-function loadNotifications() {
-  const ns = getNotifications();
+async function loadNotifications() {
+  const ns = await apiGetNotifications();
   const list = document.getElementById('notifications-list');
   const empty = document.getElementById('notifications-empty');
   if (ns.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
@@ -1025,8 +999,8 @@ function loadNotifications() {
 }
 
 // ===== ROTATION SYSTEM =====
-function loadRotation() {
-  const state = getRotationState();
+async function loadRotation() {
+  const state = await apiGetRotationState();
   const active = document.getElementById('rotation-active');
   const empty = document.getElementById('rotation-empty');
   const historyCard = document.getElementById('rotation-history-card');
@@ -1048,9 +1022,9 @@ function loadRotation() {
   }
 }
 
-function startRotation() {
-  const session = getSessionById(currentSessionId);
-  const rachao = getRachaoById(currentRachaoId);
+async function startRotation() {
+  const session = await apiGetSessionById(currentSessionId);
+  const rachao = await apiGetRachaoById(currentRachaoId);
   if (!session || !rachao || !session.teams || session.teams.length < 2) {
     showToast('Sorteie os times primeiro');
     return;
@@ -1074,11 +1048,11 @@ function startRotation() {
   }
 
   if (session.leftover && session.leftover.length > 0) {
-    const leftovers = session.leftover.map(id => getPlayerById(id)).filter(Boolean);
+    const leftovers = (await Promise.all(session.leftover.map(id => apiGetPlayerById(id).catch(() => null)))).filter(Boolean);
     if (leftovers.length > 0) state.queue.push({ name: 'Reservas', players: leftovers });
   }
 
-  saveRotationState(state);
+  await apiSaveRotationState(state);
   showToast('Rotação iniciada!');
   navigateTo('rotation');
 }
@@ -1096,8 +1070,8 @@ function renderRotationState(state) {
     nextCard.style.display = 'block';
     const next = state.queue[0];
     document.getElementById('rot-next-team-list').innerHTML = next.players.map(p => {
-      const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
-      return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${escapeHtml(ini)}</div><div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
+      const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
+      return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${ini}</div><div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
     }).join('');
   } else { nextCard.style.display = 'none'; }
 
@@ -1111,16 +1085,16 @@ function renderRotationState(state) {
   }
 }
 
-function addGoalRotation(team) {
-  const state = getRotationState();
+async function addGoalRotation(team) {
+  const state = await apiGetRotationState();
   if (!state || !state.active) return;
   if (team === 'a') state.scoreA++; else state.scoreB++;
-  saveRotationState(state);
+  await apiSaveRotationState(state);
   document.getElementById('rot-score-' + team).textContent = team === 'a' ? state.scoreA : state.scoreB;
 }
 
-function finishRound() {
-  const state = getRotationState();
+async function finishRound() {
+  const state = await apiGetRotationState();
   if (!state || !state.active) return;
 
   state.rounds.push({ round: state.round, teamA: state.teamA.name, teamB: state.teamB.name, scoreA: state.scoreA, scoreB: state.scoreB });
@@ -1132,7 +1106,7 @@ function finishRound() {
 
   if (state.queue.length === 0) {
     state.round++; state.scoreA = 0; state.scoreB = 0;
-    saveRotationState(state);
+    await apiSaveRotationState(state);
     showToast(`Rodada ${state.round - 1} encerrada!`);
     renderRotationState(state);
     renderRotationHistory(state.rounds);
@@ -1163,7 +1137,7 @@ function finishRound() {
   }
 
   state.round++; state.scoreA = 0; state.scoreB = 0;
-  saveRotationState(state);
+  await apiSaveRotationState(state);
   renderRotationState(state);
   renderRotationHistory(state.rounds);
   document.getElementById('rotation-history-card').style.display = 'block';
@@ -1176,14 +1150,14 @@ function buildRotationTeam(teamData) {
   return { name: teamData.name, goalkeeper: gk, players: field };
 }
 
-function endRotation() {
-  const state = getRotationState();
+async function endRotation() {
+  const state = await apiGetRotationState();
   if (!state) return;
   state.active = false;
-  saveRotationState(state);
-  addNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Rachão encerrado!', text: `${state.rounds.length} rodadas jogadas` });
+  await apiSaveRotationState(state);
+  await apiAddNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Rachão encerrado!', text: `${state.rounds.length} rodadas jogadas` });
   showToast('Rachão encerrado!');
-  loadRotation();
+  await loadRotation();
 }
 
 function renderRotationHistory(rounds) {
@@ -1196,8 +1170,6 @@ function renderRotationHistory(rounds) {
   }).join('');
 }
 
-// Fantasy score update is in fantasy.js (updateFantasyScoresFromStat)
-
 // ===== TABS =====
 function initTabs() {
   document.addEventListener('click', e => {
@@ -1206,14 +1178,11 @@ function initTabs() {
       parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       e.target.classList.add('active');
       const tab = e.target.dataset.tab;
-      // Stats tabs
       if (['ranking','artilharia','assists','desarmes'].includes(tab)) renderStatsTab(tab);
-      // Fantasy tabs
       if (tab === 'fantasy-ranking') { show('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
       if (tab === 'fantasy-team') { hide('fantasy-ranking-content'); show('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
       if (tab === 'fantasy-scoring') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); show('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
       if (tab === 'fantasy-prizes') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); show('fantasy-prizes-content'); loadPrizes(); }
-      // Rachão detail tabs
       if (tab === 'rachao-game') { show('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); }
       if (tab === 'rachao-members') { hide('rachao-game-content'); show('rachao-members-content'); hide('rachao-finance-content'); }
       if (tab === 'rachao-finance') { hide('rachao-game-content'); hide('rachao-members-content'); show('rachao-finance-content'); }

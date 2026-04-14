@@ -1,4 +1,4 @@
-// ========== FANTASY - LIGA DO MEU RACHÃO ==========
+// ========== FANTASY - LIGA DO MEU RACHÃO (API VERSION) ==========
 
 let fantasySlotSelection = null;
 let fantasyTeamSlots = {
@@ -9,12 +9,11 @@ let fantasyTeamSlots = {
 };
 
 // ===== LOAD FANTASY =====
-function loadFantasy() {
-  const user = getCurrentUser();
+async function loadFantasy() {
+  const user = apiGetCurrentUser();
   if (!user || !currentRachaoId) return;
 
-  // Load saved team for this rachão
-  const teams = getFantasyTeams();
+  const teams = await apiGetFantasyTeams(currentRachaoId, user.id);
   const myTeam = teams.find(t => t.userId === user.id && t.rachaoId === currentRachaoId);
   if (myTeam) {
     fantasyTeamSlots = { ...myTeam.slots };
@@ -22,12 +21,12 @@ function loadFantasy() {
     fantasyTeamSlots = { ATK1: null, ATK2: null, MID1: null, MID2: null, DEF1: null, GK: null };
   }
   renderFantasyFormation();
-  renderFantasyRanking('daily');
+  await renderFantasyRanking('daily');
 }
 
 // ===== FANTASY RANKING =====
-function renderFantasyRanking(period) {
-  const scores = getFantasyScores().filter(s => s.rachaoId === currentRachaoId);
+async function renderFantasyRanking(period) {
+  const scores = (await apiGetFantasyScores(currentRachaoId));
   const sorted = [...scores].sort((a, b) => {
     if (period === 'daily') return (b.daily || 0) - (a.daily || 0);
     if (period === 'monthly') return (b.monthly || 0) - (a.monthly || 0);
@@ -62,25 +61,23 @@ function renderFantasyRanking(period) {
 }
 
 // ===== FANTASY TEAM =====
-function openFantasyPicker(slot) {
+async function openFantasyPicker(slot) {
   fantasySlotSelection = slot;
 
-  // Get confirmed players from current session
-  const rachao = getRachaoById(currentRachaoId);
+  const rachao = await apiGetRachaoById(currentRachaoId);
   let availablePlayers = [];
 
   if (currentSessionId) {
-    const session = getSessionById(currentSessionId);
+    const session = await apiGetSessionById(currentSessionId);
     if (session) {
-      availablePlayers = session.confirmed.map(id => getPlayerById(id)).filter(Boolean);
+      availablePlayers = (await Promise.all(session.confirmed.map(id => apiGetPlayerById(id).catch(() => null)))).filter(Boolean);
     }
   }
 
   if (availablePlayers.length === 0 && rachao) {
-    availablePlayers = rachao.participants.map(id => getPlayerById(id)).filter(Boolean);
+    availablePlayers = (await Promise.all(rachao.participants.map(id => apiGetPlayerById(id).catch(() => null)))).filter(Boolean);
   }
 
-  // Filter out already selected
   const selectedIds = Object.values(fantasyTeamSlots).filter(Boolean).map(p => p.id);
   const filterable = availablePlayers.filter(p => !selectedIds.includes(p.id));
 
@@ -100,8 +97,8 @@ function openFantasyPicker(slot) {
   document.getElementById('modal-fantasy-picker').style.display = 'flex';
 }
 
-function selectFantasyPlayer(playerId) {
-  const player = getPlayerById(playerId);
+async function selectFantasyPlayer(playerId) {
+  const player = await apiGetPlayerById(playerId);
   if (!player || !fantasySlotSelection) return;
 
   fantasyTeamSlots[fantasySlotSelection] = player;
@@ -134,8 +131,8 @@ function renderFantasyFormation() {
   });
 }
 
-function saveFantasyTeam() {
-  const user = getCurrentUser();
+async function saveFantasyTeam() {
+  const user = apiGetCurrentUser();
   if (!user || !currentRachaoId) return;
 
   const filledSlots = Object.values(fantasyTeamSlots).filter(Boolean).length;
@@ -144,38 +141,26 @@ function saveFantasyTeam() {
     return;
   }
 
-  const teams = getFantasyTeams();
-  const existingIdx = teams.findIndex(t => t.userId === user.id && t.rachaoId === currentRachaoId);
-
-  const teamData = {
+  await apiSaveFantasyTeam({
     userId: user.id,
     rachaoId: currentRachaoId,
     name: user.name,
-    slots: { ...fantasyTeamSlots },
-    savedAt: new Date().toISOString()
-  };
+    slots: { ...fantasyTeamSlots }
+  });
 
-  if (existingIdx !== -1) {
-    teams[existingIdx] = teamData;
-  } else {
-    teams.push(teamData);
-  }
-
-  saveFantasyTeams(teams);
   showToast('Time salvo!');
-  addNotification({ type: 'orange', icon: 'fa-trophy', title: 'Time Fantasy salvo!', text: 'Boa sorte na Liga do Meu Rachão!' });
+  await apiAddNotification({ type: 'orange', icon: 'fa-trophy', title: 'Time Fantasy salvo!', text: 'Boa sorte na Liga do Meu Rachão!' });
 }
 
 // ===== UPDATE FANTASY SCORES FROM STAT =====
-function updateFantasyScoresFromStat(stat) {
+async function updateFantasyScoresFromStat(stat) {
   if (!stat || !stat.rachaoId) return;
 
-  const fantasyTeams = getFantasyTeams().filter(t => t.rachaoId === stat.rachaoId);
-  const scores = getFantasyScores();
-  const player = getPlayerById(stat.playerId);
+  const fantasyTeams = await apiGetFantasyTeams(stat.rachaoId);
+  const player = await apiGetPlayerById(stat.playerId).catch(() => null);
   const isGK = player && player.position === 'Goleiro';
 
-  fantasyTeams.forEach(team => {
+  for (const team of fantasyTeams) {
     const slots = Object.values(team.slots).filter(Boolean);
     const hasPlayer = slots.find(p => p.id === stat.playerId);
 
@@ -195,31 +180,19 @@ function updateFantasyScoresFromStat(stat) {
       }
       points += POINTS.field.presence;
 
-      let scoreEntry = scores.find(s => s.userId === team.userId && s.rachaoId === stat.rachaoId);
-
-      if (scoreEntry) {
-        scoreEntry.points = (scoreEntry.points || 0) + points;
-        scoreEntry.daily = (scoreEntry.daily || 0) + points;
-        scoreEntry.monthly = (scoreEntry.monthly || 0) + points;
-      } else {
-        scores.push({
-          userId: team.userId,
-          rachaoId: stat.rachaoId,
-          name: team.name,
-          points,
-          daily: points,
-          monthly: points
-        });
-      }
+      await apiUpdateFantasyScore({
+        userId: team.userId,
+        rachaoId: stat.rachaoId,
+        name: team.name,
+        points, daily: points, monthly: points
+      });
     }
-  });
-
-  saveFantasyScores(scores);
+  }
 }
 
 // ===== PRIZES =====
-function loadPrizes() {
-  const prizes = getPrizes();
+async function loadPrizes() {
+  const prizes = await apiGetPrizes();
   const p1 = document.getElementById('prize-1');
   const p2 = document.getElementById('prize-2');
   const p3 = document.getElementById('prize-3');
@@ -233,12 +206,12 @@ function loadPrizes() {
   if (prizeItems[2]) prizeItems[2].textContent = prizes.third;
 }
 
-function savePrizes() {
+async function savePrizes() {
   const prizes = {
     first: document.getElementById('prize-1').value.trim() || 'Não paga o próximo rachão',
     second: document.getElementById('prize-2').value.trim() || '50% de desconto na próxima',
     third: document.getElementById('prize-3').value.trim() || 'Escolhe o time no sorteio'
   };
-  savePrizesData(prizes);
+  await apiSavePrizes(prizes);
   showToast('Prêmios salvos!');
 }

@@ -7,6 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
     "test": "jest --verbose",
     "test:coverage": "jest --coverage --verbose"
   },
@@ -25,5 +27,10 @@
   "devDependencies": {
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   }
 }
