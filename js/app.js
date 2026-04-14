@@ -103,7 +103,7 @@ function handleVerify() {
 
 // ===== REGISTER =====
 document.getElementById('btn-register').addEventListener('click', () => {
-  const name = document.getElementById('register-name').value.trim();
+  const name = document.getElementById('register-name').value.trim().substring(0, 50);
   const position = document.getElementById('register-position').value;
   if (!name) { showToast('Digite seu nome'); return; }
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
@@ -123,7 +123,7 @@ document.getElementById('btn-register').addEventListener('click', () => {
 function loadDashboard() {
   const user = getCurrentUser();
   if (!user) return;
-  document.getElementById('dash-username').textContent = user.name;
+  document.getElementById('dash-username').textContent = escapeHtml(user.name);
 
   const rachaos = getRachaos().filter(r => r.status === 'active' && r.participants.includes(user.id));
   const listEl = document.getElementById('dash-rachaos-list');
@@ -138,11 +138,11 @@ function loadDashboard() {
       const sessions = getSessionsByRachao(r.id).filter(s => s.status === 'open');
       const nextSession = sessions.sort((a,b) => a.date.localeCompare(b.date))[0];
       const nextInfo = nextSession ? `Próximo: ${formatDateBR(nextSession.date)} • ${nextSession.confirmed.length} confirmados` : `Todo ${getDayName(r.dayOfWeek)}`;
-      return `<div class="card card-highlight" style="cursor:pointer;margin-bottom:12px" onclick="openRachao('${r.id}')">
-        <div class="card-badge">${getDayNameShort(r.dayOfWeek)} • ${r.time}</div>
-        <h3>${r.name}</h3>
-        <p class="text-muted">${r.location} • ${r.participants.length} jogadores</p>
-        <p style="font-size:12px;color:var(--orange);margin-top:4px"><i class="fas fa-futbol"></i> ${nextInfo}</p>
+      return `<div class="card card-highlight" style="cursor:pointer;margin-bottom:12px" onclick="openRachao('${escapeHtml(r.id)}')">
+        <div class="card-badge">${getDayNameShort(r.dayOfWeek)} • ${escapeHtml(r.time)}</div>
+        <h3>${escapeHtml(r.name)}</h3>
+        <p class="text-muted">${escapeHtml(r.location)} • ${r.participants.length} jogadores</p>
+        <p style="font-size:12px;color:var(--orange);margin-top:4px"><i class="fas fa-futbol"></i> ${escapeHtml(nextInfo)}</p>
       </div>`;
     }).join('');
   }
@@ -159,7 +159,7 @@ function loadDashRanking() {
     const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
     return `<div class="ranking-item">
       <div class="ranking-pos ${cls}">${i+1}</div>
-      <div class="ranking-info"><div class="ranking-name">${p.name}</div><div class="ranking-detail">${p.position} • ${p.matches} jogos</div></div>
+      <div class="ranking-info"><div class="ranking-name">${escapeHtml(p.name)}</div><div class="ranking-detail">${escapeHtml(p.position)} • ${p.matches} jogos</div></div>
       <div class="ranking-value">${p.totalPts}pts</div>
     </div>`;
   }).join('');
@@ -186,12 +186,12 @@ function loadRachaos() {
     const memberCount = r.participants.length;
     const sessions = getSessionsByRachao(r.id);
     const openSessions = sessions.filter(s => s.status === 'open').length;
-    return `<div class="match-list-item" onclick="openRachao('${r.id}')">
-      <div class="match-date-box"><span class="day">${getDayNameShort(r.dayOfWeek)}</span><span class="month">${r.time}</span></div>
+    return `<div class="match-list-item" onclick="openRachao('${escapeHtml(r.id)}')">
+      <div class="match-date-box"><span class="day">${getDayNameShort(r.dayOfWeek)}</span><span class="month">${escapeHtml(r.time)}</span></div>
       <div class="match-list-info">
-        <h4>${r.name}</h4>
-        <p>${r.location}</p>
-        <p>${memberCount} jogadores • <span style="color:var(--orange)">🔑 ${r.code}</span></p>
+        <h4>${escapeHtml(r.name)}</h4>
+        <p>${escapeHtml(r.location)}</p>
+        <p>${memberCount} jogadores • <span style="color:var(--orange)">🔑 ${escapeHtml(r.code)}</span></p>
       </div>
       <span class="match-status status-open">${openSessions > 0 ? 'Jogo aberto' : 'Ativo'}</span>
     </div>`;
@@ -206,11 +206,13 @@ function openRachao(id) {
 // ===== CREATE RACHÃO =====
 function generateRachaoCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  const existing = getRachaos().map(r => r.code);
-  if (existing.includes(code)) return generateRachaoCode();
-  return code;
+  const existing = new Set(getRachaos().map(r => r.code));
+  for (let attempt = 0; attempt < 100; attempt++) {
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    if (!existing.has(code)) return code;
+  }
+  return Date.now().toString(36).toUpperCase().slice(-6);
 }
 
 function initRachaoForm() {
@@ -226,10 +228,10 @@ function updateTotalPerTeam() {
 }
 
 function createRachao() {
-  const name = document.getElementById('rachao-name').value.trim();
+  const name = document.getElementById('rachao-name').value.trim().substring(0, 60);
   const dayOfWeek = parseInt(document.getElementById('rachao-day').value);
   const time = document.getElementById('rachao-time').value;
-  const location = document.getElementById('rachao-location').value.trim();
+  const location = document.getElementById('rachao-location').value.trim().substring(0, 100);
   const players = parseInt(document.getElementById('rachao-players').value);
   const tieRule = document.getElementById('rachao-tie-rule').value;
   const venueCost = parseFloat(document.getElementById('rachao-venue-cost').value) || 0;
@@ -372,10 +374,10 @@ function loadSessionPresence(session, rachao, user) {
   document.getElementById('confirmed-list').innerHTML = session.confirmed.map(pid => {
     const p = getPlayerById(pid);
     if (!p) return '';
-    const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+    const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     return `<div class="player-item">
       <div class="player-avatar">${ini}</div>
-      <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position}</div></div>
+      <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div>
       <span class="confirmed-badge"><i class="fas fa-check-circle"></i></span>
     </div>`;
   }).join('');
@@ -388,7 +390,7 @@ function loadSessionPresence(session, rachao, user) {
       const p = getPlayerById(pid);
       if (!p) return '';
       return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${i+1}</div>
-        <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position}</div></div></div>`;
+        <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
     }).join('');
   } else { waitCard.style.display = 'none'; }
 
@@ -446,8 +448,8 @@ function loadRachaoMembersTab(rachao) {
     const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
     const isCreator = pid === rachao.createdBy;
     return `<div class="player-item">
-      <div class="player-avatar">${ini}</div>
-      <div class="player-info"><div class="player-name">${p.name} ${isCreator ? '<span style="color:var(--orange);font-size:10px">ADMIN</span>' : ''}</div><div class="player-detail">${p.position} • ${p.goals}G ${p.assists}A</div></div>
+      <div class="player-avatar">${escapeHtml(ini)}</div>
+      <div class="player-info"><div class="player-name">${escapeHtml(p.name)} ${isCreator ? '<span style="color:var(--orange);font-size:10px">ADMIN</span>' : ''}</div><div class="player-detail">${escapeHtml(p.position)} • ${p.goals}G ${p.assists}A</div></div>
     </div>`;
   }).join('');
 }
@@ -484,8 +486,8 @@ function loadRachaoFinanceTab(rachao, user) {
     const adminBtn = isAdmin && pay.status !== 'paid'
       ? `<button class="btn-success btn-sm" onclick="confirmBillingPayment('${billing.id}','${pay.playerId}')">✓</button>` : '';
     return `<div class="player-item">
-      <div class="player-avatar">${ini}</div>
-      <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${formatCurrency(perPerson)}</div></div>
+      <div class="player-avatar">${escapeHtml(ini)}</div>
+      <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(perPerson)}</div></div>
       <span class="payment-badge ${statusClass}">${statusLabel}</span>
       ${adminBtn}
     </div>`;
@@ -573,7 +575,10 @@ function togglePresence() {
   const isConf = session.confirmed.includes(user.id);
   if (isConf) {
     session.confirmed = session.confirmed.filter(id => id !== user.id);
-    if (session.waiting && session.waiting.length > 0) session.confirmed.push(session.waiting.shift());
+    if (session.waiting && session.waiting.length > 0) {
+      const nextId = session.waiting.find(id => { const p = getPlayerById(id); return !p || !p.blocked; });
+      if (nextId) { session.waiting = session.waiting.filter(id => id !== nextId); session.confirmed.push(nextId); }
+    }
     updateSession(currentSessionId, session);
     showToast('Presença cancelada');
   } else {
@@ -605,7 +610,8 @@ function drawTeams() {
   }
 
   const players = session.confirmed.map(id => getPlayerById(id)).filter(Boolean);
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const shuffled = [...players];
+  for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
   const gks = shuffled.filter(p => p.position === 'Goleiro');
   const field = shuffled.filter(p => p.position !== 'Goleiro');
   const numTeams = Math.floor(shuffled.length / teamSize);
@@ -638,8 +644,8 @@ function renderAllTeams(teams) {
   const container = document.getElementById('teams-container');
   container.innerHTML = teams.map((t, i) => {
     let html = '';
-    if (t.goalkeeper) html += `<div class="team-player"><span class="jersey">🧤</span> ${t.goalkeeper.name}</div>`;
-    t.players.forEach(p => { html += `<div class="team-player"><span class="jersey">👕</span> ${p.name}</div>`; });
+    if (t.goalkeeper) html += `<div class="team-player"><span class="jersey">🧤</span> ${escapeHtml(t.goalkeeper.name)}</div>`;
+    t.players.forEach(p => { html += `<div class="team-player"><span class="jersey">👕</span> ${escapeHtml(p.name)}</div>`; });
     return `<div class="team-card ${getTeamClass(i)}"><h3><i class="fas fa-shirt"></i> ${t.name}</h3>${html}</div>`;
   }).join('');
 }
@@ -667,7 +673,7 @@ function loadPayments() {
     return `<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="currentRachaoId='${r.id}';navigateTo('match-detail')">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <h3 style="font-size:15px">${r.name}</h3>
+          <h3 style="font-size:15px">${escapeHtml(r.name)}</h3>
           <p class="text-muted" style="font-size:12px">${formatCurrency(perPerson)}/mês por pessoa</p>
         </div>
         <span style="color:${statusColor};font-weight:700;font-size:13px">${statusLabel}</span>
@@ -690,16 +696,16 @@ function loadAdminPayments() {
     const paid = billing.payments.filter(p => p.status === 'paid').length;
     const total = billing.payments.length;
     return `<div class="card" style="margin-bottom:12px">
-      <h3>${r.name}</h3>
+      <h3>${escapeHtml(r.name)}</h3>
       <p class="text-muted" style="font-size:12px">${paid}/${total} pagos • ${formatCurrency(perPerson)}/pessoa</p>
       <div style="margin-top:8px">${billing.payments.map(pay => {
         const p = getPlayerById(pay.playerId);
         if (!p) return '';
-        const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+        const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
         const statusLabel = pay.status === 'paid' ? 'Pago' : pay.status === 'awaiting_confirmation' ? 'Aguardando' : 'Pendente';
         return `<div class="admin-pay-item">
           <div class="player-avatar">${ini}</div>
-          <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${formatCurrency(perPerson)} • ${statusLabel}</div></div>
+          <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(perPerson)} • ${statusLabel}</div></div>
           <div class="admin-pay-actions">
             ${pay.status !== 'paid' ? `<button class="btn-success" onclick="confirmBillingPayment('${billing.id}','${pay.playerId}')">✓ Pago</button>` : ''}
             ${!p.blocked ? `<button class="btn-danger" onclick="blockPlayer('${p.id}')">Bloquear</button>` : `<button class="btn-success" onclick="unblockPlayer('${p.id}')">Liberar</button>`}
@@ -741,8 +747,8 @@ function loadAdminBlocked() {
       if (!p) return '';
       const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
       return `<div class="release-item">
-        <div class="player-avatar" style="background:var(--orange)">${ini}</div>
-        <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${r.message || 'Sem mensagem'}</div></div>
+        <div class="player-avatar" style="background:var(--orange)">${escapeHtml(ini)}</div>
+        <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(r.message || 'Sem mensagem')}</div></div>
         <div class="admin-pay-actions">
           <button class="btn-success" onclick="approveRelease('${r.id}','${r.playerId}')">Liberar</button>
           <button class="btn-danger" onclick="denyRelease('${r.id}')">Negar</button>
@@ -760,8 +766,8 @@ function loadAdminBlocked() {
     if (!p) return '';
     const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
     return `<div class="blocked-item">
-      <div class="player-avatar" style="background:var(--red)">${ini}</div>
-      <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position} • Bloqueado</div></div>
+      <div class="player-avatar" style="background:var(--red)">${escapeHtml(ini)}</div>
+      <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)} • Bloqueado</div></div>
       <button class="btn-success" onclick="unblockPlayer('${pid}');loadAdminBlocked()">Desbloquear</button>
     </div>`;
   }).join('');
@@ -817,7 +823,7 @@ function renderStatsTab(tab) {
     const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
     return `<div class="ranking-item">
       <div class="ranking-pos ${cls}">${i+1}</div>
-      <div class="ranking-info"><div class="ranking-name">${p.name}</div><div class="ranking-detail">${p.position} • ${p.matches} jogos</div></div>
+      <div class="ranking-info"><div class="ranking-name">${escapeHtml(p.name)}</div><div class="ranking-detail">${escapeHtml(p.position)} • ${p.matches} jogos</div></div>
       <div class="ranking-value">${valueLabel(p)}</div>
     </div>`;
   }).join('');
@@ -830,12 +836,12 @@ function loadRegisterStats() {
   document.getElementById('stats-register-list').innerHTML = session.confirmed.map(pid => {
     const p = getPlayerById(pid);
     if (!p) return '';
-    const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+    const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     const isGK = p.position === 'Goleiro';
     return `<div class="stat-register-item">
       <div class="stat-player-header">
         <div class="player-avatar">${ini}</div>
-        <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position}</div></div>
+        <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div>
       </div>
       <div class="stat-grid">
         ${isGK ? `
@@ -913,7 +919,7 @@ function loadAdminStats() {
       if (s.reds) chips += `<span class="stat-chip negative"><i class="fas fa-square"></i> ${s.reds} vermelho</span>`;
     }
     return `<div class="stat-validation-card">
-      <div class="stat-validation-header"><h4>${p.name}</h4><span class="match-label">${rachao ? rachao.name : ''}</span></div>
+      <div class="stat-validation-header"><h4>${escapeHtml(p.name)}</h4><span class="match-label">${rachao ? escapeHtml(rachao.name) : ''}</span></div>
       <div class="stat-validation-details">${chips}</div>
       <div class="stat-val-actions">
         <button class="btn-success" onclick="validateStat('${s.id}',true)"><i class="fas fa-check"></i> Aprovar</button>
@@ -958,11 +964,11 @@ function loadPlayers() { renderPlayerList(getPlayers()); }
 
 function renderPlayerList(players) {
   document.getElementById('players-list').innerHTML = players.map(p => {
-    const ini = p.name.split(' ').map(w => w[0]).join('').substring(0,2);
+    const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0,2));
     const blocked = p.blocked ? '<span class="payment-badge badge-blocked">Bloqueado</span>' : '';
     return `<div class="player-item">
       <div class="player-avatar">${ini}</div>
-      <div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position} • ${p.goals}G ${p.assists}A ${p.tackles||0}D</div></div>
+      <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)} • ${p.goals}G ${p.assists}A ${p.tackles||0}D</div></div>
       ${blocked}
     </div>`;
   }).join('');
@@ -1012,8 +1018,8 @@ function loadNotifications() {
     const t = new Date(n.timestamp);
     const ts = t.toLocaleDateString('pt-BR') + ' ' + t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     return `<div class="notif-item">
-      <div class="notif-icon ${n.type}"><i class="fas ${n.icon}"></i></div>
-      <div class="notif-content"><h4>${n.title}</h4><p>${n.text}</p><span class="notif-time">${ts}</span></div>
+      <div class="notif-icon ${escapeHtml(n.type)}"><i class="fas ${escapeHtml(n.icon)}"></i></div>
+      <div class="notif-content"><h4>${escapeHtml(n.title)}</h4><p>${escapeHtml(n.text)}</p><span class="notif-time">${ts}</span></div>
     </div>`;
   }).join('');
 }
@@ -1091,7 +1097,7 @@ function renderRotationState(state) {
     const next = state.queue[0];
     document.getElementById('rot-next-team-list').innerHTML = next.players.map(p => {
       const ini = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
-      return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${ini}</div><div class="player-info"><div class="player-name">${p.name}</div><div class="player-detail">${p.position}</div></div></div>`;
+      return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${escapeHtml(ini)}</div><div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
     }).join('');
   } else { nextCard.style.display = 'none'; }
 

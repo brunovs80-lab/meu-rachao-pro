@@ -53,7 +53,7 @@ function renderFantasyRanking(period) {
       <div class="ranking-item">
         <div class="ranking-pos ${posClass}">${i + 1}</div>
         <div class="ranking-info">
-          <div class="ranking-name">${s.name}</div>
+          <div class="ranking-name">${escapeHtml(s.name)}</div>
           <div class="ranking-detail">${period === 'daily' ? 'Hoje' : period === 'monthly' ? 'Este mês' : 'Total'}</div>
         </div>
         <div class="ranking-value">${val || 0}pts</div>
@@ -86,13 +86,13 @@ function openFantasyPicker(slot) {
 
   const list = document.getElementById('fantasy-picker-list');
   list.innerHTML = filterable.map(p => {
-    const initials = p.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+    const initials = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     return `
-      <div class="player-item" onclick="selectFantasyPlayer('${p.id}')" style="cursor:pointer">
+      <div class="player-item" onclick="selectFantasyPlayer('${escapeHtml(p.id)}')" style="cursor:pointer">
         <div class="player-avatar">${initials}</div>
         <div class="player-info">
-          <div class="player-name">${p.name}</div>
-          <div class="player-detail">${p.position} • ${p.goals}G ${p.assists}A</div>
+          <div class="player-name">${escapeHtml(p.name)}</div>
+          <div class="player-detail">${escapeHtml(p.position)} • ${p.goals}G ${p.assists}A</div>
         </div>
       </div>`;
   }).join('');

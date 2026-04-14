@@ -93,6 +93,11 @@ function clearSyncQueue() { DB.set('syncQueue', []); }
 // ===== UTILITÁRIOS =====
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
 function formatPhone(phone) {
   const d = phone.replace(/\D/g, '');
   if (d.length <= 2) return `(${d}`;
