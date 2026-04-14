@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Meu Rachao Pro - Manual do Usuario</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a2e; line-height: 1.7; }
+
+  .print-info { position: fixed; top: 0; left: 0; right: 0; background: #FF7A00; color: #000;
+    text-align: center; padding: 10px; font-weight: 700; font-size: 14px; z-index: 999; }
+  @media print { .print-info { display: none; } body { margin: 0; } }
+  @media print { .page-break { page-break-before: always; } }
+
+  .cover { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; background: linear-gradient(135deg, #0D0D1A 0%, #1a1a2e 100%);
+    color: #fff; text-align: center; page-break-after: always; }
+  .cover .logo { width: 100px; height: 100px; border-radius: 24px;
+    background: linear-gradient(135deg, #7B2CBF, #A855F7); display: flex;
+    align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 42px;
+    box-shadow: 0 16px 48px rgba(123,44,191,0.4); }
+  .cover h1 { font-size: 48px; font-weight: 900; margin-bottom: 8px;
+    background: linear-gradient(135deg, #A855F7, #FF7A00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .cover .sub { font-size: 20px; color: #aaa; }
+  .cover .version { margin-top: 32px; font-size: 14px; color: #666; }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+
+  .toc { page-break-after: always; }
+  .toc h2 { font-size: 28px; font-weight: 800; color: #7B2CBF; margin-bottom: 24px;
+    padding-bottom: 12px; border-bottom: 3px solid #7B2CBF; }
+  .toc-list { list-style: none; }
+  .toc-list li { padding: 10px 0; border-bottom: 1px solid #eee; display: flex;
+    justify-content: space-between; align-items: center; }
+  .toc-list li a { color: #1a1a2e; text-decoration: none; font-weight: 600; font-size: 16px; }
+  .toc-list li a:hover { color: #7B2CBF; }
+  .toc-list .toc-num { color: #7B2CBF; font-weight: 800; margin-right: 12px; }
+
+  h2.section-title { font-size: 26px; font-weight: 800; color: #7B2CBF; margin: 48px 0 8px;
+    padding-bottom: 8px; border-bottom: 3px solid #7B2CBF; }
+  h3 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin: 28px 0 8px; }
+  h4 { font-size: 15px; font-weight: 700; color: #444; margin: 20px 0 6px; }
+
+  p { margin-bottom: 12px; color: #444; font-size: 15px; }
+  .highlight { color: #7B2CBF; font-weight: 700; }
+  .highlight-orange { color: #FF7A00; font-weight: 700; }
+
+  .step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+  .step-list li { counter-increment: step; padding: 12px 12px 12px 52px; margin-bottom: 8px;
+    background: #f8f6ff; border-radius: 10px; position: relative; font-size: 14px; color: #444; }
+  .step-list li::before { content: counter(step); position: absolute; left: 12px; top: 12px;
+    width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #7B2CBF, #A855F7);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; }
+
+  .info-box { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: 14px; }
+  .info-box-purple { background: #f3e8ff; border-left: 4px solid #7B2CBF; color: #5b21b6; }
+  .info-box-orange { background: #fff7ed; border-left: 4px solid #FF7A00; color: #c2410c; }
+  .info-box-green { background: #ecfdf5; border-left: 4px solid #00C853; color: #166534; }
+  .info-box-red { background: #fef2f2; border-left: 4px solid #FF5252; color: #991b1b; }
+  .info-box strong { display: block; margin-bottom: 4px; }
+
+  .mock-small { display: inline-block; width: 200px; background: #0D0D1A; border-radius: 20px;
+    padding: 8px; margin: 8px; vertical-align: top; border: 2px solid #333; }
+  .mock-small-screen { background: #0D0D1A; border-radius: 14px; padding: 12px; }
+  .mock-small h5 { font-size: 10px; color: #A855F7; margin-bottom: 4px; }
+  .mock-small p { font-size: 9px; color: #999; margin-bottom: 4px; }
+  .mock-small .ms-btn { padding: 5px; border-radius: 6px; text-align: center; font-size: 9px;
+    font-weight: 700; margin: 4px 0; color: #fff; }
+  .mock-small .ms-purple { background: linear-gradient(135deg, #7B2CBF, #A855F7); }
+  .mock-small .ms-orange { background: linear-gradient(135deg, #E06800, #FF7A00); }
+  .mock-small .ms-item { display: flex; align-items: center; gap: 6px; padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .mock-small .ms-avatar { width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(135deg, #7B2CBF, #A855F7); display: flex;
+    align-items: center; justify-content: center; font-size: 7px; font-weight: 700;
+    color: #fff; flex-shrink: 0; }
+  .mock-small .ms-name { font-size: 9px; color: #fff; font-weight: 600; }
+
+  .table-scoring { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  .table-scoring th { text-align: left; padding: 8px 12px; background: #f3e8ff; color: #7B2CBF;
+    font-weight: 700; border-bottom: 2px solid #7B2CBF; }
+  .table-scoring td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  .table-scoring .pts-pos { color: #00C853; font-weight: 700; }
+  .table-scoring .pts-neg { color: #FF5252; font-weight: 700; }
+
+  .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .shortcut-card { padding: 16px; background: #f8f6ff; border-radius: 10px; }
+  .shortcut-card .sc-icon { font-size: 24px; margin-bottom: 6px; }
+  .shortcut-card h4 { font-size: 14px; margin: 0 0 4px; color: #7B2CBF; }
+  .shortcut-card p { font-size: 12px; color: #666; margin: 0; }
+
+  .footer { text-align: center; padding: 40px 24px; color: #999; font-size: 13px;
+    border-top: 1px solid #eee; margin-top: 40px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .container { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-info">Para salvar como PDF: Ctrl+P (ou Cmd+P) &rarr; Destino: Salvar como PDF &rarr; Salvar</div>
+
+<!-- ==================== CAPA ==================== -->
+<div class="cover">
+  <div class="logo">&#9917;</div>
+  <h1>Manual do Usuario</h1>
+  <p class="sub">Meu Rachao Pro</p>
+  <p class="version">Versao 2.0 &mdash; Abril 2026</p>
+</div>
+
+<!-- ==================== SUMARIO ==================== -->
+<div class="container toc">
+  <h2>Sumario</h2>
+  <ol class="toc-list">
+    <li><a href="#s1"><span class="toc-num">1</span> Primeiros Passos</a></li>
+    <li><a href="#s2"><span class="toc-num">2</span> Criar um Rachao</a></li>
+    <li><a href="#s3"><span class="toc-num">3</span> Entrar em um Rachao</a></li>
+    <li><a href="#s4"><span class="toc-num">4</span> Dashboard e Navegacao</a></li>
+    <li><a href="#s5"><span class="toc-num">5</span> Sessao de Jogo</a></li>
+    <li><a href="#s6"><span class="toc-num">6</span> Sorteio de Times</a></li>
+    <li><a href="#s7"><span class="toc-num">7</span> Rotacao ao Vivo</a></li>
+    <li><a href="#s8"><span class="toc-num">8</span> Financeiro e Pagamentos</a></li>
+    <li><a href="#s9"><span class="toc-num">9</span> Estatisticas</a></li>
+    <li><a href="#s10"><span class="toc-num">10</span> Fantasy League</a></li>
+    <li><a href="#s11"><span class="toc-num">11</span> Painel Admin</a></li>
+    <li><a href="#s12"><span class="toc-num">12</span> Perfil e Configuracoes</a></li>
+    <li><a href="#s13"><span class="toc-num">13</span> Perguntas Frequentes</a></li>
+  </ol>
+</div>
+
+<!-- ==================== 1. PRIMEIROS PASSOS ==================== -->
+<div class="container">
+  <h2 class="section-title" id="s1">1. Primeiros Passos</h2>
+
+  <h3>1.1 O que e o Meu Rachao Pro?</h3>
+  <p>O <span class="highlight">Meu Rachao Pro</span> e um aplicativo para organizar rachoes de futebol. Um rachao e um grupo permanente de jogadores que se encontram regularmente para jogar (ex: todo domingo). O app gerencia presenca, sorteio de times, financeiro, estatisticas e muito mais.</p>
+
+  <h3>1.2 Instalar no Celular (PWA)</h3>
+  <p>O app funciona direto no navegador, mas voce pode instala-lo como um aplicativo:</p>
+  <ol class="step-list">
+    <li>Abra o app no navegador do celular (Chrome recomendado)</li>
+    <li>Toque no menu do navegador (tres pontinhos)</li>
+    <li>Selecione <span class="highlight">"Adicionar a tela inicial"</span> ou <span class="highlight">"Instalar aplicativo"</span></li>
+    <li>Pronto! O icone aparecera na sua tela inicial</li>
+  </ol>
+
+  <div class="info-box info-box-green">
+    <strong>&#10003; Funciona Offline!</strong>
+    Apos a primeira visita, o app funciona mesmo sem internet. Seus dados ficam salvos no celular.
+  </div>
+
+  <h3>1.3 Fazer Login</h3>
+  <ol class="step-list">
+    <li>Abra o app e digite seu <span class="highlight">numero de celular</span> com DDD</li>
+    <li>Toque em <span class="highlight">ENTRAR</span></li>
+    <li>Digite o <span class="highlight">codigo de verificacao</span> de 4 digitos (qualquer numero funciona na versao demo)</li>
+    <li>Na primeira vez, preencha seu <span class="highlight">nome</span> e <span class="highlight">posicao preferida</span> (Goleiro, Zagueiro, Lateral, Volante, Meia ou Atacante)</li>
+    <li>Toque em <span class="highlight">COMECAR</span></li>
+  </ol>
+
+  <div class="info-box info-box-purple">
+    <strong>&#128161; Dica</strong>
+    Se voce ja se cadastrou antes com o mesmo numero, o app recupera seus dados automaticamente.
+  </div>
+
+  <!-- ==================== 2. CRIAR RACHAO ==================== -->
+  <h2 class="section-title page-break" id="s2">2. Criar um Rachao</h2>
+
+  <p>Criar um rachao significa criar um <span class="highlight">grupo permanente</span> para seus jogos semanais. Voce sera o <span class="highlight-orange">administrador</span> do rachao.</p>
+
+  <h3>2.1 Passo a Passo</h3>
+  <ol class="step-list">
+    <li>No Dashboard, toque no menu <span class="highlight">Rachoes</span> ou no botao <span class="highlight">CRIAR</span></li>
+    <li>Na tela de Rachoes, toque no icone <span class="highlight">+</span> no canto superior direito</li>
+    <li>Preencha os dados:
+      <br>&bull; <strong>Nome do Rachao:</strong> Ex: "Rachao de Quinta", "Pelada dos Amigos"
+      <br>&bull; <strong>Dia da Semana:</strong> Domingo, Segunda, Terca...
+      <br>&bull; <strong>Horario:</strong> Ex: 20:00
+      <br>&bull; <strong>Local:</strong> Ex: "Quadra Society Central"
+      <br>&bull; <strong>Jogadores de linha por time:</strong> 3 a 11 (padrao: 5) + 1 goleiro
+      <br>&bull; <strong>Regra de Empate:</strong> Para a rotacao (ver secao 7)
+      <br>&bull; <strong>Custo mensal da quadra:</strong> Valor total em R$ (sera dividido)
+      <br>&bull; <strong>Chave Pix:</strong> Para receber pagamentos
+    </li>
+    <li>Toque em <span class="highlight">CRIAR RACHAO</span></li>
+  </ol>
+
+  <h3>2.2 Codigo do Rachao</h3>
+  <p>Ao criar, o sistema gera um <span class="highlight-orange">codigo de 6 digitos</span> (letras e numeros). Exemplo: <strong style="font-size:20px;letter-spacing:4px;color:#FF7A00">R4CH40</strong></p>
+  <p>Compartilhe esse codigo com seus amigos para que eles entrem no rachao. Voce pode copiar ou compartilhar direto pelo botao na tela de detalhe.</p>
+
+  <div class="info-box info-box-orange">
+    <strong>&#128274; Importante</strong>
+    Apenas quem criou o rachao e o administrador. O admin pode confirmar pagamentos, validar estatisticas e bloquear jogadores.
+  </div>
+
+  <!-- ==================== 3. ENTRAR EM UM RACHAO ==================== -->
+  <h2 class="section-title page-break" id="s3">3. Entrar em um Rachao</h2>
+
+  <p>Para entrar em um rachao existente, voce precisa do <span class="highlight-orange">codigo de 6 digitos</span> que o criador compartilhou.</p>
+
+  <ol class="step-list">
+    <li>No Dashboard, toque em <span class="highlight">ENTRAR</span> ou va em Rachoes &rarr; icone de entrada</li>
+    <li>Digite o <span class="highlight-orange">codigo de 6 digitos</span> (nao diferencia maiusculas de minusculas)</li>
+    <li>Toque em <span class="highlight">ENTRAR</span></li>
+    <li>Se o codigo for valido, voce sera adicionado como <span class="highlight">participante</span> do rachao</li>
+  </ol>
+
+  <div class="info-box info-box-green">
+    <strong>&#10003; Pronto!</strong>
+    Agora voce e membro fixo do rachao. Toda semana voce podera confirmar presenca e participar dos jogos.
+  </div>
+
+  <!-- ==================== 4. DASHBOARD ==================== -->
+  <h2 class="section-title page-break" id="s4">4. Dashboard e Navegacao</h2>
+
+  <h3>4.1 Tela Inicial</h3>
+  <p>O Dashboard mostra:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li><strong>Seus rachoes</strong> &mdash; com info do proximo jogo e quantidade de confirmados</li>
+    <li><strong>Menu rapido</strong> &mdash; acesso a Rachoes, Rotacao, Pagamentos, Stats, Fantasy e Jogadores</li>
+    <li><strong>Ranking</strong> &mdash; top 5 jogadores por pontuacao geral</li>
+  </ul>
+
+  <h3>4.2 Barra de Navegacao</h3>
+  <p>Na parte inferior da tela, voce encontra 5 abas:</p>
+  <div class="shortcut-grid">
+    <div class="shortcut-card">
+      <div class="sc-icon">&#127968;</div>
+      <h4>Inicio</h4>
+      <p>Dashboard com visao geral</p>
+    </div>
+    <div class="shortcut-card">
+      <div class="sc-icon">&#128197;</div>
+      <h4>Rachoes</h4>
+      <p>Lista de todos os seus rachoes</p>
+    </div>
+    <div class="shortcut-card">
+      <div class="sc-icon">&#127942;</div>
+      <h4>Fantasy</h4>
+      <p>Liga Fantasy com ranking e premios</p>
+    </div>
+    <div class="shortcut-card">
+      <div class="sc-icon">&#128200;</div>
+      <h4>Stats</h4>
+      <p>Estatisticas e rankings</p>
+    </div>
+  </div>
+
+  <h3>4.3 Notificacoes</h3>
+  <p>O icone de sino no Dashboard leva a tela de notificacoes. Voce recebe avisos quando:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li>Entra em um novo rachao</li>
+    <li>Uma sessao de jogo e criada</li>
+    <li>Confirma presenca</li>
+    <li>Times sao sorteados</li>
+    <li>Pagamento e confirmado</li>
+    <li>Estatisticas sao aprovadas</li>
+  </ul>
+
+  <!-- ==================== 5. SESSAO DE JOGO ==================== -->
+  <h2 class="section-title page-break" id="s5">5. Sessao de Jogo</h2>
+
+  <p>Uma <span class="highlight">sessao</span> representa um dia de jogo dentro do rachao. Cada vez que o grupo se reune para jogar, o admin cria uma nova sessao.</p>
+
+  <h3>5.1 Criar Sessao (Admin)</h3>
+  <ol class="step-list">
+    <li>Abra o rachao desejado</li>
+    <li>Na tab <span class="highlight">Jogo</span>, toque em <span class="highlight-orange">CRIAR JOGO</span></li>
+    <li>A data e calculada automaticamente (proximo dia da semana do rachao)</li>
+    <li>A sessao aparece como "Proximo Jogo" com a data</li>
+  </ol>
+
+  <h3>5.2 Confirmar Presenca</h3>
+  <ol class="step-list">
+    <li>Abra o rachao</li>
+    <li>Na tab <span class="highlight">Jogo</span>, veja a sessao ativa</li>
+    <li>Toque em <span class="highlight">CONFIRMAR PRESENCA</span></li>
+    <li>Seu nome aparecera na lista de confirmados</li>
+    <li>Para cancelar, toque em <span class="highlight-orange">CANCELAR PRESENCA</span></li>
+  </ol>
+
+  <div class="info-box info-box-purple">
+    <strong>&#128161; Dica</strong>
+    Quando o numero de confirmados atinge o dobro de jogadores por time (ex: 10 para times de 5), os excedentes vao para a lista de espera e participam da rotacao.
+  </div>
+
+  <h3>5.3 Encerrar Sessao (Admin)</h3>
+  <p>Apos o jogo, o admin pode encerrar a sessao tocando em <span class="highlight-orange">ENCERRAR JOGO</span>. A sessao vai para o historico de jogos anteriores.</p>
+
+  <!-- ==================== 6. SORTEIO ==================== -->
+  <h2 class="section-title page-break" id="s6">6. Sorteio de Times</h2>
+
+  <h3>6.1 Como Funciona</h3>
+  <ol class="step-list">
+    <li>Aguarde ter jogadores confirmados suficientes (minimo 2 times completos)</li>
+    <li>Toque em <span class="highlight-orange">SORTEAR TIMES</span></li>
+    <li>O sistema embaralha aleatoriamente e divide em times iguais</li>
+    <li>Se sobrarem jogadores (numero nao divisivel), eles ficam na <span class="highlight">reserva</span></li>
+    <li>Para refazer, toque em <span class="highlight">SORTEAR NOVAMENTE</span></li>
+  </ol>
+
+  <h3>6.2 Apos o Sorteio</h3>
+  <p>Com os times sorteados, voce pode:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li><strong>Iniciar Rotacao</strong> &mdash; para jogar com sistema de rodadas (ver secao 7)</li>
+    <li><strong>Registrar Estatisticas</strong> &mdash; gols, assistencias, desarmes (ver secao 9)</li>
+    <li><strong>Sortear Novamente</strong> &mdash; se os times nao ficaram bons</li>
+  </ul>
+
+  <div class="info-box info-box-green">
+    <strong>&#9917; Sorteio Justo</strong>
+    O algoritmo usa embaralhamento aleatorio (Fisher-Yates), garantindo que todos os jogadores tenham a mesma chance de cair em qualquer time.
+  </div>
+
+  <!-- ==================== 7. ROTACAO ==================== -->
+  <h2 class="section-title page-break" id="s7">7. Rotacao ao Vivo</h2>
+
+  <p>A rotacao permite jogar multiplas partidas com troca de times automatica. Ideal para quando tem mais jogadores do que cabem em 2 times.</p>
+
+  <h3>7.1 Iniciar Rotacao</h3>
+  <ol class="step-list">
+    <li>Sorteie os times (secao 6)</li>
+    <li>Toque em <span class="highlight-orange">INICIAR ROTACAO</span></li>
+    <li>Os 2 primeiros times entram em campo</li>
+    <li>Os demais ficam na <span class="highlight">fila de espera</span></li>
+  </ol>
+
+  <h3>7.2 Durante a Partida</h3>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li>Toque em <span class="highlight">+ GOL Time A</span> ou <span class="highlight">+ GOL Time B</span> para registrar gols</li>
+    <li>O placar atualiza em tempo real</li>
+    <li>Quando a partida acabar, toque em <span class="highlight-orange">FINALIZAR PARTIDA</span></li>
+  </ul>
+
+  <h3>7.3 Regras de Troca</h3>
+  <p>Ao finalizar uma partida:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li><strong>Time vencedor</strong> permanece em campo</li>
+    <li><strong>Time perdedor</strong> vai para o final da fila</li>
+    <li><strong>Proximo time</strong> da fila entra em campo</li>
+    <li><strong>Em caso de empate</strong>, aplica-se a regra configurada no rachao:</li>
+  </ul>
+
+  <table class="table-scoring">
+    <tr><th>Regra</th><th>O que acontece no empate</th></tr>
+    <tr><td>Sai quem estava jogando</td><td>O time que ja estava em campo sai, o desafiante fica</td></tr>
+    <tr><td>Sai quem entrou depois</td><td>O time que entrou por ultimo sai</td></tr>
+  </table>
+
+  <h3>7.4 Encerrar Rotacao</h3>
+  <p>Toque em <span class="highlight">ENCERRAR RACHAO</span> para finalizar todas as rodadas. O historico fica salvo.</p>
+
+  <!-- ==================== 8. FINANCEIRO ==================== -->
+  <h2 class="section-title page-break" id="s8">8. Financeiro e Pagamentos</h2>
+
+  <h3>8.1 Como Funciona a Divisao</h3>
+  <p>O custo mensal da quadra e <span class="highlight">dividido igualmente</span> entre todos os participantes do rachao.</p>
+
+  <div style="background:#f8f6ff;border-radius:12px;padding:20px;margin:16px 0;text-align:center">
+    <p style="font-size:13px;color:#666;margin-bottom:4px">Exemplo:</p>
+    <p style="margin-bottom:4px"><strong style="font-size:20px;color:#FF7A00">R$ 800</strong> <span style="color:#999">(custo da quadra)</span></p>
+    <p style="margin-bottom:4px;font-size:20px;color:#666">&divide;</p>
+    <p style="margin-bottom:4px"><strong style="font-size:20px;color:#7B2CBF">18</strong> <span style="color:#999">(participantes)</span></p>
+    <p style="margin-bottom:4px;font-size:20px;color:#666">=</p>
+    <p><strong style="font-size:24px;color:#00C853">R$ 44,44</strong> <span style="color:#999">por pessoa/mes</span></p>
+  </div>
+
+  <h3>8.2 Ver Seu Pagamento</h3>
+  <ol class="step-list">
+    <li>Abra o rachao e va na tab <span class="highlight">Financeiro</span></li>
+    <li>Veja o valor por pessoa e o status do seu pagamento</li>
+    <li>Copie a <span class="highlight-orange">chave PIX</span> e faca o pagamento</li>
+    <li>Toque em <span class="highlight-orange">INFORMAR PAGAMENTO</span> para avisar o admin</li>
+  </ol>
+
+  <h3>8.3 Confirmar Pagamentos (Admin)</h3>
+  <ol class="step-list">
+    <li>Na tab <span class="highlight">Financeiro</span> do rachao, veja a lista de pagamentos</li>
+    <li>Toque no icone de <span class="highlight">confirmar</span> ao lado do jogador que pagou</li>
+    <li>O status muda para <span style="color:#00C853;font-weight:700">Pago</span></li>
+  </ol>
+
+  <h3>8.4 Menu de Pagamentos</h3>
+  <p>No menu principal, a secao <span class="highlight">Pagamentos</span> mostra uma visao geral de todos os seus rachoes com status financeiro.</p>
+
+  <!-- ==================== 9. ESTATISTICAS ==================== -->
+  <h2 class="section-title page-break" id="s9">9. Estatisticas</h2>
+
+  <h3>9.1 Registrar Estatisticas</h3>
+  <p>Qualquer jogador pode registrar as stats de uma sessao:</p>
+  <ol class="step-list">
+    <li>No detalhe do rachao, toque em <span class="highlight">REGISTRAR ESTATISTICAS</span></li>
+    <li>Para cada jogador confirmado, preencha: gols, assistencias, desarmes, defesas, faltas, cartoes</li>
+    <li>Toque em <span class="highlight">ENVIAR PARA VALIDACAO</span></li>
+    <li>As stats ficam <span class="highlight-orange">pendentes</span> ate o admin aprovar</li>
+  </ol>
+
+  <div class="info-box info-box-red">
+    <strong>&#128737; Sistema Anti-Fraude</strong>
+    Nenhuma estatistica conta automaticamente. Tudo passa pela aprovacao do administrador para evitar que alguem infle seus proprios numeros.
+  </div>
+
+  <h3>9.2 Tela de Estatisticas</h3>
+  <p>A tela de Stats mostra rankings em 4 categorias:</p>
+
+  <table class="table-scoring">
+    <tr><th>Tab</th><th>O que mostra</th></tr>
+    <tr><td>Ranking</td><td>Pontuacao geral (formula ponderada)</td></tr>
+    <tr><td>Artilharia</td><td>Top goleadores</td></tr>
+    <tr><td>Assistencias</td><td>Top passadores</td></tr>
+    <tr><td>Desarmes</td><td>Top defensores</td></tr>
+  </table>
+
+  <!-- ==================== 10. FANTASY ==================== -->
+  <h2 class="section-title page-break" id="s10">10. Fantasy League</h2>
+
+  <p>O Fantasy e uma competicao onde voce monta seu <span class="highlight">time ideal</span> e ganha pontos baseado no desempenho real dos jogadores.</p>
+
+  <h3>10.1 Montar Seu Time</h3>
+  <ol class="step-list">
+    <li>Va em <span class="highlight">Fantasy</span> &rarr; tab <span class="highlight">Meu Time</span></li>
+    <li>Toque em cada posicao do campo para escolher um jogador</li>
+    <li>Formacao: 2 Atacantes + 2 Meias + 1 Zagueiro + 1 Goleiro</li>
+    <li>Minimo de 3 jogadores para salvar</li>
+    <li>Toque em <span class="highlight">SALVAR TIME</span></li>
+  </ol>
+
+  <h3>10.2 Sistema de Pontuacao</h3>
+
+  <h4>Jogador de Linha</h4>
+  <table class="table-scoring">
+    <tr><th>Acao</th><th>Pontos</th></tr>
+    <tr><td>Gol</td><td class="pts-pos">+5</td></tr>
+    <tr><td>Assistencia</td><td class="pts-pos">+3</td></tr>
+    <tr><td>Desarme</td><td class="pts-pos">+2</td></tr>
+    <tr><td>Vitoria do time</td><td class="pts-pos">+2</td></tr>
+    <tr><td>Presenca</td><td class="pts-pos">+1</td></tr>
+    <tr><td>Falta cometida</td><td class="pts-neg">-1</td></tr>
+    <tr><td>Cartao Amarelo</td><td class="pts-neg">-2</td></tr>
+    <tr><td>Cartao Vermelho</td><td class="pts-neg">-4</td></tr>
+  </table>
+
+  <h4>Goleiro</h4>
+  <table class="table-scoring">
+    <tr><th>Acao</th><th>Pontos</th></tr>
+    <tr><td>Defesa</td><td class="pts-pos">+1</td></tr>
+    <tr><td>Clean Sheet (sem tomar gol)</td><td class="pts-pos">+5</td></tr>
+    <tr><td>Vitoria do time</td><td class="pts-pos">+3</td></tr>
+    <tr><td>Presenca</td><td class="pts-pos">+1</td></tr>
+    <tr><td>Gol sofrido</td><td class="pts-neg">-0.5</td></tr>
+    <tr><td colspan="2" style="color:#FF7A00;font-weight:700;text-align:center">Multiplicador final: x1.3</td></tr>
+  </table>
+
+  <div class="info-box info-box-purple">
+    <strong>&#128161; Goleiro vale mais!</strong>
+    Todos os pontos do goleiro sao multiplicados por 1.3 no final. Isso compensa o fato de goleiros terem menos oportunidades de pontuar.
+  </div>
+
+  <h3>10.3 Ranking Fantasy</h3>
+  <p>O ranking e dividido em 3 periodos:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li><strong>Diario</strong> &mdash; pontos do dia</li>
+    <li><strong>Mensal</strong> &mdash; pontos acumulados no mes</li>
+    <li><strong>Geral</strong> &mdash; pontos totais de todos os tempos</li>
+  </ul>
+
+  <h3>10.4 Premios</h3>
+  <p>O admin pode configurar premios para os 3 primeiros colocados. Exemplos:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li>&#129351; 1o lugar: Isencao de mensalidade</li>
+    <li>&#129352; 2o lugar: 50% de desconto</li>
+    <li>&#129353; 3o lugar: Escolhe o time no sorteio</li>
+  </ul>
+
+  <!-- ==================== 11. ADMIN ==================== -->
+  <h2 class="section-title page-break" id="s11">11. Painel Admin</h2>
+
+  <p>O administrador e quem criou o rachao. Ele tem acesso a funcionalidades exclusivas.</p>
+
+  <h3>11.1 Acessar o Painel</h3>
+  <p>Va em <span class="highlight">Perfil</span> &rarr; <span class="highlight">Painel Admin</span></p>
+
+  <h3>11.2 Validar Estatisticas</h3>
+  <ol class="step-list">
+    <li>Toque em <span class="highlight">Validar Estatisticas</span></li>
+    <li>Veja as stats pendentes com detalhes (quem registrou, valores)</li>
+    <li>Toque em <span style="color:#00C853;font-weight:700">&#10003; Aprovar</span> para confirmar ou <span style="color:#FF5252;font-weight:700">&#10007; Rejeitar</span> para descartar</li>
+    <li>Stats aprovadas sao automaticamente somadas ao perfil do jogador</li>
+  </ol>
+
+  <h3>11.3 Gerenciar Pagamentos</h3>
+  <ol class="step-list">
+    <li>Toque em <span class="highlight">Gerenciar Pagamentos</span></li>
+    <li>Veja a lista de todos os jogadores com status de pagamento</li>
+    <li>Confirme pagamentos recebidos</li>
+    <li>Bloqueie jogadores inadimplentes</li>
+  </ol>
+
+  <h3>11.4 Jogadores Bloqueados</h3>
+  <p>Jogadores bloqueados nao podem confirmar presenca nos jogos. O fluxo e:</p>
+  <ol class="step-list">
+    <li>Admin bloqueia o jogador (por inadimplencia ou outro motivo)</li>
+    <li>Jogador recebe aviso de bloqueio</li>
+    <li>Jogador pode enviar um <span class="highlight">pedido de liberacao</span> com mensagem</li>
+    <li>Admin analisa e <span style="color:#00C853;font-weight:700">aprova</span> ou <span style="color:#FF5252;font-weight:700">nega</span> a liberacao</li>
+  </ol>
+
+  <div class="info-box info-box-orange">
+    <strong>&#9888; Atencao</strong>
+    Bloquear um jogador e uma acao seria. Use apenas em casos de inadimplencia prolongada.
+  </div>
+
+  <!-- ==================== 12. PERFIL ==================== -->
+  <h2 class="section-title page-break" id="s12">12. Perfil e Configuracoes</h2>
+
+  <h3>12.1 Meu Perfil</h3>
+  <p>Na tela de perfil voce ve:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li>Seu nome e celular</li>
+    <li>Posicao preferida</li>
+    <li>Suas estatisticas: rachoes jogados, gols, assistencias e desarmes</li>
+    <li>Acesso ao Painel Admin (se for admin)</li>
+    <li>Botao de Sair</li>
+  </ul>
+
+  <h3>12.2 Configuracoes</h3>
+  <p>Na tela de configuracoes voce pode:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li>Ativar/desativar notificacoes (lembrete de rachao, resultado do sorteio, pagamento confirmado)</li>
+    <li>Ativar/desativar modo offline</li>
+  </ul>
+
+  <h3>12.3 Jogadores</h3>
+  <p>Na tela de Jogadores voce pode:</p>
+  <ul style="margin:12px 0 12px 24px;color:#444;font-size:14px">
+    <li>Buscar jogadores por nome</li>
+    <li>Ver detalhes de cada jogador (posicao, gols, assists)</li>
+    <li>Adicionar novos jogadores manualmente</li>
+  </ul>
+
+  <!-- ==================== 13. FAQ ==================== -->
+  <h2 class="section-title page-break" id="s13">13. Perguntas Frequentes</h2>
+
+  <h3>Posso participar de mais de um rachao?</h3>
+  <p>Sim! Voce pode criar ou entrar em quantos rachoes quiser. Cada um tem seu proprio codigo, participantes e financeiro.</p>
+
+  <h3>Meus dados sao salvos na nuvem?</h3>
+  <p>Nao. Na versao atual, todos os dados ficam salvos localmente no seu dispositivo (localStorage do navegador). Se voce limpar os dados do navegador, eles serao perdidos.</p>
+
+  <h3>O que acontece se eu limpar o cache do navegador?</h3>
+  <p>Todos os dados serao apagados. Ao abrir o app novamente, os dados de demonstracao serao carregados. Por isso, evite limpar o cache do navegador onde usa o app.</p>
+
+  <h3>Posso mudar o dia da semana do rachao?</h3>
+  <p>Na versao atual, o dia da semana e definido na criacao e nao pode ser alterado depois. Para mudar, seria necessario criar um novo rachao.</p>
+
+  <h3>Como mudo meu nome ou posicao?</h3>
+  <p>Na versao atual, o nome e posicao sao definidos no cadastro. Para alterar, seria necessario fazer logout e criar uma nova conta.</p>
+
+  <h3>Quantos jogadores cabem em um rachao?</h3>
+  <p>Nao ha limite. O rachao pode ter quantos participantes quiser. O custo mensal e dividido entre todos.</p>
+
+  <h3>E se um jogador nao confirmar presenca?</h3>
+  <p>Ele simplesmente nao participa do sorteio daquele dia. Continua sendo membro do rachao e pode confirmar nos proximos jogos.</p>
+
+  <h3>O Fantasy pontua automaticamente?</h3>
+  <p>Sim, <strong>apos o admin aprovar as estatisticas</strong>. Quando uma stat e validada, o sistema calcula automaticamente os pontos de quem tem aquele jogador no time do Fantasy.</p>
+
+  <h3>Preciso de internet para usar?</h3>
+  <p>Apenas na primeira vez para carregar o app. Depois, ele funciona 100% offline gracas ao Service Worker (PWA).</p>
+
+  <div class="footer">
+    <p><strong>Meu Rachao Pro</strong> &mdash; v2.0</p>
+    <p>Desenvolvido para a comunidade do rachao</p>
+    <p style="margin-top:8px">github.com/brunovs80-lab/meu-rachao-pro</p>
+  </div>
+</div>
+
+</body>
+</html>

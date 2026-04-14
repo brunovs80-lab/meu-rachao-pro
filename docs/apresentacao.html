@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Meu Rachao Pro - Apresentacao</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #0D0D1A; color: #fff; }
+
+  .slide {
+    width: 100%; min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; padding: 60px 80px;
+    page-break-after: always; position: relative; overflow: hidden;
+  }
+  .slide:last-child { page-break-after: avoid; }
+
+  /* Slide 1 - Capa */
+  .slide-cover {
+    background: linear-gradient(135deg, #0D0D1A 0%, #1a1a2e 50%, #16213e 100%);
+    text-align: center;
+  }
+  .slide-cover .logo { width: 120px; height: 120px; border-radius: 30px;
+    background: linear-gradient(135deg, #7B2CBF, #A855F7); display: flex;
+    align-items: center; justify-content: center; margin: 0 auto 30px;
+    font-size: 48px; box-shadow: 0 20px 60px rgba(123,44,191,0.4); }
+  .slide-cover h1 { font-size: 56px; font-weight: 900;
+    background: linear-gradient(135deg, #A855F7, #FF7A00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+  .slide-cover .subtitle { font-size: 22px; color: #aaa; font-weight: 400; }
+  .slide-cover .version { margin-top: 40px; padding: 8px 24px; border-radius: 20px;
+    background: rgba(255,122,0,0.15); color: #FF7A00; font-weight: 700; font-size: 14px; }
+
+  /* Slide generico */
+  .slide-content { text-align: center; max-width: 900px; width: 100%; }
+  .slide-content h2 { font-size: 42px; font-weight: 800; margin-bottom: 12px;
+    background: linear-gradient(135deg, #A855F7, #FF7A00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .slide-content .slide-sub { font-size: 18px; color: #999; margin-bottom: 40px; }
+
+  /* Cards de feature */
+  .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: left; }
+  .feature-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 28px; transition: transform 0.3s; }
+  .feature-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex;
+    align-items: center; justify-content: center; font-size: 22px; margin-bottom: 16px; }
+  .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .feature-card p { font-size: 14px; color: #999; line-height: 1.5; }
+  .icon-purple { background: linear-gradient(135deg, #7B2CBF, #A855F7); }
+  .icon-orange { background: linear-gradient(135deg, #E06800, #FF7A00); }
+  .icon-green { background: linear-gradient(135deg, #009624, #00C853); }
+  .icon-blue { background: linear-gradient(135deg, #1565C0, #42A5F5); }
+  .icon-red { background: linear-gradient(135deg, #C62828, #FF5252); }
+  .icon-yellow { background: linear-gradient(135deg, #F9A825, #FFD600); }
+
+  /* Mockup de tela */
+  .phone-mockup { width: 280px; height: 560px; background: #1a1a2e; border-radius: 36px;
+    border: 3px solid #333; padding: 12px; margin: 0 auto; position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+  .phone-notch { width: 120px; height: 28px; background: #0D0D1A; border-radius: 0 0 16px 16px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
+  .phone-screen { width: 100%; height: 100%; background: #0D0D1A; border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column; }
+  .mock-header { padding: 40px 16px 12px; display: flex; align-items: center; gap: 8px; }
+  .mock-header .back { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+  .mock-header h4 { font-size: 16px; font-weight: 700; }
+  .mock-body { flex: 1; padding: 0 12px 12px; overflow: hidden; }
+  .mock-card { background: rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+  .mock-card h5 { font-size: 11px; color: #FF7A00; margin-bottom: 4px; font-weight: 700; }
+  .mock-card p { font-size: 10px; color: #999; }
+  .mock-card .value { font-size: 18px; font-weight: 800; margin: 4px 0; }
+  .mock-btn { padding: 8px; border-radius: 10px; text-align: center; font-size: 11px;
+    font-weight: 700; margin-bottom: 6px; color: #fff; }
+  .mock-btn-purple { background: linear-gradient(135deg, #7B2CBF, #A855F7); }
+  .mock-btn-orange { background: linear-gradient(135deg, #E06800, #FF7A00); }
+  .mock-nav { display: flex; justify-content: space-around; padding: 8px 0;
+    border-top: 1px solid rgba(255,255,255,0.08); }
+  .mock-nav-item { text-align: center; font-size: 8px; color: #666; }
+  .mock-nav-item.active { color: #A855F7; }
+  .mock-nav-item div { width: 20px; height: 20px; margin: 0 auto 2px; display: flex;
+    align-items: center; justify-content: center; font-size: 12px; }
+  .mock-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .mock-avatar { width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #7B2CBF, #A855F7); display: flex;
+    align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+  .mock-list-name { font-size: 11px; font-weight: 600; }
+  .mock-list-detail { font-size: 9px; color: #666; }
+  .mock-badge { font-size: 8px; padding: 2px 6px; border-radius: 6px;
+    background: rgba(0,200,83,0.15); color: #00C853; font-weight: 700; margin-left: auto; }
+  .mock-badge-orange { background: rgba(255,122,0,0.15); color: #FF7A00; }
+
+  /* Telas lado a lado */
+  .screens-row { display: flex; gap: 40px; justify-content: center; align-items: flex-start; }
+  .screen-label { text-align: center; margin-top: 16px; font-size: 14px; color: #999; font-weight: 600; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 30px; }
+  .stat-box { text-align: center; padding: 24px; background: rgba(255,255,255,0.05);
+    border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); }
+  .stat-box .num { font-size: 48px; font-weight: 900;
+    background: linear-gradient(135deg, #A855F7, #FF7A00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-box .label { font-size: 13px; color: #999; margin-top: 4px; }
+
+  /* Fluxo */
+  .flow-steps { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .flow-step { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 24px;
+    text-align: center; width: 160px; border: 1px solid rgba(255,255,255,0.08); }
+  .flow-step .step-num { width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #7B2CBF, #A855F7); display: flex;
+    align-items: center; justify-content: center; margin: 0 auto 12px;
+    font-weight: 800; font-size: 16px; }
+  .flow-step h4 { font-size: 14px; margin-bottom: 6px; }
+  .flow-step p { font-size: 11px; color: #999; }
+  .flow-arrow { font-size: 24px; color: #FF7A00; }
+
+  /* Tech */
+  .tech-row { display: flex; gap: 24px; justify-content: center; margin-top: 30px; }
+  .tech-badge { padding: 16px 32px; background: rgba(255,255,255,0.05); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1); font-weight: 700; font-size: 16px; }
+
+  /* Footer */
+  .slide-footer { position: absolute; bottom: 24px; font-size: 12px; color: #444; }
+
+  /* Print */
+  @media print {
+    .slide { min-height: 100vh; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  .print-info { position: fixed; top: 0; left: 0; right: 0; background: #FF7A00; color: #000;
+    text-align: center; padding: 10px; font-weight: 700; font-size: 14px; z-index: 999; }
+  @media print { .print-info { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="print-info">Para salvar como PDF: Ctrl+P (ou Cmd+P) &rarr; Destino: Salvar como PDF &rarr; Salvar</div>
+
+<!-- ==================== SLIDE 1: CAPA ==================== -->
+<div class="slide slide-cover">
+  <div class="logo">&#9917;</div>
+  <h1>Meu Rachao Pro</h1>
+  <p class="subtitle">Gerenciamento completo do seu rachao de futebol</p>
+  <div class="version">v2.0 &mdash; Abril 2026</div>
+  <p class="slide-footer">Progressive Web App &bull; 100% Offline &bull; Mobile First</p>
+</div>
+
+<!-- ==================== SLIDE 2: O QUE E ==================== -->
+<div class="slide">
+  <div class="slide-content">
+    <h2>O que e o Meu Rachao Pro?</h2>
+    <p class="slide-sub">Um app completo para organizar seu rachao de futebol semanal</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="icon icon-purple">&#128101;</div>
+        <h3>Grupo Permanente</h3>
+        <p>Crie um rachao que dura anos. Convide jogadores com um codigo de 6 digitos. Gerencie participantes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-orange">&#9917;</div>
+        <h3>Sessoes de Jogo</h3>
+        <p>Crie jogos dentro do rachao. Jogadores confirmam presenca. Sorteie times apenas com os confirmados.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-green">&#128176;</div>
+        <h3>Financeiro Mensal</h3>
+        <p>Custo da quadra dividido automaticamente entre os participantes. Controle de pagamentos via PIX.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-blue">&#128202;</div>
+        <h3>Estatisticas e Fantasy</h3>
+        <p>Registre gols, assistencias e desarmes. Monte seu time no Fantasy e dispute com os amigos.</p>
+      </div>
+    </div>
+  </div>
+  <p class="slide-footer">Meu Rachao Pro &mdash; Apresentacao</p>
+</div>
+
+<!-- ==================== SLIDE 3: TELAS PRINCIPAIS ==================== -->
+<div class="slide">
+  <div class="slide-content">
+    <h2>Telas Principais</h2>
+    <p class="slide-sub">Interface dark moderna, otimizada para mobile</p>
+    <div class="screens-row">
+
+      <!-- Mockup: Dashboard -->
+      <div>
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="mock-header">
+              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#7B2CBF,#A855F7);display:flex;align-items:center;justify-content:center;font-size:10px">&#128100;</div>
+              <div><div style="font-size:10px;color:#999">Ola,</div><h4 style="font-size:13px">Carlos</h4></div>
+            </div>
+            <div class="mock-body">
+              <div class="mock-card">
+                <h5>RACHAO DE DOMINGO</h5>
+                <p>Quadra Society Central</p>
+                <div style="display:flex;gap:8px;margin-top:6px">
+                  <span style="font-size:9px;color:#A855F7">&#128197; DOM 20:00</span>
+                  <span style="font-size:9px;color:#00C853">12 confirmados</span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0">
+                <div style="text-align:center;padding:10px 4px;background:rgba(123,44,191,0.15);border-radius:10px">
+                  <div style="font-size:14px">&#128197;</div><div style="font-size:8px;color:#999;margin-top:2px">Rachoes</div>
+                </div>
+                <div style="text-align:center;padding:10px 4px;background:rgba(255,122,0,0.15);border-radius:10px">
+                  <div style="font-size:14px">&#128260;</div><div style="font-size:8px;color:#999;margin-top:2px">Rotacao</div>
+                </div>
+                <div style="text-align:center;padding:10px 4px;background:rgba(0,200,83,0.15);border-radius:10px">
+                  <div style="font-size:14px">&#128181;</div><div style="font-size:8px;color:#999;margin-top:2px">Pagamentos</div>
+                </div>
+                <div style="text-align:center;padding:10px 4px;background:rgba(123,44,191,0.15);border-radius:10px">
+                  <div style="font-size:14px">&#128200;</div><div style="font-size:8px;color:#999;margin-top:2px">Stats</div>
+                </div>
+                <div style="text-align:center;padding:10px 4px;background:rgba(255,215,0,0.15);border-radius:10px">
+                  <div style="font-size:14px">&#127942;</div><div style="font-size:8px;color:#999;margin-top:2px">Fantasy</div>
+                </div>
+                <div style="text-align:center;padding:10px 4px;background:rgba(123,44,191,0.15);border-radius:10px">
+                  <div style="font-size:14px">&#128101;</div><div style="font-size:8px;color:#999;margin-top:2px">Jogadores</div>
+                </div>
+              </div>
+              <div class="mock-card">
+                <h5 style="color:#A855F7">RANKING</h5>
+                <div class="mock-list-item"><div style="color:#FFD600;font-size:12px">1</div><div class="mock-avatar">TA</div><div><div class="mock-list-name">Thiago A.</div></div><div class="mock-badge">90pts</div></div>
+                <div class="mock-list-item"><div style="color:#ccc;font-size:12px">2</div><div class="mock-avatar" style="background:linear-gradient(135deg,#E06800,#FF7A00)">CS</div><div><div class="mock-list-name">Carlos S.</div></div><div class="mock-badge">85pts</div></div>
+              </div>
+            </div>
+            <div class="mock-nav">
+              <div class="mock-nav-item active"><div>&#127968;</div>Inicio</div>
+              <div class="mock-nav-item"><div>&#128197;</div>Rachoes</div>
+              <div class="mock-nav-item"><div>&#127942;</div>Fantasy</div>
+              <div class="mock-nav-item"><div>&#128200;</div>Stats</div>
+              <div class="mock-nav-item"><div>&#128100;</div>Perfil</div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-label">Dashboard</p>
+      </div>
+
+      <!-- Mockup: Detalhe do Rachao -->
+      <div>
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="mock-header">
+              <div class="back">&#8592;</div>
+              <h4>Rachao de Domingo</h4>
+            </div>
+            <div class="mock-body">
+              <div style="display:flex;gap:8px;font-size:9px;color:#999;margin-bottom:8px;flex-wrap:wrap">
+                <span>&#128197; Domingo</span>
+                <span>&#128336; 20:00</span>
+                <span>&#128205; Quadra Society</span>
+                <span>&#128101; 18 membros</span>
+              </div>
+              <div class="mock-card" style="text-align:center">
+                <p style="font-size:9px;color:#999">Codigo do Rachao</p>
+                <div style="font-size:22px;font-weight:900;color:#FF7A00;letter-spacing:4px">R4CH40</div>
+              </div>
+              <div style="display:flex;gap:4px;margin-bottom:8px">
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(168,85,247,0.2);border-radius:8px;font-size:10px;font-weight:700;color:#A855F7">Jogo</div>
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;font-size:10px;color:#999">Jogadores</div>
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;font-size:10px;color:#999">Financeiro</div>
+              </div>
+              <div class="mock-card">
+                <div style="font-size:9px;color:#FF7A00;font-weight:700">PROXIMO JOGO</div>
+                <div style="font-size:14px;font-weight:800;margin:4px 0">Domingo, 20/04</div>
+                <p style="font-size:9px;color:#999">12 confirmados de 18</p>
+              </div>
+              <div class="mock-btn mock-btn-purple">CONFIRMAR PRESENCA</div>
+              <div class="mock-btn mock-btn-orange">SORTEAR TIMES</div>
+              <div class="mock-card">
+                <h5>Confirmados (12)</h5>
+                <div class="mock-list-item"><div class="mock-avatar">CS</div><div><div class="mock-list-name">Carlos S.</div><div class="mock-list-detail">Atacante</div></div><div class="mock-badge">&#10003;</div></div>
+                <div class="mock-list-item"><div class="mock-avatar" style="background:linear-gradient(135deg,#E06800,#FF7A00)">RS</div><div><div class="mock-list-name">Rafael S.</div><div class="mock-list-detail">Meia</div></div><div class="mock-badge">&#10003;</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-label">Detalhe do Rachao</p>
+      </div>
+
+      <!-- Mockup: Financeiro -->
+      <div>
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="mock-header">
+              <div class="back">&#8592;</div>
+              <h4>Rachao de Domingo</h4>
+            </div>
+            <div class="mock-body">
+              <div style="display:flex;gap:4px;margin-bottom:8px">
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;font-size:10px;color:#999">Jogo</div>
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;font-size:10px;color:#999">Jogadores</div>
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(168,85,247,0.2);border-radius:8px;font-size:10px;font-weight:700;color:#A855F7">Financeiro</div>
+              </div>
+              <div class="mock-card">
+                <h5 style="color:#00C853">DIVISAO DO MES</h5>
+                <div style="display:flex;justify-content:space-between;margin-top:8px">
+                  <div style="text-align:center"><p style="font-size:8px;color:#999">Quadra</p><p style="font-size:14px;font-weight:800;color:#FF7A00">R$ 800</p></div>
+                  <div style="text-align:center"><p style="font-size:8px;color:#999">Membros</p><p style="font-size:14px;font-weight:800">18</p></div>
+                  <div style="text-align:center"><p style="font-size:8px;color:#999">Por pessoa</p><p style="font-size:14px;font-weight:800;color:#00C853">R$ 44,44</p></div>
+                </div>
+              </div>
+              <div class="mock-card">
+                <h5>PAGAMENTOS - ABR/2026</h5>
+                <div style="display:flex;gap:8px;margin:6px 0">
+                  <div style="flex:1;text-align:center;padding:6px;background:rgba(0,200,83,0.1);border-radius:8px"><div style="font-size:16px;font-weight:800;color:#00C853">10</div><div style="font-size:8px;color:#999">Pagos</div></div>
+                  <div style="flex:1;text-align:center;padding:6px;background:rgba(255,122,0,0.1);border-radius:8px"><div style="font-size:16px;font-weight:800;color:#FF7A00">8</div><div style="font-size:8px;color:#999">Pendentes</div></div>
+                </div>
+                <div class="mock-list-item"><div class="mock-avatar">CS</div><div><div class="mock-list-name">Carlos S.</div></div><div class="mock-badge">Pago</div></div>
+                <div class="mock-list-item"><div class="mock-avatar" style="background:#444">JM</div><div><div class="mock-list-name">Joao M.</div></div><div class="mock-badge mock-badge-orange">Pendente</div></div>
+              </div>
+              <div class="mock-card" style="border:1px solid rgba(0,200,83,0.2)">
+                <div style="text-align:center;font-size:20px;margin-bottom:4px">&#9641;</div>
+                <h5 style="text-align:center;color:#00C853">PAGUE VIA PIX</h5>
+                <p style="text-align:center;font-size:10px;color:#999">R$ 44,44</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-label">Financeiro</p>
+      </div>
+
+    </div>
+  </div>
+  <p class="slide-footer">Meu Rachao Pro &mdash; Apresentacao</p>
+</div>
+
+<!-- ==================== SLIDE 4: FUNCIONALIDADES ==================== -->
+<div class="slide">
+  <div class="slide-content">
+    <h2>Funcionalidades Completas</h2>
+    <p class="slide-sub">Tudo que voce precisa para gerenciar seu rachao</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="icon icon-purple">&#128273;</div>
+        <h3>Codigo de 6 Digitos</h3>
+        <p>Compartilhe o codigo do rachao para que outros jogadores entrem facilmente no grupo.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-orange">&#128256;</div>
+        <h3>Sorteio de Times</h3>
+        <p>Sorteio aleatorio justo. Apenas jogadores confirmados participam. Ressorteie quando quiser.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-green">&#128260;</div>
+        <h3>Rotacao Ao Vivo</h3>
+        <p>Placar em tempo real. Perdedor sai, proximo da fila entra. Regras de empate configuraveis.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-blue">&#128202;</div>
+        <h3>Estatisticas Anti-Fraude</h3>
+        <p>Jogadores registram stats que vao para validacao do admin antes de contarem oficialmente.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-yellow">&#127942;</div>
+        <h3>Fantasy League</h3>
+        <p>Monte seu time ideal. Pontuacao automatica baseada em desempenho real. Ranking e premios.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon icon-red">&#128683;</div>
+        <h3>Bloqueio por Inadimplencia</h3>
+        <p>Admin pode bloquear jogadores inadimplentes. Sistema de pedido de liberacao integrado.</p>
+      </div>
+    </div>
+  </div>
+  <p class="slide-footer">Meu Rachao Pro &mdash; Apresentacao</p>
+</div>
+
+<!-- ==================== SLIDE 5: FANTASY E ROTACAO ==================== -->
+<div class="slide">
+  <div class="slide-content">
+    <h2>Fantasy e Rotacao</h2>
+    <p class="slide-sub">Recursos exclusivos para deixar o rachao mais competitivo</p>
+    <div class="screens-row">
+
+      <!-- Mockup: Fantasy -->
+      <div>
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="mock-header" style="text-align:center;justify-content:center">
+              <h4>&#127942; Liga do Meu Rachao</h4>
+            </div>
+            <div class="mock-body">
+              <div style="display:flex;gap:4px;margin-bottom:8px">
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(168,85,247,0.2);border-radius:8px;font-size:10px;font-weight:700;color:#A855F7">Ranking</div>
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;font-size:10px;color:#999">Meu Time</div>
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;font-size:10px;color:#999">Pontos</div>
+                <div style="flex:1;padding:6px;text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;font-size:10px;color:#999">Premios</div>
+              </div>
+              <div style="display:flex;gap:4px;margin-bottom:8px;justify-content:center">
+                <span style="padding:4px 10px;border-radius:12px;font-size:9px;font-weight:700;background:rgba(168,85,247,0.3);color:#A855F7">Diario</span>
+                <span style="padding:4px 10px;border-radius:12px;font-size:9px;color:#666">Mensal</span>
+                <span style="padding:4px 10px;border-radius:12px;font-size:9px;color:#666">Geral</span>
+              </div>
+              <div class="mock-list-item"><div style="width:22px;height:22px;border-radius:50%;background:#FFD600;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000">1</div><div class="mock-avatar">TA</div><div><div class="mock-list-name">Thiago A.</div><div class="mock-list-detail">Hoje</div></div><div style="font-weight:800;font-size:12px;color:#A855F7">25pts</div></div>
+              <div class="mock-list-item"><div style="width:22px;height:22px;border-radius:50%;background:#ccc;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000">2</div><div class="mock-avatar" style="background:linear-gradient(135deg,#E06800,#FF7A00)">CS</div><div><div class="mock-list-name">Carlos S.</div><div class="mock-list-detail">Hoje</div></div><div style="font-weight:800;font-size:12px;color:#A855F7">22pts</div></div>
+              <div class="mock-list-item"><div style="width:22px;height:22px;border-radius:50%;background:#CD7F32;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000">3</div><div class="mock-avatar" style="background:linear-gradient(135deg,#009624,#00C853)">RS</div><div><div class="mock-list-name">Rafael S.</div><div class="mock-list-detail">Hoje</div></div><div style="font-weight:800;font-size:12px;color:#A855F7">18pts</div></div>
+              <div class="mock-list-item"><div style="width:22px;height:22px;border-radius:50%;background:#444;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800">4</div><div class="mock-avatar" style="background:#444">PS</div><div><div class="mock-list-name">Pedro S.</div><div class="mock-list-detail">Hoje</div></div><div style="font-weight:800;font-size:12px;color:#A855F7">15pts</div></div>
+              <div class="mock-card" style="margin-top:8px">
+                <h5>PONTUACAO - LINHA</h5>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span>Gol</span><span style="color:#00C853">+5</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span>Assistencia</span><span style="color:#00C853">+3</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span>Desarme</span><span style="color:#00C853">+2</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span>Falta</span><span style="color:#FF5252">-1</span></div>
+              </div>
+            </div>
+            <div class="mock-nav">
+              <div class="mock-nav-item"><div>&#127968;</div>Inicio</div>
+              <div class="mock-nav-item"><div>&#128197;</div>Rachoes</div>
+              <div class="mock-nav-item active"><div>&#127942;</div>Fantasy</div>
+              <div class="mock-nav-item"><div>&#128200;</div>Stats</div>
+              <div class="mock-nav-item"><div>&#128100;</div>Perfil</div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-label">Fantasy League</p>
+      </div>
+
+      <!-- Mockup: Rotacao -->
+      <div>
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="mock-header">
+              <div class="back">&#8592;</div>
+              <h4>Rotacao de Times</h4>
+            </div>
+            <div class="mock-body">
+              <div class="mock-card" style="text-align:center;border:1px solid rgba(255,122,0,0.3)">
+                <div style="font-size:8px;color:#FF7A00;font-weight:700;margin-bottom:4px">AO VIVO</div>
+                <div style="font-size:12px;font-weight:700">Rachao de Domingo</div>
+                <div style="font-size:9px;color:#999">Rodada 3</div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0">
+                <div style="text-align:center">
+                  <div style="font-size:10px;font-weight:700;color:#A855F7">Time A</div>
+                  <div style="font-size:36px;font-weight:900;color:#A855F7">2</div>
+                </div>
+                <div style="font-size:14px;color:#666;font-weight:800">VS</div>
+                <div style="text-align:center">
+                  <div style="font-size:10px;font-weight:700;color:#FF7A00">Time B</div>
+                  <div style="font-size:36px;font-weight:900;color:#FF7A00">1</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;margin-bottom:8px">
+                <div class="mock-btn mock-btn-purple" style="flex:1;font-size:9px">+ GOL Time A</div>
+                <div class="mock-btn mock-btn-orange" style="flex:1;font-size:9px">+ GOL Time B</div>
+              </div>
+              <div class="mock-card">
+                <h5 style="color:#FF7A00">PROXIMO TIME</h5>
+                <div class="mock-list-item"><div class="mock-avatar" style="background:#444">JM</div><div><div class="mock-list-name">Joao M.</div></div></div>
+                <div class="mock-list-item"><div class="mock-avatar" style="background:#444">GN</div><div><div class="mock-list-name">Gustavo N.</div></div></div>
+              </div>
+              <div class="mock-card">
+                <h5 style="color:#A855F7">FILA DE ESPERA</h5>
+                <div class="mock-list-item"><div class="mock-avatar" style="background:#333">LR</div><div><div class="mock-list-name">Leandro R.</div></div></div>
+                <div class="mock-list-item"><div class="mock-avatar" style="background:#333">FM</div><div><div class="mock-list-name">Fabio M.</div></div></div>
+              </div>
+              <div class="mock-btn mock-btn-orange">FINALIZAR PARTIDA</div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-label">Rotacao ao Vivo</p>
+      </div>
+
+    </div>
+  </div>
+  <p class="slide-footer">Meu Rachao Pro &mdash; Apresentacao</p>
+</div>
+
+<!-- ==================== SLIDE 6: FLUXO ==================== -->
+<div class="slide">
+  <div class="slide-content">
+    <h2>Fluxo do Usuario</h2>
+    <p class="slide-sub">Da criacao do rachao ate o jogo</p>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <h4>Criar Rachao</h4>
+        <p>Define dia, horario, local e custo mensal</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <h4>Convidar</h4>
+        <p>Compartilha codigo de 6 digitos</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <h4>Criar Sessao</h4>
+        <p>Admin abre o jogo do dia</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <h4>Confirmar</h4>
+        <p>Jogadores confirmam presenca</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <h4>Sortear</h4>
+        <p>Times aleatorios com confirmados</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-step">
+        <div class="step-num">6</div>
+        <h4>Jogar!</h4>
+        <p>Rotacao, stats e diversao</p>
+      </div>
+    </div>
+  </div>
+  <p class="slide-footer">Meu Rachao Pro &mdash; Apresentacao</p>
+</div>
+
+<!-- ==================== SLIDE 7: TECNOLOGIA ==================== -->
+<div class="slide">
+  <div class="slide-content">
+    <h2>Tecnologia</h2>
+    <p class="slide-sub">Simples, rapido e funciona offline</p>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="num">0</div><div class="label">Dependencias</div></div>
+      <div class="stat-box"><div class="num">4.7K</div><div class="label">Linhas de Codigo</div></div>
+      <div class="stat-box"><div class="num">20+</div><div class="label">Telas</div></div>
+      <div class="stat-box"><div class="num">100%</div><div class="label">Offline</div></div>
+    </div>
+    <div class="tech-row">
+      <div class="tech-badge">HTML5</div>
+      <div class="tech-badge">CSS3</div>
+      <div class="tech-badge">JavaScript</div>
+      <div class="tech-badge">PWA</div>
+      <div class="tech-badge">localStorage</div>
+      <div class="tech-badge">Service Worker</div>
+    </div>
+    <div style="margin-top:40px;padding:24px;background:rgba(255,255,255,0.03);border-radius:16px;border:1px solid rgba(255,255,255,0.08)">
+      <p style="font-size:16px;color:#999;line-height:1.8">
+        &#10003; Sem framework &mdash; vanilla JS puro<br>
+        &#10003; Sem backend &mdash; dados em localStorage<br>
+        &#10003; PWA instalavel no celular<br>
+        &#10003; Service Worker com cache-first<br>
+        &#10003; Design responsivo mobile-first<br>
+        &#10003; Tema dark com glassmorphism
+      </p>
+    </div>
+  </div>
+  <p class="slide-footer">Meu Rachao Pro &mdash; Apresentacao</p>
+</div>
+
+<!-- ==================== SLIDE 8: ENCERRAMENTO ==================== -->
+<div class="slide slide-cover">
+  <div class="logo" style="font-size:56px">&#9917;</div>
+  <h1>Meu Rachao Pro</h1>
+  <p class="subtitle">Organize seu rachao como um profissional</p>
+  <div style="margin-top:40px;display:flex;gap:16px">
+    <div class="tech-badge" style="border-color:rgba(168,85,247,0.3);color:#A855F7">github.com/brunovs80-lab/meu-rachao-pro</div>
+  </div>
+  <p style="margin-top:40px;color:#666;font-size:14px">Desenvolvido com &#128156; para a comunidade do rachao</p>
+</div>
+
+</body>
+</html>
