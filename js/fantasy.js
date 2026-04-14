@@ -10,22 +10,24 @@ let fantasyTeamSlots = {
 
 // ===== LOAD FANTASY =====
 function loadFantasy() {
-  // Load saved team
   const user = getCurrentUser();
-  if (user) {
-    const teams = getFantasyTeams();
-    const myTeam = teams.find(t => t.userId === user.id);
-    if (myTeam) {
-      fantasyTeamSlots = { ...myTeam.slots };
-      renderFantasyFormation();
-    }
+  if (!user || !currentRachaoId) return;
+
+  // Load saved team for this rachão
+  const teams = getFantasyTeams();
+  const myTeam = teams.find(t => t.userId === user.id && t.rachaoId === currentRachaoId);
+  if (myTeam) {
+    fantasyTeamSlots = { ...myTeam.slots };
+  } else {
+    fantasyTeamSlots = { ATK1: null, ATK2: null, MID1: null, MID2: null, DEF1: null, GK: null };
   }
+  renderFantasyFormation();
   renderFantasyRanking('daily');
 }
 
 // ===== FANTASY RANKING =====
 function renderFantasyRanking(period) {
-  const scores = getFantasyScores();
+  const scores = getFantasyScores().filter(s => s.rachaoId === currentRachaoId);
   const sorted = [...scores].sort((a, b) => {
     if (period === 'daily') return (b.daily || 0) - (a.daily || 0);
     if (period === 'monthly') return (b.monthly || 0) - (a.monthly || 0);
@@ -33,6 +35,8 @@ function renderFantasyRanking(period) {
   });
 
   const container = document.getElementById('fantasy-ranking-list');
+  if (!container) return;
+
   if (sorted.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
@@ -61,15 +65,19 @@ function renderFantasyRanking(period) {
 function openFantasyPicker(slot) {
   fantasySlotSelection = slot;
 
-  // Get confirmed players from next match
-  const matches = getMatches().filter(m => m.status !== 'done');
+  // Get confirmed players from current session
+  const rachao = getRachaoById(currentRachaoId);
   let availablePlayers = [];
 
-  if (matches.length > 0) {
-    const match = matches[0];
-    availablePlayers = match.confirmed.map(id => getPlayerById(id)).filter(Boolean);
-  } else {
-    availablePlayers = getPlayers();
+  if (currentSessionId) {
+    const session = getSessionById(currentSessionId);
+    if (session) {
+      availablePlayers = session.confirmed.map(id => getPlayerById(id)).filter(Boolean);
+    }
+  }
+
+  if (availablePlayers.length === 0 && rachao) {
+    availablePlayers = rachao.participants.map(id => getPlayerById(id)).filter(Boolean);
   }
 
   // Filter out already selected
@@ -128,7 +136,7 @@ function renderFantasyFormation() {
 
 function saveFantasyTeam() {
   const user = getCurrentUser();
-  if (!user) return;
+  if (!user || !currentRachaoId) return;
 
   const filledSlots = Object.values(fantasyTeamSlots).filter(Boolean).length;
   if (filledSlots < 3) {
@@ -137,10 +145,11 @@ function saveFantasyTeam() {
   }
 
   const teams = getFantasyTeams();
-  const existingIdx = teams.findIndex(t => t.userId === user.id);
+  const existingIdx = teams.findIndex(t => t.userId === user.id && t.rachaoId === currentRachaoId);
 
   const teamData = {
     userId: user.id,
+    rachaoId: currentRachaoId,
     name: user.name,
     slots: { ...fantasyTeamSlots },
     savedAt: new Date().toISOString()
@@ -157,18 +166,36 @@ function saveFantasyTeam() {
   addNotification({ type: 'orange', icon: 'fa-trophy', title: 'Time Fantasy salvo!', text: 'Boa sorte na Liga do Meu Rachão!' });
 }
 
-// ===== UPDATE FANTASY SCORES =====
-function updateFantasyScores(stat) {
-  const fantasyTeams = getFantasyTeams();
+// ===== UPDATE FANTASY SCORES FROM STAT =====
+function updateFantasyScoresFromStat(stat) {
+  if (!stat || !stat.rachaoId) return;
+
+  const fantasyTeams = getFantasyTeams().filter(t => t.rachaoId === stat.rachaoId);
   const scores = getFantasyScores();
+  const player = getPlayerById(stat.playerId);
+  const isGK = player && player.position === 'Goleiro';
 
   fantasyTeams.forEach(team => {
     const slots = Object.values(team.slots).filter(Boolean);
     const hasPlayer = slots.find(p => p.id === stat.playerId);
 
     if (hasPlayer) {
-      const points = (stat.goals * 10) + (stat.assists * 5);
-      let scoreEntry = scores.find(s => s.userId === team.userId);
+      let points = 0;
+      if (isGK) {
+        points += (stat.saves || 0) * POINTS.goalkeeper.save;
+        points += (stat.cleanSheets || 0) * POINTS.goalkeeper.cleanSheet;
+        points *= POINTS.goalkeeper.multiplier;
+      } else {
+        points += (stat.goals || 0) * POINTS.field.goal;
+        points += (stat.assists || 0) * POINTS.field.assist;
+        points += (stat.tackles || 0) * POINTS.field.tackle;
+        points -= (stat.fouls || 0) * Math.abs(POINTS.field.foul);
+        points -= (stat.yellows || 0) * Math.abs(POINTS.field.yellow);
+        points -= (stat.reds || 0) * Math.abs(POINTS.field.red);
+      }
+      points += POINTS.field.presence;
+
+      let scoreEntry = scores.find(s => s.userId === team.userId && s.rachaoId === stat.rachaoId);
 
       if (scoreEntry) {
         scoreEntry.points = (scoreEntry.points || 0) + points;
@@ -177,6 +204,7 @@ function updateFantasyScores(stat) {
       } else {
         scores.push({
           userId: team.userId,
+          rachaoId: stat.rachaoId,
           name: team.name,
           points,
           daily: points,
@@ -192,11 +220,13 @@ function updateFantasyScores(stat) {
 // ===== PRIZES =====
 function loadPrizes() {
   const prizes = getPrizes();
-  document.getElementById('prize-1').value = prizes.first || '';
-  document.getElementById('prize-2').value = prizes.second || '';
-  document.getElementById('prize-3').value = prizes.third || '';
+  const p1 = document.getElementById('prize-1');
+  const p2 = document.getElementById('prize-2');
+  const p3 = document.getElementById('prize-3');
+  if (p1) p1.value = prizes.first || '';
+  if (p2) p2.value = prizes.second || '';
+  if (p3) p3.value = prizes.third || '';
 
-  // Update display
   const prizeItems = document.querySelectorAll('.prize-item span');
   if (prizeItems[0]) prizeItems[0].textContent = prizes.first;
   if (prizeItems[1]) prizeItems[1].textContent = prizes.second;

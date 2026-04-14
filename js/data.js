@@ -8,6 +8,7 @@ const DB = {
 function getCurrentUser() { return DB.get('currentUser'); }
 function setCurrentUser(user) { DB.set('currentUser', user); }
 
+// ===== PLAYERS =====
 function getPlayers() { return DB.get('players') || []; }
 function savePlayers(p) { DB.set('players', p); }
 function getPlayerById(id) { return getPlayers().find(p => p.id === id); }
@@ -17,44 +18,62 @@ function updatePlayer(id, data) {
   if (i !== -1) { ps[i] = { ...ps[i], ...data }; savePlayers(ps); }
 }
 
-function getMatches() { return DB.get('matches') || []; }
-function saveMatches(m) { DB.set('matches', m); }
-function getMatchById(id) { return getMatches().find(m => m.id === id); }
-function updateMatch(id, data) {
-  const ms = getMatches();
-  const i = ms.findIndex(m => m.id === id);
-  if (i !== -1) { ms[i] = { ...ms[i], ...data }; saveMatches(ms); }
+// ===== RACHÕES (grupos permanentes) =====
+function getRachaos() { return DB.get('rachaos') || []; }
+function saveRachaos(r) { DB.set('rachaos', r); }
+function getRachaoById(id) { return getRachaos().find(r => r.id === id); }
+function updateRachao(id, data) {
+  const rs = getRachaos();
+  const i = rs.findIndex(r => r.id === id);
+  if (i !== -1) { rs[i] = { ...rs[i], ...data }; saveRachaos(rs); }
 }
 
-function getPayments() { return DB.get('payments') || []; }
-function savePayments(p) { DB.set('payments', p); }
+// ===== SESSÕES (dias de jogo) =====
+function getSessions() { return DB.get('sessions') || []; }
+function saveSessions(s) { DB.set('sessions', s); }
+function getSessionById(id) { return getSessions().find(s => s.id === id); }
+function getSessionsByRachao(rachaoId) {
+  return getSessions().filter(s => s.rachaoId === rachaoId);
+}
+function updateSession(id, data) {
+  const ss = getSessions();
+  const i = ss.findIndex(s => s.id === id);
+  if (i !== -1) { ss[i] = { ...ss[i], ...data }; saveSessions(ss); }
+}
 
+// ===== COBRANÇA MENSAL =====
+function getMonthlyBilling() { return DB.get('monthlyBilling') || []; }
+function saveMonthlyBilling(b) { DB.set('monthlyBilling', b); }
+
+// ===== STATS =====
 function getPendingStats() { return DB.get('pendingStats') || []; }
 function savePendingStats(s) { DB.set('pendingStats', s); }
-
 function getValidatedStats() { return DB.get('validatedStats') || []; }
 function saveValidatedStats(s) { DB.set('validatedStats', s); }
 
+// ===== FANTASY =====
 function getFantasyTeams() { return DB.get('fantasyTeams') || []; }
 function saveFantasyTeams(t) { DB.set('fantasyTeams', t); }
-
 function getFantasyScores() { return DB.get('fantasyScores') || []; }
 function saveFantasyScores(s) { DB.set('fantasyScores', s); }
 
+// ===== ROTATION =====
 function getRotationState() { return DB.get('rotationState') || null; }
 function saveRotationState(s) { DB.set('rotationState', s); }
 
+// ===== BLOQUEIO / LIBERAÇÃO =====
 function getReleaseRequests() { return DB.get('releaseRequests') || []; }
 function saveReleaseRequests(r) { DB.set('releaseRequests', r); }
-
 function getBlockedPlayers() { return DB.get('blockedPlayers') || []; }
 function saveBlockedPlayers(b) { DB.set('blockedPlayers', b); }
 
+// ===== PRÊMIOS =====
 function getPrizes() {
   return DB.get('prizes') || { first: 'Isenção de mensalidade', second: '50% de desconto na próxima', third: 'Escolhe o time no sorteio', type: 'exemption' };
 }
 function savePrizesData(p) { DB.set('prizes', p); }
 
+// ===== NOTIFICAÇÕES =====
 function getNotifications() { return DB.get('notifications') || []; }
 function addNotification(notif) {
   const ns = getNotifications();
@@ -62,7 +81,7 @@ function addNotification(notif) {
   DB.set('notifications', ns.slice(0, 50));
 }
 
-// Offline sync queue
+// ===== OFFLINE SYNC =====
 function getSyncQueue() { return DB.get('syncQueue') || []; }
 function addToSyncQueue(action) {
   const q = getSyncQueue();
@@ -71,7 +90,7 @@ function addToSyncQueue(action) {
 }
 function clearSyncQueue() { DB.set('syncQueue', []); }
 
-// Utility
+// ===== UTILITÁRIOS =====
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
 function formatPhone(phone) {
@@ -91,15 +110,118 @@ function formatDateBR(s) {
 
 function getMonthAbbr(i) { return ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][i]; }
 
+function getDayName(i) { return ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][i]; }
+function getDayNameShort(i) { return ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][i]; }
+
+function getCurrentMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function getNextDayOfWeek(dayOfWeek) {
+  const today = new Date();
+  const todayDay = today.getDay();
+  let diff = dayOfWeek - todayDay;
+  if (diff <= 0) diff += 7;
+  const next = new Date(today);
+  next.setDate(today.getDate() + diff);
+  return next.toISOString().split('T')[0];
+}
+
 // Fantasy point system
 const POINTS = {
   field: { goal: 5, assist: 3, tackle: 2, win: 2, presence: 1, foul: -1, yellow: -2, red: -4 },
   goalkeeper: { save: 1, cleanSheet: 5, win: 3, presence: 1, goalConceded: -0.5, multiplier: 1.3 }
 };
 
-// Seed demo data
+// ===== MIGRAÇÃO DE DADOS ANTIGOS =====
+function migrateToRachaoModel() {
+  if (DB.get('migrationVersion') >= 2) return;
+
+  const oldMatches = DB.get('matches');
+  if (oldMatches && oldMatches.length > 0) {
+    const rachaos = [];
+    const sessions = [];
+    const billing = [];
+
+    oldMatches.forEach(m => {
+      const d = new Date(m.date + 'T12:00:00');
+      const rachao = {
+        id: m.id,
+        code: m.code || generateId().slice(-6).toUpperCase(),
+        name: m.name,
+        location: m.location,
+        dayOfWeek: d.getDay(),
+        time: m.time,
+        playersPerTeam: m.playersPerTeam,
+        tieRule: m.tieRule || 'playing_leaves',
+        monthlyVenueCost: (m.price || 0) * (m.confirmed ? m.confirmed.length : 0),
+        pixKey: m.pixKey || '',
+        participants: m.participants || m.confirmed || [],
+        createdBy: m.createdBy,
+        status: 'active'
+      };
+      rachaos.push(rachao);
+
+      const session = {
+        id: 's_' + m.id,
+        rachaoId: m.id,
+        date: m.date,
+        confirmed: m.confirmed || [],
+        waiting: m.waiting || [],
+        teams: m.teams,
+        leftover: m.leftover || [],
+        status: m.status === 'done' ? 'done' : 'open'
+      };
+      sessions.push(session);
+
+      // Migrate payments to billing
+      const oldPayments = (DB.get('payments') || []).filter(p => p.matchId === m.id);
+      if (oldPayments.length > 0) {
+        const month = m.date ? m.date.substring(0, 7) : getCurrentMonth();
+        billing.push({
+          id: 'bill_' + m.id,
+          rachaoId: m.id,
+          month: month,
+          totalCost: rachao.monthlyVenueCost,
+          participantCount: rachao.participants.length,
+          perPerson: rachao.participants.length > 0 ? rachao.monthlyVenueCost / rachao.participants.length : 0,
+          payments: rachao.participants.map(pid => {
+            const oldPay = oldPayments.find(p => p.playerId === pid);
+            return { playerId: pid, status: oldPay ? oldPay.status : 'pending', paidAt: null };
+          })
+        });
+      }
+    });
+
+    saveRachaos(rachaos);
+    saveSessions(sessions);
+    saveMonthlyBilling(billing);
+
+    // Migrate stats to use sessionId
+    const pending = getPendingStats().map(s => ({ ...s, sessionId: 's_' + s.matchId, rachaoId: s.matchId }));
+    savePendingStats(pending);
+    const validated = getValidatedStats().map(s => ({ ...s, sessionId: 's_' + s.matchId, rachaoId: s.matchId }));
+    saveValidatedStats(validated);
+
+    // Migrate rotation state
+    const rot = getRotationState();
+    if (rot && rot.matchId) {
+      rot.sessionId = 's_' + rot.matchId;
+      rot.rachaoId = rot.matchId;
+      saveRotationState(rot);
+    }
+
+    DB.remove('matches');
+    DB.remove('payments');
+  }
+
+  DB.set('migrationVersion', 2);
+}
+
+// ===== SEED DEMO DATA =====
 function seedDemoData() {
-  if (getPlayers().length > 0) return;
+  if (getRachaos().length > 0 || getPlayers().length > 0) return;
 
   const demoPlayers = [
     { id:'p1', name:'Carlos Silva', phone:'11999990001', position:'Atacante', goals:12, assists:5, tackles:3, fouls:2, yellows:1, reds:0, saves:0, cleanSheets:0, matches:8, blocked:false },
@@ -123,51 +245,60 @@ function seedDemoData() {
   ];
   savePlayers(demoPlayers);
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const dateStr = tomorrow.toISOString().split('T')[0];
+  const nextSunday = getNextDayOfWeek(0);
 
-  const demoMatches = [{
-    id: 'm1',
+  const demoRachaos = [{
+    id: 'r1',
     code: 'R4CH40',
-    name: 'Rachão de Quinta',
-    date: dateStr,
-    time: '20:00',
+    name: 'Rachão de Domingo',
     location: 'Quadra Society Central',
+    dayOfWeek: 0,
+    time: '20:00',
     playersPerTeam: 5,
     tieRule: 'playing_leaves',
-    paymentType: 'per_match',
-    price: 25,
+    monthlyVenueCost: 800,
     pixKey: '11999990001',
-    confirmed: ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18'],
     participants: ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18'],
+    createdBy: 'p1',
+    status: 'active'
+  }];
+  saveRachaos(demoRachaos);
+
+  const demoSessions = [{
+    id: 's1',
+    rachaoId: 'r1',
+    date: nextSunday,
+    confirmed: ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12'],
     waiting: [],
     teams: null,
-    status: 'open',
-    createdBy: 'admin'
+    leftover: [],
+    status: 'open'
   }];
-  saveMatches(demoMatches);
+  saveSessions(demoSessions);
 
-  const demoPayments = [
-    { id:'pay1', matchId:'m1', playerId:'p1', status:'paid', amount:25 },
-    { id:'pay2', matchId:'m1', playerId:'p2', status:'paid', amount:25 },
-    { id:'pay3', matchId:'m1', playerId:'p3', status:'pending', amount:25 },
-    { id:'pay4', matchId:'m1', playerId:'p4', status:'paid', amount:25 },
-    { id:'pay5', matchId:'m1', playerId:'p5', status:'pending', amount:25 },
-    { id:'pay6', matchId:'m1', playerId:'p6', status:'paid', amount:25 },
-    { id:'pay7', matchId:'m1', playerId:'p7', status:'paid', amount:25 },
-    { id:'pay8', matchId:'m1', playerId:'p8', status:'pending', amount:25 },
-    { id:'pay9', matchId:'m1', playerId:'p9', status:'paid', amount:25 },
-    { id:'pay10', matchId:'m1', playerId:'p10', status:'paid', amount:25 },
-  ];
-  savePayments(demoPayments);
+  // Monthly billing: R$800 / 18 participantes = R$44,44 por pessoa
+  const month = getCurrentMonth();
+  const demoBilling = [{
+    id: 'bill1',
+    rachaoId: 'r1',
+    month: month,
+    totalCost: 800,
+    participantCount: 18,
+    perPerson: Math.round(800 / 18 * 100) / 100,
+    payments: demoRachaos[0].participants.map((pid, i) => ({
+      playerId: pid,
+      status: i < 10 ? 'paid' : 'pending',
+      paidAt: i < 10 ? new Date().toISOString() : null
+    }))
+  }];
+  saveMonthlyBilling(demoBilling);
 
   const demoFantasy = [
-    { userId:'p1', name:'Carlos Silva', points:145, monthly:85, daily:22 },
-    { userId:'p2', name:'Rafael Santos', points:132, monthly:78, daily:18 },
-    { userId:'p5', name:'Thiago Almeida', points:128, monthly:90, daily:25 },
-    { userId:'p7', name:'Pedro Souza', points:115, monthly:65, daily:15 },
-    { userId:'p6', name:'Diego Ferreira', points:98, monthly:55, daily:12 },
+    { userId:'p1', rachaoId:'r1', name:'Carlos Silva', points:145, monthly:85, daily:22 },
+    { userId:'p2', rachaoId:'r1', name:'Rafael Santos', points:132, monthly:78, daily:18 },
+    { userId:'p5', rachaoId:'r1', name:'Thiago Almeida', points:128, monthly:90, daily:25 },
+    { userId:'p7', rachaoId:'r1', name:'Pedro Souza', points:115, monthly:65, daily:15 },
+    { userId:'p6', rachaoId:'r1', name:'Diego Ferreira', points:98, monthly:55, daily:12 },
   ];
   saveFantasyScores(demoFantasy);
 }

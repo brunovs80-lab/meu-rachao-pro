@@ -97,13 +97,14 @@
       </div>
     </div>
     <div class="page-body">
-      <div class="card card-highlight" id="next-match-card">
-        <div class="card-badge">PRÓXIMO RACHÃO</div>
-        <h3 id="next-match-title">Nenhum rachão agendado</h3>
-        <p id="next-match-info" class="text-muted"></p>
-        <div class="card-actions" id="next-match-actions" style="display:none">
-          <button class="btn-primary btn-sm" onclick="navigateTo('match-detail')">VER DETALHES</button>
-          <button class="btn-outline btn-sm" id="btn-confirm-presence">CONFIRMAR</button>
+      <div id="dash-rachaos-list"></div>
+      <div id="dash-no-rachao" class="card card-highlight" style="text-align:center;display:none">
+        <i class="fas fa-futbol" style="font-size:36px;color:var(--orange);margin-bottom:8px"></i>
+        <h3>Nenhum rachão</h3>
+        <p class="text-muted">Crie ou entre em um rachão para começar</p>
+        <div class="card-actions" style="margin-top:12px">
+          <button class="btn-primary btn-sm" onclick="navigateTo('match-create')">CRIAR</button>
+          <button class="btn-orange btn-sm" onclick="navigateTo('match-join')">ENTRAR</button>
         </div>
       </div>
 
@@ -194,52 +195,54 @@
     <div class="page-body">
       <div class="form-group">
         <label>Nome do Rachão</label>
-        <input type="text" id="match-name" class="input-field" placeholder="Ex: Rachão de Quinta">
+        <input type="text" id="rachao-name" class="input-field" placeholder="Ex: Rachão de Quinta">
       </div>
       <div class="form-group">
-        <label>Data</label>
-        <input type="date" id="match-date" class="input-field">
+        <label>Dia da Semana</label>
+        <select id="rachao-day" class="input-field">
+          <option value="0">Domingo</option>
+          <option value="1">Segunda-feira</option>
+          <option value="2">Terça-feira</option>
+          <option value="3">Quarta-feira</option>
+          <option value="4">Quinta-feira</option>
+          <option value="5">Sexta-feira</option>
+          <option value="6">Sábado</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Horário</label>
-        <input type="time" id="match-time" class="input-field">
+        <input type="time" id="rachao-time" class="input-field">
       </div>
       <div class="form-group">
         <label>Local</label>
-        <input type="text" id="match-location" class="input-field" placeholder="Ex: Quadra do Parque">
+        <input type="text" id="rachao-location" class="input-field" placeholder="Ex: Quadra Society Central">
       </div>
       <div class="form-group">
         <label>Jogadores de linha por time</label>
         <div class="number-input">
-          <button onclick="adjustNumber('match-players', -1)">-</button>
-          <input type="number" id="match-players" value="5" min="3" max="11" class="input-field">
-          <button onclick="adjustNumber('match-players', 1)">+</button>
+          <button onclick="adjustNumber('rachao-players', -1)">-</button>
+          <input type="number" id="rachao-players" value="5" min="3" max="11" class="input-field">
+          <button onclick="adjustNumber('rachao-players', 1)">+</button>
         </div>
         <p class="text-muted hint">+ 1 goleiro dedicado por time = <strong id="total-per-team">6</strong> por time</p>
       </div>
       <div class="form-group">
         <label>Regra de Empate (Rotação)</label>
-        <select id="match-tie-rule" class="input-field">
+        <select id="rachao-tie-rule" class="input-field">
           <option value="playing_leaves">Sai quem estava jogando</option>
           <option value="newest_leaves">Sai quem entrou depois</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Tipo de cobrança</label>
-        <select id="match-payment-type" class="input-field">
-          <option value="per_match">Avulso (por rachão)</option>
-          <option value="monthly">Mensalidade</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Valor (R$)</label>
-        <input type="number" id="match-price" class="input-field" placeholder="0.00" step="0.01">
+        <label>Custo mensal da quadra (R$)</label>
+        <input type="number" id="rachao-venue-cost" class="input-field" placeholder="Ex: 800" step="1">
+        <p class="text-muted hint">Será dividido entre todos os participantes</p>
       </div>
       <div class="form-group">
         <label>Chave Pix</label>
-        <input type="text" id="match-pix" class="input-field" placeholder="CPF, email ou telefone">
+        <input type="text" id="rachao-pix" class="input-field" placeholder="CPF, email ou telefone">
       </div>
-      <button id="btn-create-match" class="btn-primary btn-large">CRIAR RACHÃO</button>
+      <button id="btn-create-rachao" class="btn-primary btn-large">CRIAR RACHÃO</button>
     </div>
   </div>
 
@@ -259,73 +262,162 @@
         <label>Código do Rachão</label>
         <input type="text" id="join-code" class="input-field" placeholder="Ex: 482A7F" maxlength="6" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;text-transform:uppercase">
       </div>
-      <button class="btn-orange btn-large" onclick="joinMatchByCode()"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
+      <button class="btn-orange btn-large" onclick="joinRachaoByCode()"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
     </div>
   </div>
 
-  <!-- ========== DETALHE DO RACHÃO ========== -->
+  <!-- ========== DETALHE DO RACHÃO (com tabs) ========== -->
   <div id="page-match-detail" class="page">
     <div class="page-header">
       <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
-      <h2 id="detail-match-title">Rachão</h2>
-      <button class="btn-icon" onclick="showMatchMenu()"><i class="fas fa-ellipsis-vertical"></i></button>
+      <h2 id="detail-rachao-title">Rachão</h2>
     </div>
     <div class="page-body">
+      <!-- Info do Rachão -->
       <div class="match-info-bar">
-        <div class="info-item"><i class="fas fa-calendar"></i><span id="detail-date"></span></div>
+        <div class="info-item"><i class="fas fa-calendar-day"></i><span id="detail-day"></span></div>
         <div class="info-item"><i class="fas fa-clock"></i><span id="detail-time"></span></div>
         <div class="info-item"><i class="fas fa-location-dot"></i><span id="detail-location"></span></div>
-        <div class="info-item"><i class="fas fa-users"></i><span id="detail-format"></span></div>
+        <div class="info-item"><i class="fas fa-users"></i><span id="detail-members-count"></span></div>
       </div>
 
-      <div class="card" id="match-code-card" style="display:none">
+      <div class="card" id="rachao-code-card">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <p class="text-muted" style="font-size:12px;margin-bottom:4px"><i class="fas fa-ticket"></i> Código do Rachão</p>
-            <span id="detail-match-code" style="font-size:28px;font-weight:900;letter-spacing:6px;color:var(--orange)"></span>
+            <span id="detail-rachao-code" style="font-size:28px;font-weight:900;letter-spacing:6px;color:var(--orange)"></span>
           </div>
-          <button class="btn-outline btn-sm" onclick="shareMatchCode()" style="flex-shrink:0"><i class="fas fa-share-nodes"></i> Compartilhar</button>
+          <button class="btn-outline btn-sm" onclick="shareRachaoCode()" style="flex-shrink:0"><i class="fas fa-share-nodes"></i> Compartilhar</button>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title-row">
-          <h3>Confirmados (<span id="confirmed-count">0</span>/<span id="max-players">10</span>)</h3>
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="rachao-game">Jogo</button>
+        <button class="tab" data-tab="rachao-members">Jogadores</button>
+        <button class="tab" data-tab="rachao-finance">Financeiro</button>
+      </div>
+
+      <!-- TAB: Próximo Jogo -->
+      <div id="rachao-game-content">
+        <div class="card card-highlight" id="session-card">
+          <div class="card-badge" id="session-badge">PRÓXIMO JOGO</div>
+          <h3 id="session-date-display">Nenhuma sessão agendada</h3>
+          <p class="text-muted" id="session-info"></p>
         </div>
-        <div class="progress-bar"><div class="progress-fill" id="confirmed-progress"></div></div>
-        <div id="confirmed-list" class="player-list"></div>
-        <button id="btn-toggle-presence" class="btn-primary" style="margin-top:12px">CONFIRMAR PRESENÇA</button>
-      </div>
 
-      <div class="card" id="participants-not-confirmed" style="display:none">
-        <h3><i class="fas fa-user-clock" style="color:var(--text-muted);margin-right:6px"></i>Aguardando Confirmação</h3>
-        <div id="participants-list" class="player-list"></div>
-      </div>
-
-      <div class="card" id="waiting-list-card" style="display:none">
-        <h3><i class="fas fa-clock" style="color:var(--orange);margin-right:6px"></i>Lista de Espera</h3>
-        <div id="waiting-list" class="player-list"></div>
-      </div>
-
-      <div class="action-buttons">
-        <button class="btn-orange btn-large" id="btn-draw-teams" onclick="drawTeams()">
-          <i class="fas fa-shuffle"></i> SORTEAR TIMES
+        <button class="btn-orange btn-large" id="btn-create-session" onclick="createSession()" style="width:100%;margin-bottom:12px;display:none">
+          <i class="fas fa-plus"></i> CRIAR JOGO
         </button>
-      </div>
 
-      <div id="teams-result" style="display:none">
-        <h3 style="margin-bottom:12px"><i class="fas fa-shirt" style="color:var(--purple-light)"></i> Times Sorteados</h3>
-        <div class="teams-container" id="teams-container"></div>
-        <div class="action-buttons" style="margin-top:12px">
-          <button class="btn-outline" onclick="drawTeams()" style="width:100%"><i class="fas fa-shuffle"></i> SORTEAR NOVAMENTE</button>
-          <button id="btn-start-rotation" class="btn-orange btn-large" style="margin-top:8px;width:100%;display:none"><i class="fas fa-rotate"></i> INICIAR ROTAÇÃO</button>
+        <div id="session-active-area" style="display:none">
+          <div class="card">
+            <div class="card-title-row">
+              <h3>Confirmados (<span id="confirmed-count">0</span>/<span id="max-players">10</span>)</h3>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="confirmed-progress"></div></div>
+            <div id="confirmed-list" class="player-list"></div>
+            <button id="btn-toggle-presence" class="btn-primary" style="margin-top:12px">CONFIRMAR PRESENÇA</button>
+          </div>
+
+          <div class="card" id="waiting-list-card" style="display:none">
+            <h3><i class="fas fa-clock" style="color:var(--orange);margin-right:6px"></i>Lista de Espera</h3>
+            <div id="waiting-list" class="player-list"></div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn-orange btn-large" id="btn-draw-teams" onclick="drawTeams()">
+              <i class="fas fa-shuffle"></i> SORTEAR TIMES
+            </button>
+          </div>
+
+          <div id="teams-result" style="display:none">
+            <h3 style="margin-bottom:12px"><i class="fas fa-shirt" style="color:var(--purple-light)"></i> Times Sorteados</h3>
+            <div class="teams-container" id="teams-container"></div>
+            <div class="action-buttons" style="margin-top:12px">
+              <button class="btn-outline" onclick="drawTeams()" style="width:100%"><i class="fas fa-shuffle"></i> SORTEAR NOVAMENTE</button>
+              <button id="btn-start-rotation" class="btn-orange btn-large" style="margin-top:8px;width:100%;display:none"><i class="fas fa-rotate"></i> INICIAR ROTAÇÃO</button>
+            </div>
+          </div>
+
+          <div class="action-buttons" style="margin-top:8px;gap:8px">
+            <button class="btn-outline" onclick="navigateTo('register-stats')" style="width:100%">
+              <i class="fas fa-chart-bar"></i> REGISTRAR ESTATÍSTICAS
+            </button>
+            <button class="btn-outline" style="width:100%;border-color:var(--red);color:var(--red)" onclick="endSession()">
+              <i class="fas fa-flag-checkered"></i> ENCERRAR JOGO
+            </button>
+          </div>
+        </div>
+
+        <!-- Histórico de sessões -->
+        <div class="card" style="margin-top:12px">
+          <h3><i class="fas fa-history" style="color:var(--text-muted);margin-right:6px"></i>Jogos Anteriores</h3>
+          <div id="sessions-history-list"></div>
+          <div id="sessions-history-empty" class="text-muted" style="padding:12px;font-size:13px;text-align:center">Nenhum jogo anterior</div>
         </div>
       </div>
 
-      <div class="action-buttons" style="margin-top:8px">
-        <button class="btn-outline" onclick="navigateTo('register-stats')" style="width:100%">
-          <i class="fas fa-chart-bar"></i> REGISTRAR ESTATÍSTICAS
-        </button>
+      <!-- TAB: Jogadores do Rachão -->
+      <div id="rachao-members-content" style="display:none">
+        <div class="card card-highlight" style="text-align:center">
+          <h3 id="members-total">0 participantes</h3>
+          <p class="text-muted">Membros fixos deste rachão</p>
+        </div>
+        <div id="rachao-members-list" class="player-list"></div>
+      </div>
+
+      <!-- TAB: Financeiro -->
+      <div id="rachao-finance-content" style="display:none">
+        <div class="card card-highlight">
+          <h3><i class="fas fa-calculator" style="color:var(--green);margin-right:6px"></i>Divisão do Mês</h3>
+          <div style="display:flex;justify-content:space-between;margin-top:12px">
+            <div style="text-align:center;flex:1">
+              <p class="text-muted" style="font-size:11px">Custo da quadra</p>
+              <p style="font-size:20px;font-weight:800;color:var(--orange)" id="finance-total-cost">R$ 0</p>
+            </div>
+            <div style="text-align:center;flex:1">
+              <p class="text-muted" style="font-size:11px">Participantes</p>
+              <p style="font-size:20px;font-weight:800" id="finance-members">0</p>
+            </div>
+            <div style="text-align:center;flex:1">
+              <p class="text-muted" style="font-size:11px">Valor por pessoa</p>
+              <p style="font-size:20px;font-weight:800;color:var(--green)" id="finance-per-person">R$ 0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row">
+            <h3>Pagamentos</h3>
+            <span class="text-muted" id="finance-month"></span>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <div style="flex:1;text-align:center;padding:8px;background:rgba(0,200,83,0.1);border-radius:var(--radius)">
+              <p style="font-size:18px;font-weight:800;color:var(--green)" id="finance-paid-count">0</p>
+              <p class="text-muted" style="font-size:11px">Pagos</p>
+            </div>
+            <div style="flex:1;text-align:center;padding:8px;background:rgba(255,122,0,0.1);border-radius:var(--radius)">
+              <p style="font-size:18px;font-weight:800;color:var(--orange)" id="finance-pending-count">0</p>
+              <p class="text-muted" style="font-size:11px">Pendentes</p>
+            </div>
+          </div>
+          <div id="finance-payments-list" class="player-list"></div>
+        </div>
+
+        <!-- PIX Info -->
+        <div class="card pix-card">
+          <div class="pix-header">
+            <div class="pix-qr-icon"><i class="fas fa-qrcode"></i></div>
+            <h3>Pague via Pix</h3>
+            <p class="text-muted" id="finance-pix-amount"></p>
+          </div>
+          <div class="pix-copy-group">
+            <input type="text" class="input-field" id="finance-pix-key" readonly>
+            <button class="btn-primary" onclick="copyFinancePix()"><i class="fas fa-copy"></i></button>
+          </div>
+          <button class="btn-orange btn-large" style="margin-top:12px;width:100%" onclick="notifyPayment()"><i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO</button>
+        </div>
       </div>
     </div>
   </div>
@@ -405,67 +497,12 @@
       <h2>Pagamentos</h2>
     </div>
     <div class="page-body">
-      <div class="tabs">
-        <button class="tab active" data-tab="pay-overview">Visão Geral</button>
-        <button class="tab" data-tab="pay-pix">Pagar via Pix</button>
-      </div>
-
-      <div id="pay-overview-content">
-        <div class="card card-highlight">
-          <div class="payment-summary">
-            <div>
-              <span class="text-muted">Total</span>
-              <h2 id="payment-total">R$ 0,00</h2>
-            </div>
-            <div>
-              <span class="text-muted">Recebido</span>
-              <h2 id="payment-received" class="text-green">R$ 0,00</h2>
-            </div>
-            <div>
-              <span class="text-muted">Pendente</span>
-              <h2 id="payment-pending" class="text-orange">R$ 0,00</h2>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Jogadores</h3>
-          <div id="payment-players-list" class="player-list"></div>
-        </div>
-      </div>
-
-      <div id="pay-pix-content" style="display:none">
-        <div class="card pix-card">
-          <div class="pix-header">
-            <i class="fas fa-qrcode pix-qr-icon"></i>
-            <h3>Pagar via Pix</h3>
-          </div>
-          <div class="pix-qr-container">
-            <canvas id="pix-qr-canvas" width="200" height="200"></canvas>
-            <p class="text-muted">Escaneie o QR Code</p>
-          </div>
-          <div class="pix-divider"><span>ou</span></div>
-          <div class="form-group">
-            <label>Pix Copia e Cola</label>
-            <div class="pix-copy-group">
-              <input type="text" id="pix-copy-text" class="input-field" readonly>
-              <button class="btn-primary btn-sm" onclick="copyPix()"><i class="fas fa-copy"></i></button>
-            </div>
-          </div>
-          <div class="pix-info">
-            <div class="info-item"><i class="fas fa-user"></i><span id="pix-recipient">-</span></div>
-            <div class="info-item"><i class="fas fa-money-bill"></i><span id="pix-amount">R$ 0,00</span></div>
-          </div>
-          <button class="btn-primary btn-large" onclick="notifyPayment()"><i class="fas fa-check"></i> JÁ PAGUEI</button>
-        </div>
+      <div id="payments-rachao-list"></div>
+      <div id="payments-empty" class="empty-state" style="display:none">
+        <i class="fas fa-money-bill-wave"></i>
+        <p>Nenhum rachão com cobrança</p>
       </div>
     </div>
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
-      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
-      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
-      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
-    </nav>
   </div>
 
   <!-- ========== ESTATÍSTICAS ========== -->
@@ -496,7 +533,7 @@
   <div id="page-register-stats" class="page">
     <div class="page-header">
       <button class="btn-back" onclick="navigateTo('match-detail')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Registrar Estatísticas</h2>
+      <h2>Registrar Stats</h2>
     </div>
     <div class="page-body">
       <div class="card card-highlight">
@@ -695,7 +732,7 @@
       <div class="modal-menu">
         <button onclick="closeModal('match-menu');navigateTo('register-stats')"><i class="fas fa-chart-bar"></i> Registrar Estatísticas</button>
         <button onclick="closeModal('match-menu');navigateTo('rotation')"><i class="fas fa-rotate"></i> Rotação de Times</button>
-        <button onclick="closeModal('match-menu');endMatch()"><i class="fas fa-flag-checkered"></i> Encerrar Rachão</button>
+        <button onclick="closeModal('match-menu');endSession()"><i class="fas fa-flag-checkered"></i> Encerrar Jogo</button>
       </div>
     </div>
   </div>
