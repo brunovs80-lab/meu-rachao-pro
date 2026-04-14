@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function registerSW() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 }
 
@@ -94,13 +94,18 @@ async function handleVerify() {
   const code = Array.from(document.querySelectorAll('.code-digit')).map(d => d.value).join('');
   if (code.length < 4) { showToast('Digite o código completo'); return; }
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
-  const existing = await apiLogin(phone);
-  if (existing) {
-    apiSetCurrentUser(existing);
-    navigateTo('dashboard');
-    showToast('Bem-vindo de volta, ' + existing.name + '!');
-  } else {
-    navigateTo('register');
+  try {
+    const existing = await apiLogin(phone);
+    if (existing) {
+      apiSetCurrentUser(existing);
+      navigateTo('dashboard');
+      showToast('Bem-vindo de volta, ' + existing.name + '!');
+    } else {
+      navigateTo('register');
+    }
+  } catch (err) {
+    console.error('Erro no login:', err);
+    showToast('Erro de conexão. Tente novamente.');
   }
 }
 

@@ -1,13 +1,18 @@
 // ========== SUPABASE API LAYER ==========
 // Usa @supabase/supabase-js via CDN (carregado no index.html)
 
-let supabase;
+let _supabaseClient;
 
 function initSupabase() {
-  if (!supabase) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  if (!_supabaseClient) {
+    // CDN UMD expõe window.supabase com createClient dentro
+    const lib = window.supabase;
+    if (!lib) { console.error('Supabase SDK não carregou'); return null; }
+    const createFn = lib.createClient || (lib.supabase && lib.supabase.createClient);
+    if (!createFn) { console.error('createClient não encontrado no SDK'); return null; }
+    _supabaseClient = createFn(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
-  return supabase;
+  return _supabaseClient;
 }
 
 // ===== PLAYERS =====
