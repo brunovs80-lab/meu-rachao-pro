@@ -4,25 +4,25 @@
 -- ============================================================
 
 -- Jogadores
-INSERT INTO players (id, name, phone, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches) VALUES
-  ('p1','Carlos Silva','11999990001','Atacante',12,5,3,2,1,0,0,0,8),
-  ('p2','Rafael Santos','11999990002','Meia',8,10,6,1,0,0,0,0,10),
-  ('p3','Bruno Costa','11999990003','Zagueiro',2,1,15,4,2,0,0,0,9),
-  ('p4','Lucas Oliveira','11999990004','Goleiro',0,0,0,0,0,0,35,4,10),
-  ('p5','Thiago Almeida','11999990005','Atacante',15,3,2,3,1,0,0,0,10),
-  ('p6','Diego Ferreira','11999990006','Volante',3,7,18,2,1,0,0,0,7),
-  ('p7','Pedro Souza','11999990007','Meia',6,8,5,1,0,0,0,0,9),
-  ('p8','André Lima','11999990008','Lateral',1,4,10,2,1,0,0,0,8),
-  ('p9','Marcos Pereira','11999990009','Atacante',9,2,1,5,2,1,0,0,6),
-  ('p10','Felipe Rocha','11999990010','Goleiro',0,1,0,0,0,0,28,3,10),
-  ('p11','João Mendes','11999990011','Zagueiro',1,0,12,3,1,0,0,0,5),
-  ('p12','Gustavo Nunes','11999990012','Meia',4,6,4,1,0,0,0,0,7),
-  ('p13','Leandro Ramos','11999990013','Atacante',7,4,2,2,0,0,0,0,6),
-  ('p14','Fábio Martins','11999990014','Volante',2,3,14,3,2,0,0,0,8),
-  ('p15','Rodrigo Neves','11999990015','Lateral',0,5,8,1,0,0,0,0,7),
-  ('p16','Vinícius Souza','11999990016','Meia',5,9,3,0,0,0,0,0,9),
-  ('p17','Henrique Dias','11999990017','Zagueiro',1,0,16,4,3,0,0,0,8),
-  ('p18','Matheus Lopes','11999990018','Goleiro',0,0,0,0,0,0,22,2,5)
+INSERT INTO players (id, name, phone, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, password) VALUES
+  ('p1','Carlos Silva','11999990001','Atacante',12,5,3,2,1,0,0,0,8,'123456'),
+  ('p2','Rafael Santos','11999990002','Meia',8,10,6,1,0,0,0,0,10,'123456'),
+  ('p3','Bruno Costa','11999990003','Zagueiro',2,1,15,4,2,0,0,0,9,'123456'),
+  ('p4','Lucas Oliveira','11999990004','Goleiro',0,0,0,0,0,0,35,4,10,'123456'),
+  ('p5','Thiago Almeida','11999990005','Atacante',15,3,2,3,1,0,0,0,10,'123456'),
+  ('p6','Diego Ferreira','11999990006','Volante',3,7,18,2,1,0,0,0,7,'123456'),
+  ('p7','Pedro Souza','11999990007','Meia',6,8,5,1,0,0,0,0,9,'123456'),
+  ('p8','André Lima','11999990008','Lateral',1,4,10,2,1,0,0,0,8,'123456'),
+  ('p9','Marcos Pereira','11999990009','Atacante',9,2,1,5,2,1,0,0,6,'123456'),
+  ('p10','Felipe Rocha','11999990010','Goleiro',0,1,0,0,0,0,28,3,10,'123456'),
+  ('p11','João Mendes','11999990011','Zagueiro',1,0,12,3,1,0,0,0,5,'123456'),
+  ('p12','Gustavo Nunes','11999990012','Meia',4,6,4,1,0,0,0,0,7,'123456'),
+  ('p13','Leandro Ramos','11999990013','Atacante',7,4,2,2,0,0,0,0,6,'123456'),
+  ('p14','Fábio Martins','11999990014','Volante',2,3,14,3,2,0,0,0,8,'123456'),
+  ('p15','Rodrigo Neves','11999990015','Lateral',0,5,8,1,0,0,0,0,7,'123456'),
+  ('p16','Vinícius Souza','11999990016','Meia',5,9,3,0,0,0,0,0,9,'123456'),
+  ('p17','Henrique Dias','11999990017','Zagueiro',1,0,16,4,3,0,0,0,8,'123456'),
+  ('p18','Matheus Lopes','11999990018','Goleiro',0,0,0,0,0,0,22,2,5,'123456')
 ON CONFLICT (id) DO NOTHING;
 
 -- Rachão

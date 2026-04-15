@@ -42,31 +42,32 @@
     </div>
   </div>
 
-  <!-- ========== VERIFICAÇÃO SMS ========== -->
-  <div id="page-verify" class="page">
+  <!-- ========== TELA DE SENHA ========== -->
+  <div id="page-password" class="page">
     <div class="page-header">
       <button class="btn-back" onclick="navigateTo('login')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Verificação</h2>
+      <h2>Senha</h2>
     </div>
     <div class="page-body center-content">
-      <i class="fas fa-shield-halved verify-icon"></i>
-      <h3>Código de verificação</h3>
-      <p class="text-muted">Enviamos um SMS para<br><span id="verify-phone"></span></p>
+      <i class="fas fa-lock verify-icon"></i>
+      <h3 id="password-title">Digite sua senha</h3>
+      <p class="text-muted">Telefone: <span id="password-phone"></span></p>
       <div class="code-inputs">
-        <input type="text" maxlength="1" class="code-digit" data-index="0">
-        <input type="text" maxlength="1" class="code-digit" data-index="1">
-        <input type="text" maxlength="1" class="code-digit" data-index="2">
-        <input type="text" maxlength="1" class="code-digit" data-index="3">
+        <input type="password" maxlength="1" class="code-digit" data-index="0">
+        <input type="password" maxlength="1" class="code-digit" data-index="1">
+        <input type="password" maxlength="1" class="code-digit" data-index="2">
+        <input type="password" maxlength="1" class="code-digit" data-index="3">
+        <input type="password" maxlength="1" class="code-digit" data-index="4">
+        <input type="password" maxlength="1" class="code-digit" data-index="5">
       </div>
-      <button id="btn-verify" class="btn-primary">VERIFICAR</button>
-      <p class="text-muted">Não recebeu? <a href="#" id="resend-code">Reenviar código</a></p>
+      <button id="btn-password" class="btn-primary">ENTRAR</button>
     </div>
   </div>
 
   <!-- ========== CADASTRO ========== -->
   <div id="page-register" class="page">
     <div class="page-header">
-      <button class="btn-back" onclick="navigateTo('verify')"><i class="fas fa-arrow-left"></i></button>
+      <button class="btn-back" onclick="navigateTo('login')"><i class="fas fa-arrow-left"></i></button>
       <h2>Cadastro</h2>
     </div>
     <div class="page-body center-content">
@@ -82,6 +83,17 @@
         <option value="Meia">Meia</option>
         <option value="Atacante">Atacante</option>
       </select>
+      <div class="form-group">
+        <label>Crie sua senha (6 dígitos)</label>
+        <div class="code-inputs">
+          <input type="password" maxlength="1" class="code-digit register-pwd" data-index="0">
+          <input type="password" maxlength="1" class="code-digit register-pwd" data-index="1">
+          <input type="password" maxlength="1" class="code-digit register-pwd" data-index="2">
+          <input type="password" maxlength="1" class="code-digit register-pwd" data-index="3">
+          <input type="password" maxlength="1" class="code-digit register-pwd" data-index="4">
+          <input type="password" maxlength="1" class="code-digit register-pwd" data-index="5">
+        </div>
+      </div>
       <button id="btn-register" class="btn-primary">COMEÇAR</button>
     </div>
   </div>
@@ -114,46 +126,13 @@
         </div>
       </div>
 
-      <div class="menu-grid">
-        <div class="menu-item" onclick="navigateTo('matches')">
-          <div class="menu-icon"><i class="fas fa-calendar-days"></i></div>
-          <span>Rachões</span>
-        </div>
-        <div class="menu-item" onclick="navigateTo('rotation')">
-          <div class="menu-icon" style="background:linear-gradient(135deg,#E06800,var(--orange))"><i class="fas fa-rotate"></i></div>
-          <span>Rotação</span>
-        </div>
-        <div class="menu-item" onclick="navigateTo('payments')">
-          <div class="menu-icon" style="background:linear-gradient(135deg,#00C853,#009624)"><i class="fas fa-money-bill-wave"></i></div>
-          <span>Pagamentos</span>
-        </div>
-        <div class="menu-item" onclick="navigateTo('stats')">
-          <div class="menu-icon"><i class="fas fa-chart-line"></i></div>
-          <span>Estatísticas</span>
-        </div>
-        <div class="menu-item" onclick="navigateTo('fantasy')">
-          <div class="menu-icon fantasy-icon"><i class="fas fa-trophy"></i></div>
-          <span>Fantasy</span>
-        </div>
-        <div class="menu-item" onclick="navigateTo('players')">
-          <div class="menu-icon"><i class="fas fa-users"></i></div>
-          <span>Jogadores</span>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title-row">
-          <h3><i class="fas fa-ranking-star" style="color:var(--orange);margin-right:6px"></i>Ranking</h3>
-          <a href="#" onclick="navigateTo('stats')" class="link-more">Ver tudo</a>
-        </div>
-        <div id="dash-ranking"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-primary btn-large" style="flex:1" onclick="navigateTo('match-create')"><i class="fas fa-plus"></i> CRIAR RACHÃO</button>
+        <button class="btn-orange btn-large" style="flex:1" onclick="navigateTo('match-join')"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
       </div>
     </div>
     <nav class="bottom-nav">
       <button class="nav-item active" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
-      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
-      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
       <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
     </nav>
   </div>
@@ -183,13 +162,6 @@
         </div>
       </div>
     </div>
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item active" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
-      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
-      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
-      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
-    </nav>
   </div>
 
   <!-- ========== CRIAR RACHÃO ========== -->
@@ -298,10 +270,12 @@
       </div>
 
       <!-- Tabs -->
-      <div class="tabs">
+      <div class="tabs" style="flex-wrap:wrap">
         <button class="tab active" data-tab="rachao-game">Jogo</button>
         <button class="tab" data-tab="rachao-members">Jogadores</button>
         <button class="tab" data-tab="rachao-finance">Financeiro</button>
+        <button class="tab" data-tab="rachao-stats">Stats</button>
+        <button class="tab" data-tab="rachao-ranking">Ranking</button>
       </div>
 
       <!-- TAB: Próximo Jogo -->
@@ -343,6 +317,35 @@
             <div class="action-buttons" style="margin-top:12px">
               <button class="btn-outline" onclick="drawTeams()" style="width:100%"><i class="fas fa-shuffle"></i> SORTEAR NOVAMENTE</button>
               <button id="btn-start-rotation" class="btn-orange btn-large" style="margin-top:8px;width:100%;display:none"><i class="fas fa-rotate"></i> INICIAR ROTAÇÃO</button>
+            </div>
+          </div>
+
+          <!-- Cronômetro -->
+          <div class="card" id="timer-card">
+            <h3><i class="fas fa-stopwatch" style="color:var(--orange);margin-right:6px"></i>Cronômetro da Partida</h3>
+            <div id="timer-setup" style="margin-top:12px">
+              <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+                <label style="font-size:13px">Tempo (min):</label>
+                <div class="number-input" style="width:auto">
+                  <button onclick="adjustNumber('timer-minutes',-1)">-</button>
+                  <input type="number" id="timer-minutes" value="10" min="1" max="60" class="input-field" style="width:60px;text-align:center">
+                  <button onclick="adjustNumber('timer-minutes',1)">+</button>
+                </div>
+              </div>
+              <button class="btn-orange btn-large" style="width:100%;margin-top:12px" onclick="startTimer()"><i class="fas fa-play"></i> INICIAR PARTIDA</button>
+            </div>
+            <div id="timer-running" style="display:none;text-align:center">
+              <div id="timer-display" style="font-size:64px;font-weight:900;color:var(--orange);margin:16px 0;font-variant-numeric:tabular-nums">10:00</div>
+              <div id="timer-progress-bar" class="progress-bar" style="margin-bottom:12px"><div class="progress-fill" id="timer-progress" style="width:100%;background:var(--orange)"></div></div>
+              <div style="display:flex;gap:8px">
+                <button class="btn-outline" style="flex:1" onclick="pauseTimer()" id="btn-pause-timer"><i class="fas fa-pause"></i> PAUSAR</button>
+                <button class="btn-outline" style="flex:1;border-color:var(--red);color:var(--red)" onclick="stopTimer()"><i class="fas fa-stop"></i> PARAR</button>
+              </div>
+            </div>
+            <div id="timer-finished" style="display:none;text-align:center">
+              <div style="font-size:48px;margin:12px 0">⏰</div>
+              <h3 style="color:var(--orange)">TEMPO ESGOTADO!</h3>
+              <button class="btn-primary" style="margin-top:12px" onclick="resetTimer()">NOVA PARTIDA</button>
             </div>
           </div>
 
@@ -424,6 +427,27 @@
           </div>
           <button class="btn-orange btn-large" style="margin-top:12px;width:100%" onclick="notifyPayment()"><i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO</button>
         </div>
+      </div>
+
+      <!-- TAB: Stats do Rachão -->
+      <div id="rachao-stats-content" style="display:none">
+        <div class="tabs">
+          <button class="tab active" data-tab="r-ranking">Ranking</button>
+          <button class="tab" data-tab="r-artilharia">Artilharia</button>
+          <button class="tab" data-tab="r-assists">Assist.</button>
+          <button class="tab" data-tab="r-desarmes">Desarmes</button>
+        </div>
+        <div id="rachao-stats-list" class="list"></div>
+      </div>
+
+      <!-- TAB: Ranking Fantasy do Rachão -->
+      <div id="rachao-ranking-content" style="display:none">
+        <div class="fantasy-period-toggle">
+          <button class="pill active" data-period="daily">Diário</button>
+          <button class="pill" data-period="monthly">Mensal</button>
+          <button class="pill" data-period="alltime">Geral</button>
+        </div>
+        <div id="rachao-fantasy-list" class="list"></div>
       </div>
     </div>
   </div>
@@ -526,13 +550,6 @@
       </div>
       <div id="stats-content" class="list"></div>
     </div>
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
-      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
-      <button class="nav-item active" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
-      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
-    </nav>
   </div>
 
   <!-- ========== REGISTRAR STATS ========== -->
@@ -711,13 +728,6 @@
         </div>
       </div>
     </div>
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
-      <button class="nav-item active" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
-      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
-      <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
-    </nav>
   </div>
 
   <!-- ========== MODAL PICKER ========== -->
@@ -780,13 +790,6 @@
         <button class="profile-menu-item text-red" onclick="logout()"><i class="fas fa-right-from-bracket"></i><span>Sair</span><i class="fas fa-chevron-right"></i></button>
       </div>
     </div>
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
-      <button class="nav-item" onclick="navigateTo('matches')"><i class="fas fa-calendar-days"></i><span>Rachões</span></button>
-      <button class="nav-item" onclick="navigateTo('fantasy')"><i class="fas fa-trophy"></i><span>Fantasy</span></button>
-      <button class="nav-item" onclick="navigateTo('stats')"><i class="fas fa-chart-line"></i><span>Stats</span></button>
-      <button class="nav-item active" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
-    </nav>
   </div>
 
   <!-- ========== ADMIN ========== -->

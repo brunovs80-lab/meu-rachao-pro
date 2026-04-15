@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS players (
   matches INTEGER DEFAULT 0,
   blocked BOOLEAN DEFAULT FALSE,
   is_admin BOOLEAN DEFAULT FALSE,
+  password TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

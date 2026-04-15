@@ -25,7 +25,7 @@ async function apiGetPlayers() {
 async function apiGetPlayerById(id) {
   const { data, error } = await initSupabase().from('players').select('*').eq('id', id).single();
   if (error) throw error;
-  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
+  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets, password: data.password };
 }
 
 async function apiCreatePlayer(player) {
@@ -33,10 +33,11 @@ async function apiCreatePlayer(player) {
   const { data, error } = await initSupabase().from('players').insert({
     id, name: player.name, phone: player.phone,
     position: player.position || 'Meia',
-    is_admin: player.isAdmin || false
+    is_admin: player.isAdmin || false,
+    password: player.password || null
   }).select().single();
   if (error) throw error;
-  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
+  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets, password: data.password };
 }
 
 async function apiUpdatePlayer(id, fields) {
@@ -55,6 +56,7 @@ async function apiUpdatePlayer(id, fields) {
   if (fields.matches !== undefined) mapped.matches = fields.matches;
   if (fields.blocked !== undefined) mapped.blocked = fields.blocked;
   if (fields.isAdmin !== undefined) mapped.is_admin = fields.isAdmin;
+  if (fields.password !== undefined) mapped.password = fields.password;
 
   const { data, error } = await initSupabase().from('players').update(mapped).eq('id', id).select().single();
   if (error) throw error;
@@ -64,7 +66,7 @@ async function apiUpdatePlayer(id, fields) {
 async function apiGetPlayerByPhone(phone) {
   const { data } = await initSupabase().from('players').select('*').eq('phone', phone).maybeSingle();
   if (!data) return null;
-  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
+  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets, password: data.password };
 }
 
 async function apiLogin(phone) {

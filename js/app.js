@@ -1,10 +1,14 @@
 // ========== MEU RACHÃO PRO - MAIN APP (API VERSION) ==========
 let currentRachaoId = null;
 let currentSessionId = null;
+let timerInterval = null;
+let timerSeconds = 0;
+let timerTotalSeconds = 0;
+let timerPaused = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   initPhoneInput();
-  initCodeInputs();
+  initPasswordInputs();
   initTabs();
   initRachaoForm();
   registerSW();
@@ -72,37 +76,57 @@ function initPhoneInput() {
   input.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
 }
 
-function handleLogin() {
+async function handleLogin() {
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
   if (phone.length < 10) { showToast('Digite um número válido'); return; }
-  document.getElementById('verify-phone').textContent = formatPhone(phone);
-  navigateTo('verify');
-}
-
-// ===== VERIFICATION =====
-function initCodeInputs() {
-  const digits = document.querySelectorAll('.code-digit');
-  digits.forEach((inp, i) => {
-    inp.addEventListener('input', e => { if (e.target.value && i < digits.length - 1) digits[i+1].focus(); });
-    inp.addEventListener('keydown', e => { if (e.key === 'Backspace' && !e.target.value && i > 0) digits[i-1].focus(); });
-  });
-  document.getElementById('btn-verify').addEventListener('click', handleVerify);
-  document.getElementById('resend-code').addEventListener('click', e => { e.preventDefault(); showToast('Código reenviado!'); });
-}
-
-async function handleVerify() {
-  const code = Array.from(document.querySelectorAll('.code-digit')).map(d => d.value).join('');
-  if (code.length < 4) { showToast('Digite o código completo'); return; }
-  const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
+  document.getElementById('password-phone').textContent = formatPhone(phone);
   try {
     const existing = await apiLogin(phone);
     if (existing) {
-      apiSetCurrentUser(existing);
-      navigateTo('dashboard');
-      showToast('Bem-vindo de volta, ' + existing.name + '!');
+      document.getElementById('password-title').textContent = 'Digite sua senha';
+      document.getElementById('btn-password').textContent = 'ENTRAR';
+      document.getElementById('btn-password').onclick = handlePasswordLogin;
     } else {
       navigateTo('register');
+      return;
     }
+  } catch (err) {
+    console.error('Erro ao verificar telefone:', err);
+    showToast('Erro de conexão. Tente novamente.');
+    return;
+  }
+  navigateTo('password');
+  setTimeout(() => document.querySelector('#page-password .code-digit')?.focus(), 100);
+}
+
+// ===== PASSWORD INPUT =====
+function initPasswordInputs() {
+  // Configurar navegação de dígitos para cada grupo separadamente
+  document.querySelectorAll('.code-inputs').forEach(group => {
+    const digits = group.querySelectorAll('.code-digit');
+    digits.forEach((inp, i) => {
+      inp.addEventListener('input', e => { if (e.target.value && i < digits.length - 1) digits[i+1].focus(); });
+      inp.addEventListener('keydown', e => { if (e.key === 'Backspace' && !e.target.value && i > 0) digits[i-1].focus(); });
+    });
+  });
+  document.getElementById('btn-password').addEventListener('click', handlePasswordLogin);
+}
+
+function getPasswordFromInputs(container) {
+  return Array.from(container.querySelectorAll('.code-digit')).map(d => d.value).join('');
+}
+
+async function handlePasswordLogin() {
+  const password = getPasswordFromInputs(document.getElementById('page-password'));
+  if (password.length < 6) { showToast('Digite a senha de 6 dígitos'); return; }
+  const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
+  try {
+    const existing = await apiLogin(phone);
+    if (!existing) { showToast('Usuário não encontrado'); return; }
+    if (existing.password !== password) { showToast('Senha incorreta'); return; }
+    apiSetCurrentUser(existing);
+    navigateTo('dashboard');
+    showToast('Bem-vindo de volta, ' + existing.name + '!');
   } catch (err) {
     console.error('Erro no login:', err);
     showToast('Erro de conexão. Tente novamente.');
@@ -114,12 +138,15 @@ document.getElementById('btn-register').addEventListener('click', async () => {
   const name = document.getElementById('register-name').value.trim().substring(0, 50);
   const position = document.getElementById('register-position').value;
   if (!name) { showToast('Digite seu nome'); return; }
+  const password = getPasswordFromInputs(document.getElementById('page-register'));
+  if (password.length < 6) { showToast('Crie uma senha de 6 dígitos'); return; }
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
 
   const allPlayers = await apiGetPlayers();
   const newUser = await apiCreatePlayer({
     name, phone, position: position || 'Meia',
-    isAdmin: allPlayers.length === 0
+    isAdmin: allPlayers.length === 0,
+    password
   });
 
   apiSetCurrentUser(newUser);
@@ -157,22 +184,6 @@ async function loadDashboard() {
     }).join('');
   }
 
-  await loadDashRanking();
-}
-
-async function loadDashRanking() {
-  const players = (await apiGetPlayers()).map(p => ({
-    ...p, totalPts: calcPlayerPoints(p)
-  })).sort((a,b) => b.totalPts - a.totalPts).slice(0, 5);
-
-  document.getElementById('dash-ranking').innerHTML = players.map((p, i) => {
-    const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-    return `<div class="ranking-item">
-      <div class="ranking-pos ${cls}">${i+1}</div>
-      <div class="ranking-info"><div class="ranking-name">${escapeHtml(p.name)}</div><div class="ranking-detail">${escapeHtml(p.position)} • ${p.matches} jogos</div></div>
-      <div class="ranking-value">${p.totalPts}pts</div>
-    </div>`;
-  }).join('');
 }
 
 function calcPlayerPoints(p) {
@@ -367,9 +378,9 @@ async function loadRachaoGameTab(rachao, user) {
 
 async function loadSessionPresence(session, rachao, user) {
   const teamSize = rachao.playersPerTeam + 1;
-  const maxDisplay = teamSize * 2;
+  const maxDisplay = rachao.participants.length;
   document.getElementById('confirmed-count').textContent = session.confirmed.length;
-  document.getElementById('max-players').textContent = maxDisplay + '+';
+  document.getElementById('max-players').textContent = maxDisplay;
   const pct = Math.min(100, (session.confirmed.length / maxDisplay) * 100);
   document.getElementById('confirmed-progress').style.width = pct + '%';
 
@@ -580,8 +591,8 @@ async function drawTeams() {
   if (!session || !rachao) return;
 
   const teamSize = rachao.playersPerTeam + 1;
-  if (session.confirmed.length < teamSize * 2) {
-    showToast(`Precisa de pelo menos ${teamSize * 2} jogadores`);
+  if (session.confirmed.length < 4) {
+    showToast('Precisa de pelo menos 4 jogadores');
     return;
   }
 
@@ -594,23 +605,28 @@ async function drawTeams() {
 
   const gks = shuffled.filter(p => p.position === 'Goleiro');
   const field = shuffled.filter(p => p.position !== 'Goleiro');
-  const numTeams = Math.floor(shuffled.length / teamSize);
+  // Todos jogam — distribuir em times iguais
+  const numTeams = Math.max(2, Math.round(shuffled.length / teamSize));
   const teams = [];
 
   for (let t = 0; t < numTeams; t++) {
-    const gk = gks[t] || field.shift();
+    const gk = gks[t] || null;
     const teamPlayers = [];
-    for (let i = 0; i < rachao.playersPerTeam; i++) {
-      const next = field.shift();
-      if (next && next !== gk) teamPlayers.push(next);
-    }
     teams.push({ goalkeeper: gk, players: teamPlayers, name: getTeamName(t) });
   }
 
-  const leftover = field.filter(p => !teams.some(t => t.goalkeeper?.id === p.id || t.players.some(tp => tp.id === p.id)));
+  // Distribuir goleiros que não foram alocados como goleiro nas vagas de campo
+  const extraGks = gks.slice(numTeams);
+  const allField = [...field, ...extraGks];
+
+  // Distribuir jogadores de campo nos times via round-robin
+  allField.forEach((p, i) => {
+    const teamIdx = i % numTeams;
+    teams[teamIdx].players.push(p);
+  });
 
   await apiUpdateSession(currentSessionId, {
-    teams, leftover: leftover.map(p => p.id),
+    teams, leftover: [],
     confirmed: session.confirmed, waiting: session.waiting
   });
 
@@ -621,7 +637,7 @@ async function drawTeams() {
   await loadRachaoDetail();
 }
 
-function getTeamName(idx) { return ['Time A','Time B','Time C','Time D','Time E','Time F'][idx] || 'Time ' + (idx+1); }
+function getTeamName(idx) { return 'Time ' + (idx + 1); }
 function getTeamClass(idx) { return ['team-a','team-b','team-c','team-d'][idx % 4]; }
 
 function renderAllTeams(teams) {
@@ -1052,11 +1068,6 @@ async function startRotation() {
     state.queue.push({ name: t.name, players: teamPlayers });
   }
 
-  if (session.leftover && session.leftover.length > 0) {
-    const leftovers = (await Promise.all(session.leftover.map(id => apiGetPlayerById(id).catch(() => null)))).filter(Boolean);
-    if (leftovers.length > 0) state.queue.push({ name: 'Reservas', players: leftovers });
-  }
-
   await apiSaveRotationState(state);
   showToast('Rotação iniciada!');
   navigateTo('rotation');
@@ -1188,9 +1199,12 @@ function initTabs() {
       if (tab === 'fantasy-team') { hide('fantasy-ranking-content'); show('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
       if (tab === 'fantasy-scoring') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); show('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
       if (tab === 'fantasy-prizes') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); show('fantasy-prizes-content'); loadPrizes(); }
-      if (tab === 'rachao-game') { show('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); }
-      if (tab === 'rachao-members') { hide('rachao-game-content'); show('rachao-members-content'); hide('rachao-finance-content'); }
-      if (tab === 'rachao-finance') { hide('rachao-game-content'); hide('rachao-members-content'); show('rachao-finance-content'); }
+      if (tab === 'rachao-game') { show('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
+      if (tab === 'rachao-members') { hide('rachao-game-content'); show('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
+      if (tab === 'rachao-finance') { hide('rachao-game-content'); hide('rachao-members-content'); show('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
+      if (tab === 'rachao-stats') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); show('rachao-stats-content'); hide('rachao-ranking-content'); loadRachaoStats('r-ranking'); }
+      if (tab === 'rachao-ranking') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); show('rachao-ranking-content'); loadRachaoFantasyRanking('daily'); }
+      if (['r-ranking','r-artilharia','r-assists','r-desarmes'].includes(tab)) loadRachaoStats(tab);
     }
     if (e.target.classList.contains('pill')) {
       e.target.closest('.fantasy-period-toggle').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
@@ -1198,6 +1212,111 @@ function initTabs() {
       renderFantasyRanking(e.target.dataset.period);
     }
   });
+}
+
+// ===== TIMER (cronômetro regressivo) =====
+function startTimer() {
+  const minutes = parseInt(document.getElementById('timer-minutes').value) || 10;
+  timerTotalSeconds = minutes * 60;
+  timerSeconds = timerTotalSeconds;
+  timerPaused = false;
+  document.getElementById('timer-setup').style.display = 'none';
+  document.getElementById('timer-running').style.display = 'block';
+  document.getElementById('timer-finished').style.display = 'none';
+  document.getElementById('btn-pause-timer').innerHTML = '<i class="fas fa-pause"></i> PAUSAR';
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    if (!timerPaused) {
+      timerSeconds--;
+      updateTimerDisplay();
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        document.getElementById('timer-running').style.display = 'none';
+        document.getElementById('timer-finished').style.display = 'block';
+        showToast('Tempo esgotado!');
+      }
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  document.getElementById('timer-display').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  const pct = timerTotalSeconds > 0 ? (timerSeconds / timerTotalSeconds) * 100 : 0;
+  document.getElementById('timer-progress').style.width = pct + '%';
+  if (pct < 20) document.getElementById('timer-progress').style.background = 'var(--red)';
+  else if (pct < 50) document.getElementById('timer-progress').style.background = 'var(--yellow)';
+  else document.getElementById('timer-progress').style.background = 'var(--orange)';
+}
+
+function pauseTimer() {
+  timerPaused = !timerPaused;
+  const btn = document.getElementById('btn-pause-timer');
+  btn.innerHTML = timerPaused ? '<i class="fas fa-play"></i> RETOMAR' : '<i class="fas fa-pause"></i> PAUSAR';
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  resetTimer();
+}
+
+function resetTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  timerSeconds = 0;
+  timerPaused = false;
+  document.getElementById('timer-setup').style.display = 'block';
+  document.getElementById('timer-running').style.display = 'none';
+  document.getElementById('timer-finished').style.display = 'none';
+}
+
+// ===== RACHÃO STATS (dentro do rachão) =====
+async function loadRachaoStats(tab) {
+  const rachao = await apiGetRachaoById(currentRachaoId);
+  if (!rachao) return;
+  const playerPromises = rachao.participants.map(pid => apiGetPlayerById(pid).catch(() => null));
+  const players = (await Promise.all(playerPromises)).filter(Boolean);
+  let sorted, valueLabel;
+  if (tab === 'r-ranking') {
+    sorted = players.map(p => ({...p, pts: calcPlayerPoints(p)})).sort((a,b) => b.pts - a.pts);
+    valueLabel = p => p.pts + 'pts';
+  } else if (tab === 'r-artilharia') {
+    sorted = [...players].sort((a,b) => b.goals - a.goals);
+    valueLabel = p => p.goals + ' gols';
+  } else if (tab === 'r-assists') {
+    sorted = [...players].sort((a,b) => b.assists - a.assists);
+    valueLabel = p => p.assists + ' assist.';
+  } else {
+    sorted = [...players].sort((a,b) => (b.tackles||0) - (a.tackles||0));
+    valueLabel = p => (p.tackles||0) + ' desarmes';
+  }
+  document.getElementById('rachao-stats-list').innerHTML = sorted.map((p, i) => {
+    const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    return `<div class="ranking-item">
+      <div class="ranking-pos ${cls}">${i+1}</div>
+      <div class="ranking-info"><div class="ranking-name">${escapeHtml(p.name)}</div><div class="ranking-detail">${escapeHtml(p.position)} • ${p.matches} jogos</div></div>
+      <div class="ranking-value">${valueLabel(p)}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadRachaoFantasyRanking(period) {
+  const scores = await apiGetFantasyScores();
+  const filtered = scores.filter(s => s.rachao_id === currentRachaoId || s.rachaoId === currentRachaoId);
+  let sorted;
+  if (period === 'daily') sorted = filtered.sort((a,b) => (b.daily||0) - (a.daily||0));
+  else if (period === 'monthly') sorted = filtered.sort((a,b) => (b.monthly||0) - (a.monthly||0));
+  else sorted = filtered.sort((a,b) => (b.points||0) - (a.points||0));
+  document.getElementById('rachao-fantasy-list').innerHTML = sorted.map((s, i) => {
+    const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const val = period === 'daily' ? s.daily : period === 'monthly' ? s.monthly : s.points;
+    return `<div class="ranking-item">
+      <div class="ranking-pos ${cls}">${i+1}</div>
+      <div class="ranking-info"><div class="ranking-name">${escapeHtml(s.name)}</div></div>
+      <div class="ranking-value">${val||0}pts</div>
+    </div>`;
+  }).join('');
 }
 
 // ===== UTILITIES =====
