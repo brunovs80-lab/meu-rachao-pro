@@ -1169,9 +1169,10 @@ async function endRotation() {
   if (!state) return;
   state.active = false;
   await apiSaveRotationState(state);
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   await apiAddNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Rachão encerrado!', text: `${state.rounds.length} rodadas jogadas` });
   showToast('Rachão encerrado!');
-  await loadRotation();
+  navigateTo('dashboard');
 }
 
 function renderRotationHistory(rounds) {

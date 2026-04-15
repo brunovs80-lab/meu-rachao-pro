@@ -721,16 +721,16 @@ select.input-field {
 
 .code-inputs {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: center;
   margin: 20px 0;
 }
 
 .code-digit {
-  width: 56px;
-  height: 64px;
+  width: 42px;
+  height: 48px;
   text-align: center;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   background: var(--bg-card);
   border: 2px solid var(--border);
