@@ -93,6 +93,47 @@ function clearSyncQueue() { DB.set('syncQueue', []); }
 // ===== UTILITÁRIOS =====
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
+// Loading state para botoes
+function setLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) {
+    btn._originalText = btn.innerHTML;
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+  } else {
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+    if (btn._originalText) btn.innerHTML = btn._originalText;
+  }
+}
+
+// Skeleton placeholder para listas
+function showListSkeleton(containerId, count) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = Array(count || 3).fill('<div class="skeleton"></div>').join('');
+}
+
+// Debounce
+function debounce(fn, delay) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// Throttle para prevenir double-click
+function throttleBtn(btn, fn, delay) {
+  if (!btn) return fn;
+  return async function(...args) {
+    if (btn.classList.contains('btn-throttled')) return;
+    btn.classList.add('btn-throttled');
+    try { await fn.apply(this, args); }
+    finally { setTimeout(() => btn.classList.remove('btn-throttled'), delay || 1000); }
+  };
+}
+
 function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
@@ -273,7 +314,7 @@ function seedDemoData() {
     id: 's1',
     rachaoId: 'r1',
     date: nextSunday,
-    confirmed: ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12'],
+    confirmed: ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18'],
     waiting: [],
     teams: null,
     leftover: [],

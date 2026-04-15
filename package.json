@@ -10,7 +10,13 @@
     "start": "node server/index.js",
     "dev": "node server/index.js",
     "test": "jest --verbose",
-    "test:coverage": "jest --coverage --verbose"
+    "test:coverage": "jest --coverage --verbose",
+    "build": "node scripts/build-web.js",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:android": "npm run build && npx cap sync android && npx cap open android",
+    "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
+    "cap:build:android": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
+    "cap:build:aab": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease"
   },
   "repository": {
     "type": "git",
@@ -29,9 +35,12 @@
     "jest-environment-jsdom": "^30.3.0"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0",
     "@supabase/supabase-js": "^2.103.0",
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.9.0",
     "cors": "^2.8.6",
     "express": "^5.2.1"

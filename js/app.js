@@ -1,4 +1,6 @@
-// ========== MEU RACHÃO PRO - MAIN APP (API VERSION) ==========
+// ========== MEU RACHÃO PRO - MAIN APP ==========
+// Modules: auth.js, rotation.js, admin.js, fantasy.js
+
 let currentRachaoId = null;
 let currentSessionId = null;
 let timerInterval = null;
@@ -11,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPasswordInputs();
   initTabs();
   initRachaoForm();
+  initHistory();
   registerSW();
   initOfflineDetection();
   await checkAuth();
@@ -36,11 +39,33 @@ async function checkAuth() {
   if (apiGetCurrentUser()) navigateTo('dashboard');
 }
 
-// ===== NAVIGATION =====
-function navigateTo(page) {
+// ===== NAVIGATION WITH HISTORY API =====
+function navigateTo(page, pushState) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const el = document.getElementById('page-' + page);
-  if (el) { el.classList.add('active'); window.scrollTo(0, 0); onPageLoad(page); }
+  if (el) {
+    el.classList.add('active');
+    window.scrollTo(0, 0);
+    if (pushState !== false) {
+      history.pushState({ page, rachaoId: currentRachaoId, sessionId: currentSessionId }, '', '#' + page);
+    }
+    onPageLoad(page);
+  }
+}
+
+function initHistory() {
+  window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.page) {
+      currentRachaoId = e.state.rachaoId || null;
+      currentSessionId = e.state.sessionId || null;
+      navigateTo(e.state.page, false);
+    }
+  });
+  // Set initial state
+  const hash = location.hash.replace('#', '');
+  if (hash && document.getElementById('page-' + hash)) {
+    history.replaceState({ page: hash }, '', '#' + hash);
+  }
 }
 
 function onPageLoad(page) {
@@ -64,103 +89,13 @@ function onPageLoad(page) {
   if (handlers[page]) handlers[page]();
 }
 
-// ===== PHONE INPUT =====
-function initPhoneInput() {
-  const input = document.getElementById('phone-input');
-  input.addEventListener('input', e => {
-    let d = e.target.value.replace(/\D/g, '');
-    if (d.length > 11) d = d.slice(0, 11);
-    e.target.value = formatPhone(d);
-  });
-  document.getElementById('btn-login').addEventListener('click', handleLogin);
-  input.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
-}
-
-async function handleLogin() {
-  const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
-  if (phone.length < 10) { showToast('Digite um número válido'); return; }
-  document.getElementById('password-phone').textContent = formatPhone(phone);
-  try {
-    const existing = await apiLogin(phone);
-    if (existing) {
-      document.getElementById('password-title').textContent = 'Digite sua senha';
-      document.getElementById('btn-password').textContent = 'ENTRAR';
-      document.getElementById('btn-password').onclick = handlePasswordLogin;
-    } else {
-      navigateTo('register');
-      return;
-    }
-  } catch (err) {
-    console.error('Erro ao verificar telefone:', err);
-    showToast('Erro de conexão. Tente novamente.');
-    return;
-  }
-  navigateTo('password');
-  setTimeout(() => document.querySelector('#page-password .code-digit')?.focus(), 100);
-}
-
-// ===== PASSWORD INPUT =====
-function initPasswordInputs() {
-  // Configurar navegação de dígitos para cada grupo separadamente
-  document.querySelectorAll('.code-inputs').forEach(group => {
-    const digits = group.querySelectorAll('.code-digit');
-    digits.forEach((inp, i) => {
-      inp.addEventListener('input', e => { if (e.target.value && i < digits.length - 1) digits[i+1].focus(); });
-      inp.addEventListener('keydown', e => { if (e.key === 'Backspace' && !e.target.value && i > 0) digits[i-1].focus(); });
-    });
-  });
-  document.getElementById('btn-password').addEventListener('click', handlePasswordLogin);
-}
-
-function getPasswordFromInputs(container) {
-  return Array.from(container.querySelectorAll('.code-digit')).map(d => d.value).join('');
-}
-
-async function handlePasswordLogin() {
-  const password = getPasswordFromInputs(document.getElementById('page-password'));
-  if (password.length < 6) { showToast('Digite a senha de 6 dígitos'); return; }
-  const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
-  try {
-    const existing = await apiLogin(phone);
-    if (!existing) { showToast('Usuário não encontrado'); return; }
-    if (existing.password !== password) { showToast('Senha incorreta'); return; }
-    apiSetCurrentUser(existing);
-    navigateTo('dashboard');
-    showToast('Bem-vindo de volta, ' + existing.name + '!');
-  } catch (err) {
-    console.error('Erro no login:', err);
-    showToast('Erro de conexão. Tente novamente.');
-  }
-}
-
-// ===== REGISTER =====
-document.getElementById('btn-register').addEventListener('click', async () => {
-  const name = document.getElementById('register-name').value.trim().substring(0, 50);
-  const position = document.getElementById('register-position').value;
-  if (!name) { showToast('Digite seu nome'); return; }
-  const password = getPasswordFromInputs(document.getElementById('page-register'));
-  if (password.length < 6) { showToast('Crie uma senha de 6 dígitos'); return; }
-  const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
-
-  const allPlayers = await apiGetPlayers();
-  const newUser = await apiCreatePlayer({
-    name, phone, position: position || 'Meia',
-    isAdmin: allPlayers.length === 0,
-    password
-  });
-
-  apiSetCurrentUser(newUser);
-  navigateTo('dashboard');
-  showToast('Conta criada!');
-  await apiAddNotification({ type:'purple', icon:'fa-user-plus', title:'Bem-vindo!', text:'Sua conta foi criada.' });
-});
-
 // ===== DASHBOARD =====
 async function loadDashboard() {
   const user = apiGetCurrentUser();
   if (!user) return;
   document.getElementById('dash-username').textContent = escapeHtml(user.name);
 
+  showListSkeleton('dash-rachaos-list', 2);
   const rachaos = (await apiGetRachaos()).filter(r => r.status === 'active' && r.participants.includes(user.id));
   const listEl = document.getElementById('dash-rachaos-list');
   const emptyEl = document.getElementById('dash-no-rachao');
@@ -183,7 +118,6 @@ async function loadDashboard() {
       </div>`;
     }).join('');
   }
-
 }
 
 function calcPlayerPoints(p) {
@@ -196,6 +130,7 @@ function calcPlayerPoints(p) {
 // ===== RACHÕES LIST =====
 async function loadRachaos() {
   const user = apiGetCurrentUser();
+  showListSkeleton('matches-list', 3);
   const rachaos = (await apiGetRachaos()).filter(r => r.participants.includes(user.id) || r.createdBy === user.id);
   const list = document.getElementById('matches-list');
   const empty = document.getElementById('matches-empty');
@@ -256,19 +191,28 @@ async function createRachao() {
 
   if (!name || !time || !location) { showToast('Preencha todos os campos'); return; }
 
-  const user = apiGetCurrentUser();
-  const code = generateRachaoCode();
-  const result = await apiCreateRachao({
-    code, name, location, dayOfWeek, time,
-    playersPerTeam: players, tieRule,
-    monthlyVenueCost: venueCost, pixKey: pix,
-    createdBy: user.id, participants: [user.id]
-  });
+  const btn = document.getElementById('btn-create-rachao');
+  try {
+    setLoading(btn, true);
+    const user = apiGetCurrentUser();
+    const code = generateRachaoCode();
+    const result = await apiCreateRachao({
+      code, name, location, dayOfWeek, time,
+      playersPerTeam: players, tieRule,
+      monthlyVenueCost: venueCost, pixKey: pix,
+      createdBy: user.id, participants: [user.id]
+    });
 
-  await apiAddNotification({ type:'green', icon:'fa-calendar-plus', title:'Novo rachão!', text: name + ' - ' + getDayName(dayOfWeek) });
-  showToast('Rachão criado! Código: ' + code);
-  currentRachaoId = result.id;
-  navigateTo('match-detail');
+    await apiAddNotification({ type:'green', icon:'fa-calendar-plus', title:'Novo rachão!', text: name + ' - ' + getDayName(dayOfWeek) });
+    showToast('Rachão criado! Código: ' + code);
+    currentRachaoId = result.id;
+    navigateTo('match-detail');
+  } catch (err) {
+    console.error('Erro ao criar rachão:', err);
+    showToast('Erro ao criar rachão. Tente novamente.');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 function adjustNumber(id, delta) {
@@ -284,22 +228,28 @@ async function joinRachaoByCode() {
   const codeInput = document.getElementById('join-code');
   const code = codeInput.value.trim().toUpperCase();
   if (code.length !== 6) { showToast('Digite o código de 6 dígitos'); return; }
-  const rachao = await apiGetRachaoByCode(code);
-  if (!rachao) { showToast('Código não encontrado'); return; }
-  const user = apiGetCurrentUser();
-  if (!user) { showToast('Faça login primeiro'); return; }
-  if (rachao.participants.includes(user.id)) {
-    showToast('Você já está neste rachão');
+
+  try {
+    const rachao = await apiGetRachaoByCode(code);
+    if (!rachao) { showToast('Código não encontrado'); return; }
+    const user = apiGetCurrentUser();
+    if (!user) { showToast('Faça login primeiro'); return; }
+    if (rachao.participants.includes(user.id)) {
+      showToast('Você já está neste rachão');
+      currentRachaoId = rachao.id;
+      navigateTo('match-detail');
+      return;
+    }
+    await apiJoinRachao(rachao.id, user.id);
+    await apiAddNotification({ type:'green', icon:'fa-right-to-bracket', title:'Entrou no rachão!', text: user.name + ' entrou em ' + rachao.name });
+    showToast('Você entrou no rachão!');
+    codeInput.value = '';
     currentRachaoId = rachao.id;
     navigateTo('match-detail');
-    return;
+  } catch (err) {
+    console.error('Erro ao entrar no rachão:', err);
+    showToast('Erro ao entrar no rachão');
   }
-  await apiJoinRachao(rachao.id, user.id);
-  await apiAddNotification({ type:'green', icon:'fa-right-to-bracket', title:'Entrou no rachão!', text: user.name + ' entrou em ' + rachao.name });
-  showToast('Você entrou no rachão!');
-  codeInput.value = '';
-  currentRachaoId = rachao.id;
-  navigateTo('match-detail');
 }
 
 async function shareRachaoCode() {
@@ -564,15 +514,24 @@ async function togglePresence() {
     return;
   }
 
-  const session = await apiGetSessionById(currentSessionId);
-  const isConf = session.confirmed.includes(user.id);
+  const btn = document.getElementById('btn-toggle-presence');
+  try {
+    setLoading(btn, true);
+    const session = await apiGetSessionById(currentSessionId);
+    const isConf = session.confirmed.includes(user.id);
 
-  if (isConf) {
-    await apiTogglePresence(currentSessionId, user.id, 'cancel');
-    showToast('Presença cancelada');
-  } else {
-    await apiTogglePresence(currentSessionId, user.id, 'confirm');
-    showToast('Presença confirmada!');
+    if (isConf) {
+      await apiTogglePresence(currentSessionId, user.id, 'cancel');
+      showToast('Presença cancelada');
+    } else {
+      await apiTogglePresence(currentSessionId, user.id, 'confirm');
+      showToast('Presença confirmada!');
+    }
+  } catch (err) {
+    console.error('Erro ao alterar presença:', err);
+    showToast('Erro ao alterar presença');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
@@ -584,6 +543,9 @@ async function endSession() {
 
 // ===== DRAW TEAMS =====
 async function drawTeams() {
+  const btn = document.getElementById('btn-draw-teams');
+  try {
+  setLoading(btn, true);
   const session = await apiGetSessionById(currentSessionId);
   const rachao = await apiGetRachaoById(currentRachaoId);
   if (!session || !rachao) return;
@@ -604,21 +566,18 @@ async function drawTeams() {
   const gks = shuffled.filter(p => p.position === 'Goleiro');
   const field = shuffled.filter(p => p.position !== 'Goleiro');
 
-  // Montar times completos primeiro, sobra vira time incompleto
   const numFullTeams = Math.floor(shuffled.length / teamSize);
   const leftoverCount = shuffled.length - (numFullTeams * teamSize);
   const totalTeams = numFullTeams + (leftoverCount > 0 ? 1 : 0);
   const teams = [];
   const usedGks = [];
 
-  // Criar times completos
   for (let t = 0; t < numFullTeams; t++) {
     const gk = gks[t] || null;
     if (gk) usedGks.push(gk);
     teams.push({ goalkeeper: gk, players: [], name: getTeamName(t) });
   }
 
-  // Distribuir jogadores de campo nos times completos
   const extraGks = gks.filter(g => !usedGks.includes(g));
   const allField = [...field, ...extraGks];
   let fieldIdx = 0;
@@ -629,7 +588,6 @@ async function drawTeams() {
     }
   }
 
-  // Sobra vira time incompleto (ex: 13 jogadores = 2 times de 6 + 1 jogador)
   if (fieldIdx < allField.length) {
     const remainingPlayers = allField.slice(fieldIdx);
     const remainGk = remainingPlayers.find(p => p.position === 'Goleiro') || null;
@@ -637,6 +595,7 @@ async function drawTeams() {
     teams.push({ goalkeeper: remainGk, players: remainField, name: getTeamName(numFullTeams) });
   }
 
+  const numTeams = teams.length;
   await apiUpdateSession(currentSessionId, {
     teams, leftover: [],
     confirmed: session.confirmed, waiting: session.waiting
@@ -647,6 +606,12 @@ async function drawTeams() {
   await apiAddNotification({ type:'orange', icon:'fa-shuffle', title:'Times sorteados!', text: `${numTeams} times formados` });
   showToast(`${numTeams} times sorteados!`);
   await loadRachaoDetail();
+  } catch (err) {
+    console.error('Erro ao sortear times:', err);
+    showToast('Erro ao sortear. Tente novamente.');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 function getTeamName(idx) { return 'Time ' + (idx + 1); }
@@ -654,7 +619,6 @@ function getTeamClass(idx) { return ['team-a','team-b','team-c','team-d'][idx % 
 
 function renderAllTeams(teams) {
   const container = document.getElementById('teams-container');
-  // Detectar tamanho do maior time para saber quais são incompletos
   const maxSize = Math.max(...teams.map(t => (t.goalkeeper ? 1 : 0) + t.players.length));
   container.innerHTML = teams.map((t, i) => {
     const size = (t.goalkeeper ? 1 : 0) + t.players.length;
@@ -699,134 +663,6 @@ async function loadPayments() {
       </div>
     </div>`;
   }).join('');
-}
-
-// ===== ADMIN PAYMENTS =====
-async function loadAdminPayments() {
-  const user = apiGetCurrentUser();
-  const rachaos = (await apiGetRachaos()).filter(r => r.createdBy === user.id && r.monthlyVenueCost > 0);
-  const list = document.getElementById('admin-payment-list');
-  if (rachaos.length === 0) { list.innerHTML = '<p class="text-muted" style="padding:16px;text-align:center">Nenhum rachão com cobrança</p>'; return; }
-
-  const month = getCurrentMonth();
-  let html = '';
-  for (const r of rachaos) {
-    const perPerson = r.participants.length > 0 ? Math.ceil(r.monthlyVenueCost / r.participants.length * 100) / 100 : 0;
-    let billing = await apiGetBilling(r.id, month);
-    if (!billing) {
-      await apiCreateBilling({ rachaoId: r.id, month, totalCost: r.monthlyVenueCost, participantCount: r.participants.length, perPerson, payments: r.participants.map(pid => ({ playerId: pid, status: 'pending' })) });
-      billing = await apiGetBilling(r.id, month);
-    }
-    if (!billing || !billing.payments) continue;
-
-    const paid = billing.payments.filter(p => p.status === 'paid').length;
-    const total = billing.payments.length;
-
-    const payHtmls = await Promise.all(billing.payments.map(async pay => {
-      const pid = pay.player_id || pay.playerId;
-      const p = await apiGetPlayerById(pid).catch(() => null);
-      if (!p) return '';
-      const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
-      const statusLabel = pay.status === 'paid' ? 'Pago' : pay.status === 'awaiting_confirmation' ? 'Aguardando' : 'Pendente';
-      return `<div class="admin-pay-item">
-        <div class="player-avatar">${ini}</div>
-        <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(perPerson)} • ${statusLabel}</div></div>
-        <div class="admin-pay-actions">
-          ${pay.status !== 'paid' ? `<button class="btn-success" onclick="confirmBillingPayment('${billing.id}','${pid}')">✓ Pago</button>` : ''}
-          ${!p.blocked ? `<button class="btn-danger" onclick="blockPlayer('${p.id}')">Bloquear</button>` : `<button class="btn-success" onclick="unblockPlayer('${p.id}')">Liberar</button>`}
-        </div>
-      </div>`;
-    }));
-
-    html += `<div class="card" style="margin-bottom:12px">
-      <h3>${escapeHtml(r.name)}</h3>
-      <p class="text-muted" style="font-size:12px">${paid}/${total} pagos • ${formatCurrency(perPerson)}/pessoa</p>
-      <div style="margin-top:8px">${payHtmls.join('')}</div>
-    </div>`;
-  }
-  list.innerHTML = html;
-}
-
-// ===== BLOCK/UNBLOCK =====
-async function blockPlayer(pid) {
-  await apiBlockPlayer(pid);
-  const p = await apiGetPlayerById(pid);
-  await apiAddNotification({ type:'red', icon:'fa-ban', title:'Jogador bloqueado', text: p.name + ' bloqueado por inadimplência' });
-  showToast('Jogador bloqueado');
-  await loadAdminPayments();
-}
-
-async function unblockPlayer(pid) {
-  await apiUnblockPlayer(pid);
-  showToast('Jogador desbloqueado');
-  if (document.getElementById('page-admin-blocked').classList.contains('active')) await loadAdminBlocked();
-}
-
-// ===== BLOCKED / RELEASE =====
-async function loadAdminBlocked() {
-  const blocked = await apiGetBlockedPlayers();
-  const releases = await apiGetReleaseRequests();
-  const reqCard = document.getElementById('release-requests-card');
-
-  if (releases.length > 0) {
-    reqCard.style.display = 'block';
-    const relHtml = await Promise.all(releases.map(async r => {
-      const p = await apiGetPlayerById(r.playerId).catch(() => null);
-      if (!p) return '';
-      const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
-      return `<div class="release-item">
-        <div class="player-avatar" style="background:var(--orange)">${ini}</div>
-        <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(r.message || 'Sem mensagem')}</div></div>
-        <div class="admin-pay-actions">
-          <button class="btn-success" onclick="approveRelease('${r.id}','${r.playerId}')">Liberar</button>
-          <button class="btn-danger" onclick="denyRelease('${r.id}')">Negar</button>
-        </div>
-      </div>`;
-    }));
-    document.getElementById('release-requests-list').innerHTML = relHtml.join('');
-  } else reqCard.style.display = 'none';
-
-  const list = document.getElementById('blocked-players-list');
-  const empty = document.getElementById('blocked-empty');
-  if (blocked.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
-  empty.style.display = 'none';
-
-  const blockedHtml = await Promise.all(blocked.map(async pid => {
-    const p = await apiGetPlayerById(pid).catch(() => null);
-    if (!p) return '';
-    const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
-    return `<div class="blocked-item">
-      <div class="player-avatar" style="background:var(--red)">${ini}</div>
-      <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)} • Bloqueado</div></div>
-      <button class="btn-success" onclick="unblockPlayer('${pid}');loadAdminBlocked()">Desbloquear</button>
-    </div>`;
-  }));
-  list.innerHTML = blockedHtml.join('');
-}
-
-async function requestRelease() {
-  const user = apiGetCurrentUser();
-  if (!user) return;
-  const msg = document.getElementById('release-message').value.trim();
-  try {
-    await apiCreateReleaseRequest(user.id, msg);
-    await apiAddNotification({ type:'orange', icon:'fa-hand', title:'Pedido de liberação', text: user.name + ' solicita liberação' });
-    showToast('Pedido enviado ao admin!');
-  } catch { showToast('Pedido já enviado'); }
-  closeModal('request-release');
-}
-
-async function approveRelease(reqId, playerId) {
-  await unblockPlayer(playerId);
-  await apiDeleteReleaseRequest(reqId);
-  showToast('Jogador liberado!');
-  await loadAdminBlocked();
-}
-
-async function denyRelease(reqId) {
-  await apiDeleteReleaseRequest(reqId);
-  showToast('Pedido negado');
-  await loadAdminBlocked();
 }
 
 // ===== STATS =====
@@ -891,6 +727,9 @@ async function loadRegisterStats() {
 }
 
 async function saveMatchStats() {
+  const btn = document.querySelector('#page-register-stats .btn-primary');
+  try {
+  setLoading(btn, true);
   const session = await apiGetSessionById(currentSessionId);
   if (!session) return;
   const stats = [];
@@ -920,60 +759,16 @@ async function saveMatchStats() {
   showToast(`${stats.length} estatísticas enviadas para validação!`);
   await apiAddNotification({ type:'purple', icon:'fa-shield-halved', title:'Anti-fraude', text:`${stats.length} stats pendentes de validação` });
   navigateTo('match-detail');
-}
-
-// ===== ADMIN STATS VALIDATION =====
-async function loadAdminStats() {
-  const pending = await apiGetPendingStats();
-  const list = document.getElementById('pending-stats-list');
-  const empty = document.getElementById('pending-stats-empty');
-  if (pending.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
-  empty.style.display = 'none';
-
-  const html = await Promise.all(pending.map(async s => {
-    const p = await apiGetPlayerById(s.playerId).catch(() => null);
-    const rachao = s.rachaoId ? await apiGetRachaoById(s.rachaoId).catch(() => null) : null;
-    if (!p) return '';
-    let chips = '';
-    if (s.isGoalkeeper) {
-      if (s.saves) chips += `<span class="stat-chip positive"><i class="fas fa-hand"></i> ${s.saves} defesas</span>`;
-      if (s.goalsConceded) chips += `<span class="stat-chip negative"><i class="fas fa-futbol"></i> ${s.goalsConceded} gols sofr.</span>`;
-      if (s.cleanSheet) chips += `<span class="stat-chip positive"><i class="fas fa-shield"></i> Clean Sheet</span>`;
-    } else {
-      if (s.goals) chips += `<span class="stat-chip positive"><i class="fas fa-futbol"></i> ${s.goals} gol(s)</span>`;
-      if (s.assists) chips += `<span class="stat-chip positive"><i class="fas fa-handshake"></i> ${s.assists} assist.</span>`;
-      if (s.tackles) chips += `<span class="stat-chip positive"><i class="fas fa-shoe-prints"></i> ${s.tackles} desarmes</span>`;
-      if (s.fouls) chips += `<span class="stat-chip negative"><i class="fas fa-triangle-exclamation"></i> ${s.fouls} faltas</span>`;
-      if (s.yellows) chips += `<span class="stat-chip negative" style="background:rgba(255,214,0,0.15);color:var(--yellow)"><i class="fas fa-square"></i> ${s.yellows} amarelo</span>`;
-      if (s.reds) chips += `<span class="stat-chip negative"><i class="fas fa-square"></i> ${s.reds} vermelho</span>`;
-    }
-    return `<div class="stat-validation-card">
-      <div class="stat-validation-header"><h4>${escapeHtml(p.name)}</h4><span class="match-label">${rachao ? escapeHtml(rachao.name) : ''}</span></div>
-      <div class="stat-validation-details">${chips}</div>
-      <div class="stat-val-actions">
-        <button class="btn-success" onclick="validateStat('${s.id}',true)"><i class="fas fa-check"></i> Aprovar</button>
-        <button class="btn-danger" onclick="validateStat('${s.id}',false)"><i class="fas fa-xmark"></i> Rejeitar</button>
-      </div>
-    </div>`;
-  }));
-  list.innerHTML = html.join('');
-}
-
-async function validateStat(statId, approved) {
-  await apiValidateStat(statId, approved);
-  showToast(approved ? 'Estatística aprovada!' : 'Estatística rejeitada');
-  await loadAdminStats();
-}
-
-async function loadAdminBadges() {
-  const pending = await apiGetPendingStats();
-  const releases = await apiGetReleaseRequests();
-  document.getElementById('admin-pending-count').textContent = pending.length > 0 ? pending.length : '';
-  document.getElementById('admin-release-count').textContent = releases.length > 0 ? releases.length : '';
+  } catch (err) {
+    console.error('Erro ao enviar stats:', err);
+    showToast('Erro ao enviar estatísticas');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 // ===== PLAYERS =====
-async function loadPlayers() { renderPlayerList(await apiGetPlayers()); }
+async function loadPlayers() { showListSkeleton('players-list', 5); renderPlayerList(await apiGetPlayers()); }
 
 function renderPlayerList(players) {
   document.getElementById('players-list').innerHTML = players.map(p => {
@@ -987,11 +782,11 @@ function renderPlayerList(players) {
   }).join('');
 }
 
-async function filterPlayers() {
+const filterPlayers = debounce(async function() {
   const q = document.getElementById('search-players').value.toLowerCase();
   const players = await apiGetPlayers();
   renderPlayerList(players.filter(p => p.name.toLowerCase().includes(q)));
-}
+}, 300);
 
 async function addPlayer() {
   const name = document.getElementById('player-add-name').value.trim();
@@ -1002,22 +797,6 @@ async function addPlayer() {
   showToast('Jogador adicionado!');
   navigateTo('players');
 }
-
-// ===== PROFILE =====
-async function loadProfile() {
-  const user = apiGetCurrentUser();
-  if (!user) return;
-  const fresh = await apiGetPlayerById(user.id).catch(() => user);
-  document.getElementById('profile-name').textContent = fresh.name;
-  document.getElementById('profile-phone').textContent = formatPhone(fresh.phone);
-  document.getElementById('profile-position').textContent = fresh.position;
-  document.getElementById('profile-matches').textContent = fresh.matches || 0;
-  document.getElementById('profile-goals').textContent = fresh.goals || 0;
-  document.getElementById('profile-assists').textContent = fresh.assists || 0;
-  document.getElementById('profile-desarmes').textContent = fresh.tackles || 0;
-}
-
-function logout() { apiLogout(); navigateTo('login'); showToast('Até a próxima!'); }
 
 // ===== NOTIFICATIONS =====
 async function loadNotifications() {
@@ -1036,295 +815,7 @@ async function loadNotifications() {
   }).join('');
 }
 
-// ===== ROTATION SYSTEM =====
-async function loadRotation() {
-  const state = await apiGetRotationState();
-  const active = document.getElementById('rotation-active');
-  const empty = document.getElementById('rotation-empty');
-  const historyCard = document.getElementById('rotation-history-card');
-
-  if (state && state.active) {
-    active.style.display = 'block';
-    empty.style.display = 'none';
-    renderRotationState(state);
-  } else {
-    active.style.display = 'none';
-    empty.style.display = 'flex';
-  }
-
-  if (state && state.rounds && state.rounds.length > 0) {
-    historyCard.style.display = 'block';
-    renderRotationHistory(state.rounds);
-  } else {
-    historyCard.style.display = 'none';
-  }
-}
-
-async function startRotation() {
-  const session = await apiGetSessionById(currentSessionId);
-  const rachao = await apiGetRachaoById(currentRachaoId);
-  if (!session || !rachao || !session.teams || session.teams.length < 2) {
-    showToast('Sorteie os times primeiro');
-    return;
-  }
-
-  const state = {
-    active: true, sessionId: session.id, rachaoId: rachao.id,
-    matchName: rachao.name, tieRule: rachao.tieRule || 'playing_leaves',
-    playersPerTeam: rachao.playersPerTeam, round: 1, scoreA: 0, scoreB: 0,
-    teamA: { name: session.teams[0].name, goalkeeper: session.teams[0].goalkeeper, players: session.teams[0].players },
-    teamB: { name: session.teams[1].name, goalkeeper: session.teams[1].goalkeeper, players: session.teams[1].players },
-    queue: [], rounds: []
-  };
-
-  for (let i = 2; i < session.teams.length; i++) {
-    const t = session.teams[i];
-    const teamPlayers = [];
-    if (t.goalkeeper) teamPlayers.push(t.goalkeeper);
-    teamPlayers.push(...t.players);
-    state.queue.push({ name: t.name, players: teamPlayers });
-  }
-
-  await apiSaveRotationState(state);
-  showToast('Rotação iniciada!');
-  navigateTo('rotation');
-}
-
-function renderRotationState(state) {
-  document.getElementById('rotation-match-name').textContent = state.matchName;
-  document.getElementById('rotation-round-info').textContent = `Rodada ${state.round}`;
-  document.getElementById('rot-score-a').textContent = state.scoreA;
-  document.getElementById('rot-score-b').textContent = state.scoreB;
-  document.querySelector('#rot-team-a h4').textContent = state.teamA.name;
-  document.querySelector('#rot-team-b h4').textContent = state.teamB.name;
-
-  const nextCard = document.getElementById('rot-next-team-card');
-  if (state.queue.length > 0) {
-    nextCard.style.display = 'block';
-    const next = state.queue[0];
-    document.getElementById('rot-next-team-list').innerHTML = next.players.map(p => {
-      const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
-      return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${ini}</div><div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
-    }).join('');
-  } else { nextCard.style.display = 'none'; }
-
-  const queueEl = document.getElementById('rot-queue');
-  if (state.queue.length > 1) {
-    queueEl.innerHTML = state.queue.slice(1).map((team, i) =>
-      `<div class="player-item"><div class="player-avatar">${i + 2}</div><div class="player-info"><div class="player-name">${team.name}</div><div class="player-detail">${team.players.length} jogadores</div></div></div>`
-    ).join('');
-  } else {
-    queueEl.innerHTML = '<p class="text-muted" style="padding:8px;font-size:13px">Sem times na espera</p>';
-  }
-}
-
-async function addGoalRotation(team) {
-  const state = await apiGetRotationState();
-  if (!state || !state.active) return;
-  if (team === 'a') state.scoreA++; else state.scoreB++;
-  await apiSaveRotationState(state);
-  document.getElementById('rot-score-' + team).textContent = team === 'a' ? state.scoreA : state.scoreB;
-}
-
-async function finishRound() {
-  const state = await apiGetRotationState();
-  if (!state || !state.active) return;
-
-  state.rounds.push({ round: state.round, teamA: state.teamA.name, teamB: state.teamB.name, scoreA: state.scoreA, scoreB: state.scoreB });
-
-  let winner, loser;
-  if (state.scoreA > state.scoreB) { winner = 'a'; loser = 'b'; }
-  else if (state.scoreB > state.scoreA) { winner = 'b'; loser = 'a'; }
-  else { winner = null; loser = 'both'; }
-
-  if (state.queue.length === 0) {
-    state.round++; state.scoreA = 0; state.scoreB = 0;
-    await apiSaveRotationState(state);
-    showToast(`Rodada ${state.round - 1} encerrada!`);
-    renderRotationState(state);
-    renderRotationHistory(state.rounds);
-    document.getElementById('rotation-history-card').style.display = 'block';
-    return;
-  }
-
-  const nextTeamData = state.queue.shift();
-  const fullTeamSize = state.playersPerTeam + 1;
-
-  if (loser === 'both') {
-    // Empate: ambos saem, próximo time entra + monta com jogadores dos dois
-    const losingPlayers = [];
-    if (state.teamA.goalkeeper) losingPlayers.push(state.teamA.goalkeeper);
-    losingPlayers.push(...state.teamA.players);
-    if (state.teamB.goalkeeper) losingPlayers.push(state.teamB.goalkeeper);
-    losingPlayers.push(...state.teamB.players);
-
-    // Completar próximo time com jogadores dos perdedores se incompleto
-    const nextPlayers = [...nextTeamData.players];
-    const needed = fullTeamSize - nextPlayers.length;
-    const borrowed = needed > 0 ? losingPlayers.splice(0, needed) : [];
-    nextPlayers.push(...borrowed);
-    state.teamA = buildRotationTeam({ name: nextTeamData.name, players: nextPlayers });
-
-    // Segundo time: pegar do próximo da fila ou dos perdedores restantes
-    if (state.queue.length > 0) {
-      const secondData = state.queue.shift();
-      const secondPlayers = [...secondData.players];
-      const needed2 = fullTeamSize - secondPlayers.length;
-      if (needed2 > 0) secondPlayers.push(...losingPlayers.splice(0, needed2));
-      state.teamB = buildRotationTeam({ name: secondData.name, players: secondPlayers });
-    } else {
-      state.teamB = buildRotationTeam({ name: 'Perdedores', players: losingPlayers.splice(0, fullTeamSize) });
-    }
-
-    // Sobra dos perdedores volta pra fila
-    if (losingPlayers.length > 0) {
-      state.queue.push({ name: 'Espera', players: losingPlayers });
-    }
-  } else {
-    // Time perdedor sai, próximo entra
-    const loserTeam = loser === 'a' ? state.teamA : state.teamB;
-    const loserPlayers = [];
-    if (loserTeam.goalkeeper) loserPlayers.push(loserTeam.goalkeeper);
-    loserPlayers.push(...loserTeam.players);
-
-    // Completar próximo time com jogadores do perdedor se incompleto
-    const nextPlayers = [...nextTeamData.players];
-    const needed = fullTeamSize - nextPlayers.length;
-    if (needed > 0) {
-      const borrowed = loserPlayers.splice(0, needed);
-      nextPlayers.push(...borrowed);
-    }
-
-    // Sobra do perdedor volta pra fila
-    if (loserPlayers.length > 0) {
-      state.queue.push({ name: loserTeam.name, players: loserPlayers });
-    }
-
-    const newTeam = buildRotationTeam({ name: nextTeamData.name, players: nextPlayers });
-    if (loser === 'a') state.teamA = newTeam; else state.teamB = newTeam;
-  }
-
-  state.round++; state.scoreA = 0; state.scoreB = 0;
-  await apiSaveRotationState(state);
-  renderRotationState(state);
-  renderRotationHistory(state.rounds);
-  document.getElementById('rotation-history-card').style.display = 'block';
-  showToast(`Rodada ${state.round - 1} encerrada!`);
-}
-
-function buildRotationTeam(teamData) {
-  const gk = teamData.players.find(p => p.position === 'Goleiro') || null;
-  const field = teamData.players.filter(p => p !== gk);
-  return { name: teamData.name, goalkeeper: gk, players: field };
-}
-
-async function endRotation() {
-  const state = await apiGetRotationState();
-  if (!state) return;
-  state.active = false;
-  await apiSaveRotationState(state);
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-  await apiAddNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Rachão encerrado!', text: `${state.rounds.length} rodadas jogadas` });
-  showToast('Rachão encerrado!');
-  navigateTo('dashboard');
-}
-
-function renderRotationHistory(rounds) {
-  document.getElementById('rotation-history').innerHTML = rounds.map(r => {
-    const resultText = r.scoreA > r.scoreB ? `${r.teamA} venceu` : r.scoreB > r.scoreA ? `${r.teamB} venceu` : 'Empate';
-    return `<div class="rotation-round-item">
-      <div class="round-number">${r.round}</div>
-      <div class="round-result">${r.teamA} vs ${r.teamB} — <span class="round-score">${r.scoreA} x ${r.scoreB}</span> • ${resultText}</div>
-    </div>`;
-  }).join('');
-}
-
-// ===== TABS =====
-function initTabs() {
-  document.addEventListener('click', e => {
-    if (e.target.classList.contains('tab')) {
-      const parent = e.target.closest('.tabs');
-      parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      const tab = e.target.dataset.tab;
-      if (['ranking','artilharia','assists','desarmes'].includes(tab)) renderStatsTab(tab);
-      if (tab === 'fantasy-ranking') { show('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
-      if (tab === 'fantasy-team') { hide('fantasy-ranking-content'); show('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
-      if (tab === 'fantasy-scoring') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); show('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
-      if (tab === 'fantasy-prizes') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); show('fantasy-prizes-content'); loadPrizes(); }
-      if (tab === 'rachao-game') { show('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
-      if (tab === 'rachao-members') { hide('rachao-game-content'); show('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
-      if (tab === 'rachao-finance') { hide('rachao-game-content'); hide('rachao-members-content'); show('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
-      if (tab === 'rachao-stats') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); show('rachao-stats-content'); hide('rachao-ranking-content'); loadRachaoStats('r-ranking'); }
-      if (tab === 'rachao-ranking') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); show('rachao-ranking-content'); loadRachaoFantasyRanking('daily'); }
-      if (['r-ranking','r-artilharia','r-assists','r-desarmes'].includes(tab)) loadRachaoStats(tab);
-    }
-    if (e.target.classList.contains('pill')) {
-      e.target.closest('.fantasy-period-toggle').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-      e.target.classList.add('active');
-      renderFantasyRanking(e.target.dataset.period);
-    }
-  });
-}
-
-// ===== TIMER (cronômetro regressivo) =====
-function startTimer() {
-  const minutes = parseInt(document.getElementById('timer-minutes').value) || 10;
-  timerTotalSeconds = minutes * 60;
-  timerSeconds = timerTotalSeconds;
-  timerPaused = false;
-  document.getElementById('timer-setup').style.display = 'none';
-  document.getElementById('timer-running').style.display = 'block';
-  document.getElementById('timer-finished').style.display = 'none';
-  document.getElementById('btn-pause-timer').innerHTML = '<i class="fas fa-pause"></i> PAUSAR';
-  updateTimerDisplay();
-  timerInterval = setInterval(() => {
-    if (!timerPaused) {
-      timerSeconds--;
-      updateTimerDisplay();
-      if (timerSeconds <= 0) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        document.getElementById('timer-running').style.display = 'none';
-        document.getElementById('timer-finished').style.display = 'block';
-        showToast('Tempo esgotado!');
-      }
-    }
-  }, 1000);
-}
-
-function updateTimerDisplay() {
-  const m = Math.floor(timerSeconds / 60);
-  const s = timerSeconds % 60;
-  document.getElementById('timer-display').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-  const pct = timerTotalSeconds > 0 ? (timerSeconds / timerTotalSeconds) * 100 : 0;
-  document.getElementById('timer-progress').style.width = pct + '%';
-  if (pct < 20) document.getElementById('timer-progress').style.background = 'var(--red)';
-  else if (pct < 50) document.getElementById('timer-progress').style.background = 'var(--yellow)';
-  else document.getElementById('timer-progress').style.background = 'var(--orange)';
-}
-
-function pauseTimer() {
-  timerPaused = !timerPaused;
-  const btn = document.getElementById('btn-pause-timer');
-  btn.innerHTML = timerPaused ? '<i class="fas fa-play"></i> RETOMAR' : '<i class="fas fa-pause"></i> PAUSAR';
-}
-
-function stopTimer() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-  resetTimer();
-}
-
-function resetTimer() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-  timerSeconds = 0;
-  timerPaused = false;
-  document.getElementById('timer-setup').style.display = 'block';
-  document.getElementById('timer-running').style.display = 'none';
-  document.getElementById('timer-finished').style.display = 'none';
-}
-
-// ===== RACHÃO STATS (dentro do rachão) =====
+// ===== RACHÃO STATS =====
 async function loadRachaoStats(tab) {
   const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao) return;
@@ -1370,6 +861,34 @@ async function loadRachaoFantasyRanking(period) {
       <div class="ranking-value">${val||0}pts</div>
     </div>`;
   }).join('');
+}
+
+// ===== TABS =====
+function initTabs() {
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('tab')) {
+      const parent = e.target.closest('.tabs');
+      parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      const tab = e.target.dataset.tab;
+      if (['ranking','artilharia','assists','desarmes'].includes(tab)) renderStatsTab(tab);
+      if (tab === 'fantasy-ranking') { show('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
+      if (tab === 'fantasy-team') { hide('fantasy-ranking-content'); show('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
+      if (tab === 'fantasy-scoring') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); show('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
+      if (tab === 'fantasy-prizes') { hide('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); show('fantasy-prizes-content'); loadPrizes(); }
+      if (tab === 'rachao-game') { show('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
+      if (tab === 'rachao-members') { hide('rachao-game-content'); show('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
+      if (tab === 'rachao-finance') { hide('rachao-game-content'); hide('rachao-members-content'); show('rachao-finance-content'); hide('rachao-stats-content'); hide('rachao-ranking-content'); }
+      if (tab === 'rachao-stats') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); show('rachao-stats-content'); hide('rachao-ranking-content'); loadRachaoStats('r-ranking'); }
+      if (tab === 'rachao-ranking') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); show('rachao-ranking-content'); loadRachaoFantasyRanking('daily'); }
+      if (['r-ranking','r-artilharia','r-assists','r-desarmes'].includes(tab)) loadRachaoStats(tab);
+    }
+    if (e.target.classList.contains('pill')) {
+      e.target.closest('.fantasy-period-toggle').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      e.target.classList.add('active');
+      renderFantasyRanking(e.target.dataset.period);
+    }
+  });
 }
 
 // ===== UTILITIES =====

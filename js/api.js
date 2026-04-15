@@ -23,9 +23,9 @@ async function apiGetPlayers() {
 }
 
 async function apiGetPlayerById(id) {
-  const { data, error } = await initSupabase().from('players').select('*').eq('id', id).single();
+  const { data, error } = await initSupabase().from('players').select('id, name, phone, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, blocked, is_admin, created_at').eq('id', id).single();
   if (error) throw error;
-  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets, password: data.password };
+  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
 }
 
 async function apiCreatePlayer(player) {
@@ -33,11 +33,10 @@ async function apiCreatePlayer(player) {
   const { data, error } = await initSupabase().from('players').insert({
     id, name: player.name, phone: player.phone,
     position: player.position || 'Meia',
-    is_admin: player.isAdmin || false,
-    password: player.password || null
+    is_admin: player.isAdmin || false
   }).select().single();
   if (error) throw error;
-  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets, password: data.password };
+  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
 }
 
 async function apiUpdatePlayer(id, fields) {
@@ -56,21 +55,42 @@ async function apiUpdatePlayer(id, fields) {
   if (fields.matches !== undefined) mapped.matches = fields.matches;
   if (fields.blocked !== undefined) mapped.blocked = fields.blocked;
   if (fields.isAdmin !== undefined) mapped.is_admin = fields.isAdmin;
-  if (fields.password !== undefined) mapped.password = fields.password;
 
   const { data, error } = await initSupabase().from('players').update(mapped).eq('id', id).select().single();
   if (error) throw error;
   return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
 }
 
-async function apiGetPlayerByPhone(phone) {
-  const { data } = await initSupabase().from('players').select('*').eq('phone', phone).maybeSingle();
-  if (!data) return null;
-  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets, password: data.password };
+// ===== AUTH (server-side) =====
+async function apiCheckPhone(phone) {
+  const res = await fetch('/api/auth/check-phone', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone })
+  });
+  return res.json();
 }
 
-async function apiLogin(phone) {
-  return apiGetPlayerByPhone(phone);
+async function apiLoginWithPassword(phone, password) {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, password })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro ao fazer login');
+  return data.user;
+}
+
+async function apiRegisterUser(phone, password, name, position) {
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, password, name, position })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro ao cadastrar');
+  return data.user;
 }
 
 // ===== RACHAOS =====

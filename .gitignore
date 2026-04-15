@@ -7,3 +7,7 @@ data/*.db-shm
 android/
 ios/
 .env
+www/
+*.keystore
+*.jks
+android/keystore.properties
