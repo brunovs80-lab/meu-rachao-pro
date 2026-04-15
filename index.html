@@ -316,36 +316,7 @@
             <div class="teams-container" id="teams-container"></div>
             <div class="action-buttons" style="margin-top:12px">
               <button class="btn-outline" onclick="drawTeams()" style="width:100%"><i class="fas fa-shuffle"></i> SORTEAR NOVAMENTE</button>
-              <button id="btn-start-rotation" class="btn-orange btn-large" style="margin-top:8px;width:100%;display:none"><i class="fas fa-rotate"></i> INICIAR ROTAÇÃO</button>
-            </div>
-          </div>
-
-          <!-- Cronômetro -->
-          <div class="card" id="timer-card">
-            <h3><i class="fas fa-stopwatch" style="color:var(--orange);margin-right:6px"></i>Cronômetro da Partida</h3>
-            <div id="timer-setup" style="margin-top:12px">
-              <div style="display:flex;align-items:center;gap:8px;justify-content:center">
-                <label style="font-size:13px">Tempo (min):</label>
-                <div class="number-input" style="width:auto">
-                  <button onclick="adjustNumber('timer-minutes',-1)">-</button>
-                  <input type="number" id="timer-minutes" value="10" min="1" max="60" class="input-field" style="width:60px;text-align:center">
-                  <button onclick="adjustNumber('timer-minutes',1)">+</button>
-                </div>
-              </div>
-              <button class="btn-orange btn-large" style="width:100%;margin-top:12px" onclick="startTimer()"><i class="fas fa-play"></i> INICIAR PARTIDA</button>
-            </div>
-            <div id="timer-running" style="display:none;text-align:center">
-              <div id="timer-display" style="font-size:64px;font-weight:900;color:var(--orange);margin:16px 0;font-variant-numeric:tabular-nums">10:00</div>
-              <div id="timer-progress-bar" class="progress-bar" style="margin-bottom:12px"><div class="progress-fill" id="timer-progress" style="width:100%;background:var(--orange)"></div></div>
-              <div style="display:flex;gap:8px">
-                <button class="btn-outline" style="flex:1" onclick="pauseTimer()" id="btn-pause-timer"><i class="fas fa-pause"></i> PAUSAR</button>
-                <button class="btn-outline" style="flex:1;border-color:var(--red);color:var(--red)" onclick="stopTimer()"><i class="fas fa-stop"></i> PARAR</button>
-              </div>
-            </div>
-            <div id="timer-finished" style="display:none;text-align:center">
-              <div style="font-size:48px;margin:12px 0">⏰</div>
-              <h3 style="color:var(--orange)">TEMPO ESGOTADO!</h3>
-              <button class="btn-primary" style="margin-top:12px" onclick="resetTimer()">NOVA PARTIDA</button>
+              <button id="btn-start-rotation" class="btn-orange btn-large" style="margin-top:8px;width:100%" onclick="startRotation()"><i class="fas fa-play"></i> INICIAR PARTIDA</button>
             </div>
           </div>
 
@@ -452,11 +423,11 @@
     </div>
   </div>
 
-  <!-- ========== ROTAÇÃO DE TIMES ========== -->
+  <!-- ========== ROTAÇÃO DE TIMES (PARTIDA AO VIVO) ========== -->
   <div id="page-rotation" class="page">
     <div class="page-header">
-      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Rotação de Times</h2>
+      <button class="btn-back" onclick="navigateTo('match-detail')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Partida ao Vivo</h2>
     </div>
     <div class="page-body">
       <div id="rotation-active" style="display:none">
@@ -475,6 +446,35 @@
           <div class="rotation-team" id="rot-team-b">
             <h4>Time B</h4>
             <div class="rotation-score" id="rot-score-b">0</div>
+          </div>
+        </div>
+
+        <!-- Cronômetro -->
+        <div class="card" id="timer-card">
+          <h3><i class="fas fa-stopwatch" style="color:var(--orange);margin-right:6px"></i>Cronômetro</h3>
+          <div id="timer-setup" style="margin-top:12px">
+            <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+              <label style="font-size:13px">Tempo (min):</label>
+              <div class="number-input" style="width:auto">
+                <button onclick="adjustNumber('timer-minutes',-1)">-</button>
+                <input type="number" id="timer-minutes" value="10" min="1" max="60" class="input-field" style="width:60px;text-align:center">
+                <button onclick="adjustNumber('timer-minutes',1)">+</button>
+              </div>
+            </div>
+            <button class="btn-orange btn-large" style="width:100%;margin-top:12px" onclick="startTimer()"><i class="fas fa-play"></i> INICIAR TEMPO</button>
+          </div>
+          <div id="timer-running" style="display:none;text-align:center">
+            <div id="timer-display" style="font-size:64px;font-weight:900;color:var(--orange);margin:16px 0;font-variant-numeric:tabular-nums">10:00</div>
+            <div id="timer-progress-bar" class="progress-bar" style="margin-bottom:12px"><div class="progress-fill" id="timer-progress" style="width:100%;background:var(--orange)"></div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-outline" style="flex:1" onclick="pauseTimer()" id="btn-pause-timer"><i class="fas fa-pause"></i> PAUSAR</button>
+              <button class="btn-outline" style="flex:1;border-color:var(--red);color:var(--red)" onclick="stopTimer()"><i class="fas fa-stop"></i> PARAR</button>
+            </div>
+          </div>
+          <div id="timer-finished" style="display:none;text-align:center">
+            <div style="font-size:48px;margin:12px 0">⏰</div>
+            <h3 style="color:var(--orange)">TEMPO ESGOTADO!</h3>
+            <button class="btn-primary" style="margin-top:12px" onclick="resetTimer()">REINICIAR</button>
           </div>
         </div>
 

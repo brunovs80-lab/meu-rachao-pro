@@ -436,13 +436,11 @@ async function loadSessionTeams(session) {
     const rotBtn = document.getElementById('btn-start-rotation');
     const rotState = await apiGetRotationState();
     if (rotState && rotState.active && rotState.sessionId === session.id) {
-      rotBtn.innerHTML = '<i class="fas fa-rotate"></i> CONTINUAR ROTAÇÃO';
+      rotBtn.innerHTML = '<i class="fas fa-play"></i> CONTINUAR PARTIDA';
       rotBtn.onclick = () => navigateTo('rotation');
-      rotBtn.style.display = 'block';
     } else if (session.status !== 'done') {
-      rotBtn.innerHTML = '<i class="fas fa-rotate"></i> INICIAR ROTAÇÃO';
+      rotBtn.innerHTML = '<i class="fas fa-play"></i> INICIAR PARTIDA';
       rotBtn.onclick = () => startRotation();
-      rotBtn.style.display = 'block';
     } else {
       rotBtn.style.display = 'none';
     }
