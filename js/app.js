@@ -603,25 +603,39 @@ async function drawTeams() {
 
   const gks = shuffled.filter(p => p.position === 'Goleiro');
   const field = shuffled.filter(p => p.position !== 'Goleiro');
-  // Todos jogam — distribuir em times iguais
-  const numTeams = Math.max(2, Math.round(shuffled.length / teamSize));
-  const teams = [];
 
-  for (let t = 0; t < numTeams; t++) {
+  // Montar times completos primeiro, sobra vira time incompleto
+  const numFullTeams = Math.floor(shuffled.length / teamSize);
+  const leftoverCount = shuffled.length - (numFullTeams * teamSize);
+  const totalTeams = numFullTeams + (leftoverCount > 0 ? 1 : 0);
+  const teams = [];
+  const usedGks = [];
+
+  // Criar times completos
+  for (let t = 0; t < numFullTeams; t++) {
     const gk = gks[t] || null;
-    const teamPlayers = [];
-    teams.push({ goalkeeper: gk, players: teamPlayers, name: getTeamName(t) });
+    if (gk) usedGks.push(gk);
+    teams.push({ goalkeeper: gk, players: [], name: getTeamName(t) });
   }
 
-  // Distribuir goleiros que não foram alocados como goleiro nas vagas de campo
-  const extraGks = gks.slice(numTeams);
+  // Distribuir jogadores de campo nos times completos
+  const extraGks = gks.filter(g => !usedGks.includes(g));
   const allField = [...field, ...extraGks];
+  let fieldIdx = 0;
+  for (let t = 0; t < numFullTeams; t++) {
+    const needed = teams[t].goalkeeper ? rachao.playersPerTeam : teamSize;
+    for (let i = 0; i < needed && fieldIdx < allField.length; i++) {
+      teams[t].players.push(allField[fieldIdx++]);
+    }
+  }
 
-  // Distribuir jogadores de campo nos times via round-robin
-  allField.forEach((p, i) => {
-    const teamIdx = i % numTeams;
-    teams[teamIdx].players.push(p);
-  });
+  // Sobra vira time incompleto (ex: 13 jogadores = 2 times de 6 + 1 jogador)
+  if (fieldIdx < allField.length) {
+    const remainingPlayers = allField.slice(fieldIdx);
+    const remainGk = remainingPlayers.find(p => p.position === 'Goleiro') || null;
+    const remainField = remainingPlayers.filter(p => p !== remainGk);
+    teams.push({ goalkeeper: remainGk, players: remainField, name: getTeamName(numFullTeams) });
+  }
 
   await apiUpdateSession(currentSessionId, {
     teams, leftover: [],
@@ -640,11 +654,16 @@ function getTeamClass(idx) { return ['team-a','team-b','team-c','team-d'][idx % 
 
 function renderAllTeams(teams) {
   const container = document.getElementById('teams-container');
+  // Detectar tamanho do maior time para saber quais são incompletos
+  const maxSize = Math.max(...teams.map(t => (t.goalkeeper ? 1 : 0) + t.players.length));
   container.innerHTML = teams.map((t, i) => {
+    const size = (t.goalkeeper ? 1 : 0) + t.players.length;
+    const isIncomplete = size < maxSize;
     let html = '';
     if (t.goalkeeper) html += `<div class="team-player"><span class="jersey">🧤</span> ${escapeHtml(t.goalkeeper.name)}</div>`;
     t.players.forEach(p => { html += `<div class="team-player"><span class="jersey">👕</span> ${escapeHtml(p.name)}</div>`; });
-    return `<div class="team-card ${getTeamClass(i)}"><h3><i class="fas fa-shirt"></i> ${t.name}</h3>${html}</div>`;
+    const note = isIncomplete ? `<p class="text-muted" style="font-size:11px;margin-top:8px">Completa com perdedores (faltam ${maxSize - size})</p>` : '';
+    return `<div class="team-card ${getTeamClass(i)}"><h3><i class="fas fa-shirt"></i> ${t.name} <span style="font-size:12px;font-weight:400;color:var(--text-muted)">(${size})</span></h3>${html}${note}</div>`;
   }).join('');
 }
 
@@ -1129,24 +1148,59 @@ async function finishRound() {
   }
 
   const nextTeamData = state.queue.shift();
+  const fullTeamSize = state.playersPerTeam + 1;
 
   if (loser === 'both') {
+    // Empate: ambos saem, próximo time entra + monta com jogadores dos dois
     const losingPlayers = [];
     if (state.teamA.goalkeeper) losingPlayers.push(state.teamA.goalkeeper);
     losingPlayers.push(...state.teamA.players);
     if (state.teamB.goalkeeper) losingPlayers.push(state.teamB.goalkeeper);
     losingPlayers.push(...state.teamB.players);
-    state.queue.push({ name: state.teamA.name, players: losingPlayers.slice(0, Math.ceil(losingPlayers.length / 2)) });
-    state.queue.push({ name: state.teamB.name, players: losingPlayers.slice(Math.ceil(losingPlayers.length / 2)) });
-    state.teamA = buildRotationTeam(nextTeamData);
-    if (state.queue.length > 0) { state.teamB = buildRotationTeam(state.queue.shift()); }
+
+    // Completar próximo time com jogadores dos perdedores se incompleto
+    const nextPlayers = [...nextTeamData.players];
+    const needed = fullTeamSize - nextPlayers.length;
+    const borrowed = needed > 0 ? losingPlayers.splice(0, needed) : [];
+    nextPlayers.push(...borrowed);
+    state.teamA = buildRotationTeam({ name: nextTeamData.name, players: nextPlayers });
+
+    // Segundo time: pegar do próximo da fila ou dos perdedores restantes
+    if (state.queue.length > 0) {
+      const secondData = state.queue.shift();
+      const secondPlayers = [...secondData.players];
+      const needed2 = fullTeamSize - secondPlayers.length;
+      if (needed2 > 0) secondPlayers.push(...losingPlayers.splice(0, needed2));
+      state.teamB = buildRotationTeam({ name: secondData.name, players: secondPlayers });
+    } else {
+      state.teamB = buildRotationTeam({ name: 'Perdedores', players: losingPlayers.splice(0, fullTeamSize) });
+    }
+
+    // Sobra dos perdedores volta pra fila
+    if (losingPlayers.length > 0) {
+      state.queue.push({ name: 'Espera', players: losingPlayers });
+    }
   } else {
+    // Time perdedor sai, próximo entra
     const loserTeam = loser === 'a' ? state.teamA : state.teamB;
     const loserPlayers = [];
     if (loserTeam.goalkeeper) loserPlayers.push(loserTeam.goalkeeper);
     loserPlayers.push(...loserTeam.players);
-    state.queue.push({ name: loserTeam.name, players: loserPlayers });
-    const newTeam = buildRotationTeam(nextTeamData);
+
+    // Completar próximo time com jogadores do perdedor se incompleto
+    const nextPlayers = [...nextTeamData.players];
+    const needed = fullTeamSize - nextPlayers.length;
+    if (needed > 0) {
+      const borrowed = loserPlayers.splice(0, needed);
+      nextPlayers.push(...borrowed);
+    }
+
+    // Sobra do perdedor volta pra fila
+    if (loserPlayers.length > 0) {
+      state.queue.push({ name: loserTeam.name, players: loserPlayers });
+    }
+
+    const newTeam = buildRotationTeam({ name: nextTeamData.name, players: nextPlayers });
     if (loser === 'a') state.teamA = newTeam; else state.teamB = newTeam;
   }
 
