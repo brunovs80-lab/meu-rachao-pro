@@ -291,19 +291,7 @@
         </button>
 
         <div id="session-active-area" style="display:none">
-          <div class="card">
-            <div class="card-title-row">
-              <h3>Confirmados (<span id="confirmed-count">0</span>/<span id="max-players">10</span>)</h3>
-            </div>
-            <div class="progress-bar"><div class="progress-fill" id="confirmed-progress"></div></div>
-            <div id="confirmed-list" class="player-list"></div>
-            <button id="btn-toggle-presence" class="btn-primary" style="margin-top:12px">CONFIRMAR PRESENÇA</button>
-          </div>
-
-          <div class="card" id="waiting-list-card" style="display:none">
-            <h3><i class="fas fa-clock" style="color:var(--orange);margin-right:6px"></i>Lista de Espera</h3>
-            <div id="waiting-list" class="player-list"></div>
-          </div>
+          <button id="btn-toggle-presence" class="btn-primary btn-large" style="width:100%;margin-bottom:12px">CONFIRMAR PRESENÇA</button>
 
           <div class="action-buttons">
             <button class="btn-orange btn-large" id="btn-draw-teams" onclick="drawTeams()">
@@ -327,6 +315,19 @@
             <button class="btn-outline" style="width:100%;border-color:var(--red);color:var(--red)" onclick="endSession()">
               <i class="fas fa-flag-checkered"></i> ENCERRAR JOGO
             </button>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <div class="card-title-row">
+              <h3>Confirmados (<span id="confirmed-count">0</span>/<span id="max-players">10</span>)</h3>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="confirmed-progress"></div></div>
+            <div id="confirmed-list" class="player-list"></div>
+          </div>
+
+          <div class="card" id="waiting-list-card" style="display:none">
+            <h3><i class="fas fa-clock" style="color:var(--orange);margin-right:6px"></i>Lista de Espera</h3>
+            <div id="waiting-list" class="player-list"></div>
           </div>
         </div>
 
