@@ -550,7 +550,7 @@ async function drawTeams() {
   const rachao = await apiGetRachaoById(currentRachaoId);
   if (!session || !rachao) return;
 
-  const teamSize = rachao.playersPerTeam + 1;
+  const teamSize = rachao.playersPerTeam + 1; // jogadores de linha + 1 goleiro
   if (session.confirmed.length < 4) {
     showToast('Precisa de pelo menos 4 jogadores');
     return;
@@ -566,33 +566,37 @@ async function drawTeams() {
   const gks = shuffled.filter(p => p.position === 'Goleiro');
   const field = shuffled.filter(p => p.position !== 'Goleiro');
 
+  // Calcular times: cada time completo tem exatamente teamSize jogadores
   const numFullTeams = Math.floor(shuffled.length / teamSize);
   const leftoverCount = shuffled.length - (numFullTeams * teamSize);
   const totalTeams = numFullTeams + (leftoverCount > 0 ? 1 : 0);
   const teams = [];
-  const usedGks = [];
 
-  for (let t = 0; t < numFullTeams; t++) {
-    const gk = gks[t] || null;
-    if (gk) usedGks.push(gk);
-    teams.push({ goalkeeper: gk, players: [], name: getTeamName(t) });
+  // Criar todos os times (completos + incompleto se houver sobra)
+  for (let t = 0; t < totalTeams; t++) {
+    teams.push({ goalkeeper: null, players: [], name: getTeamName(t) });
   }
 
-  const extraGks = gks.filter(g => !usedGks.includes(g));
+  // Distribuir goleiros (1 por time, priorizando times completos)
+  let gkIdx = 0;
+  for (let t = 0; t < totalTeams && gkIdx < gks.length; t++) {
+    teams[t].goalkeeper = gks[gkIdx++];
+  }
+
+  // Goleiros extras entram como jogadores de linha
+  const extraGks = gks.slice(gkIdx);
   const allField = [...field, ...extraGks];
+
+  // Preencher cada time até o limite exato
   let fieldIdx = 0;
-  for (let t = 0; t < numFullTeams; t++) {
-    const needed = teams[t].goalkeeper ? rachao.playersPerTeam : teamSize;
+  for (let t = 0; t < totalTeams; t++) {
+    const isFullTeam = t < numFullTeams;
+    const maxPlayers = isFullTeam ? teamSize : leftoverCount;
+    const hasGk = teams[t].goalkeeper !== null;
+    const needed = hasGk ? maxPlayers - 1 : maxPlayers;
     for (let i = 0; i < needed && fieldIdx < allField.length; i++) {
       teams[t].players.push(allField[fieldIdx++]);
     }
-  }
-
-  if (fieldIdx < allField.length) {
-    const remainingPlayers = allField.slice(fieldIdx);
-    const remainGk = remainingPlayers.find(p => p.position === 'Goleiro') || null;
-    const remainField = remainingPlayers.filter(p => p !== remainGk);
-    teams.push({ goalkeeper: remainGk, players: remainField, name: getTeamName(numFullTeams) });
   }
 
   const numTeams = teams.length;
