@@ -53,6 +53,15 @@ function navigateTo(page, pushState) {
   }
 }
 
+function goBackFrom(page) {
+  const user = apiGetCurrentUser();
+  if (history.state && history.state.page && history.state.page !== page) {
+    history.back();
+  } else {
+    navigateTo(user ? 'settings' : 'login');
+  }
+}
+
 function initHistory() {
   window.addEventListener('popstate', (e) => {
     if (e.state && e.state.page) {
@@ -703,7 +712,17 @@ async function renderStatsTab(tab) {
 async function loadRegisterStats() {
   const session = await apiGetSessionById(currentSessionId);
   if (!session) return;
-  const players = (await Promise.all(session.confirmed.map(pid => apiGetPlayerById(pid).catch(() => null)))).filter(Boolean);
+  const currentUser = apiGetCurrentUser();
+  const isAdmin = currentUser && currentUser.isAdmin;
+  const allPlayers = (await Promise.all(session.confirmed.map(pid => apiGetPlayerById(pid).catch(() => null)))).filter(Boolean);
+  // Jogador comum: só registra o próprio. Admin: registra de todos.
+  const players = isAdmin ? allPlayers : allPlayers.filter(p => p.id === currentUser.id);
+
+  if (players.length === 0) {
+    document.getElementById('stats-register-list').innerHTML = '<div class="empty-state" style="padding:20px"><i class="fas fa-ban"></i><p>Você não está na lista de confirmados deste jogo</p></div>';
+    return;
+  }
+
   document.getElementById('stats-register-list').innerHTML = players.map(p => {
     const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     const isGK = p.position === 'Goleiro';
@@ -736,8 +755,11 @@ async function saveMatchStats() {
   setLoading(btn, true);
   const session = await apiGetSessionById(currentSessionId);
   if (!session) return;
+  const currentUser = apiGetCurrentUser();
+  const isAdmin = currentUser && currentUser.isAdmin;
+  const playerIds = isAdmin ? session.confirmed : session.confirmed.filter(pid => pid === currentUser.id);
   const stats = [];
-  for (const pid of session.confirmed) {
+  for (const pid of playerIds) {
     const p = await apiGetPlayerById(pid).catch(() => null);
     if (!p) continue;
     const isGK = p.position === 'Goleiro';

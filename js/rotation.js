@@ -46,7 +46,7 @@ async function startRotation() {
     const teamPlayers = [];
     if (t.goalkeeper) teamPlayers.push(t.goalkeeper);
     teamPlayers.push(...t.players);
-    state.queue.push({ name: t.name, players: teamPlayers });
+    state.queue.push({ name: '', players: teamPlayers });
   }
 
   await apiSaveRotationState(state);
@@ -66,20 +66,14 @@ function renderRotationState(state) {
   if (state.queue.length > 0) {
     nextCard.style.display = 'block';
     const next = state.queue[0];
+    const nameInput = document.getElementById('rot-next-team-name');
+    nameInput.value = next.name || '';
+    nameInput.placeholder = 'Nome do próximo time';
     document.getElementById('rot-next-team-list').innerHTML = next.players.map(p => {
       const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
       return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${ini}</div><div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
     }).join('');
   } else { nextCard.style.display = 'none'; }
-
-  const queueEl = document.getElementById('rot-queue');
-  if (state.queue.length > 1) {
-    queueEl.innerHTML = state.queue.slice(1).map((team, i) =>
-      `<div class="player-item"><div class="player-avatar">${i + 2}</div><div class="player-info"><div class="player-name">${team.name}</div><div class="player-detail">${team.players.length} jogadores</div></div></div>`
-    ).join('');
-  } else {
-    queueEl.innerHTML = '<p class="text-muted" style="padding:8px;font-size:13px">Sem times na espera</p>';
-  }
 }
 
 async function addGoalRotation(team) {
@@ -112,6 +106,9 @@ async function finishRound() {
   }
 
   const nextTeamData = state.queue.shift();
+  // Usar nome digitado pelo usuário no campo, se disponível
+  const customName = document.getElementById('rot-next-team-name')?.value?.trim();
+  if (customName) nextTeamData.name = customName;
   const fullTeamSize = state.playersPerTeam + 1;
 
   if (loser === 'both') {

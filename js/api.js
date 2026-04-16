@@ -61,35 +61,27 @@ async function apiUpdatePlayer(id, fields) {
   return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
 }
 
-// ===== AUTH (server-side) =====
+// ===== AUTH (via Supabase RPC) =====
 async function apiCheckPhone(phone) {
-  const res = await fetch('/api/auth/check-phone', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone })
-  });
-  return res.json();
+  const cleanPhone = phone.replace(/\D/g, '');
+  const { data, error } = await initSupabase().rpc('check_phone', { p_phone: cleanPhone });
+  if (error) throw new Error('Erro ao verificar telefone');
+  return data;
 }
 
 async function apiLoginWithPassword(phone, password) {
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, password })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Erro ao fazer login');
+  const cleanPhone = phone.replace(/\D/g, '');
+  const { data, error } = await initSupabase().rpc('login_with_password', { p_phone: cleanPhone, p_password: password });
+  if (error) throw new Error('Erro ao fazer login');
+  if (!data.success) throw new Error(data.error || 'Erro ao fazer login');
   return data.user;
 }
 
 async function apiRegisterUser(phone, password, name, position) {
-  const res = await fetch('/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, password, name, position })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Erro ao cadastrar');
+  const cleanPhone = phone.replace(/\D/g, '');
+  const { data, error } = await initSupabase().rpc('register_user', { p_phone: cleanPhone, p_password: password, p_name: name, p_position: position || 'Meia' });
+  if (error) throw new Error('Erro ao cadastrar');
+  if (!data.success) throw new Error(data.error || 'Erro ao cadastrar');
   return data.user;
 }
 
