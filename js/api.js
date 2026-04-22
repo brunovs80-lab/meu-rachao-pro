@@ -292,12 +292,80 @@ async function apiTogglePresence(sessionId, playerId, action) {
 }
 
 // ===== BILLING =====
+function _mapBilling(data, payments) {
+  return {
+    ...data,
+    rachaoId: data.rachao_id,
+    perPerson: data.per_person,
+    totalCost: data.total_cost,
+    venuePaidAt: data.venue_paid_at,
+    venuePaidBy: data.venue_paid_by,
+    payments: payments || [],
+  };
+}
+
 async function apiGetBilling(rachaoId, month) {
   const { data } = await initSupabase().from('monthly_billing').select('*')
     .eq('rachao_id', rachaoId).eq('month', month).maybeSingle();
   if (!data) return null;
   const { data: payments } = await initSupabase().from('billing_payments').select('*').eq('billing_id', data.id);
-  return { ...data, rachaoId: data.rachao_id, perPerson: data.per_person, totalCost: data.total_cost, payments: payments || [] };
+  return _mapBilling(data, payments);
+}
+
+async function apiUpdateBillingValues(billingId, { totalCost, perPerson }) {
+  const patch = {};
+  if (totalCost !== undefined && totalCost !== null) patch.total_cost = Number(totalCost);
+  if (perPerson !== undefined && perPerson !== null) patch.per_person = Number(perPerson);
+  if (Object.keys(patch).length === 0) return;
+  const { error } = await initSupabase().from('monthly_billing').update(patch).eq('id', billingId);
+  if (error) throw error;
+}
+
+async function apiMarkVenuePaid(billingId, userId, paid) {
+  const patch = paid
+    ? { venue_paid_at: new Date().toISOString(), venue_paid_by: userId }
+    : { venue_paid_at: null, venue_paid_by: null };
+  const { error } = await initSupabase().from('monthly_billing').update(patch).eq('id', billingId);
+  if (error) throw error;
+}
+
+async function apiGetCashFlow(rachaoId) {
+  const { data: billings } = await initSupabase().from('monthly_billing')
+    .select('id, month, total_cost, per_person, venue_paid_at')
+    .eq('rachao_id', rachaoId)
+    .order('month', { ascending: true });
+  if (!billings || billings.length === 0) return { months: [], accumulated: 0 };
+
+  const ids = billings.map(b => b.id);
+  const { data: payments } = await initSupabase().from('billing_payments')
+    .select('billing_id, status')
+    .in('billing_id', ids);
+
+  const paidCountByBilling = {};
+  (payments || []).forEach(p => {
+    if (p.status === 'paid') paidCountByBilling[p.billing_id] = (paidCountByBilling[p.billing_id] || 0) + 1;
+  });
+
+  let accumulated = 0;
+  const months = billings.map(b => {
+    const paidCount = paidCountByBilling[b.id] || 0;
+    const collected = paidCount * Number(b.per_person || 0);
+    const venuePaid = !!b.venue_paid_at;
+    const net = collected - (venuePaid ? Number(b.total_cost || 0) : 0);
+    if (venuePaid) accumulated += collected - Number(b.total_cost || 0);
+    return {
+      billingId: b.id,
+      month: b.month,
+      totalCost: Number(b.total_cost || 0),
+      perPerson: Number(b.per_person || 0),
+      paidCount,
+      collected,
+      venuePaid,
+      net,
+    };
+  });
+
+  return { months, accumulated };
 }
 
 async function apiCreateBilling(billing) {

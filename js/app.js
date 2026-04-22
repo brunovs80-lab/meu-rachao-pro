@@ -421,14 +421,13 @@ async function loadRachaoMembersTab(rachao) {
   }).join('');
 }
 
-async function loadRachaoFinanceTab(rachao, user) {
-  const cost = rachao.monthlyVenueCost || 0;
-  const members = rachao.participants.length;
-  const perPerson = members > 0 ? Math.ceil(cost / members * 100) / 100 : 0;
+let _currentBillingId = null;
+let _currentBillingValues = { totalCost: 0, perPerson: 0, venuePaidAt: null };
 
-  document.getElementById('finance-total-cost').textContent = formatCurrency(cost);
-  document.getElementById('finance-members').textContent = members;
-  document.getElementById('finance-per-person').textContent = formatCurrency(perPerson);
+async function loadRachaoFinanceTab(rachao, user) {
+  const isAdmin = rachao.createdBy === user.id;
+  const defaultCost = rachao.monthlyVenueCost || 0;
+  const members = rachao.participants.length;
 
   const month = getCurrentMonth();
   const monthNames = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -437,19 +436,74 @@ async function loadRachaoFinanceTab(rachao, user) {
 
   let billing = await apiGetBilling(rachao.id, month);
   if (!billing) {
+    const defaultPerPerson = members > 0 ? Math.ceil(defaultCost / members * 100) / 100 : 0;
     await apiCreateBilling({
-      rachaoId: rachao.id, month, totalCost: cost,
-      participantCount: members, perPerson,
+      rachaoId: rachao.id, month, totalCost: defaultCost,
+      participantCount: members, perPerson: defaultPerPerson,
       payments: rachao.participants.map(pid => ({ playerId: pid, status: 'pending' }))
     });
     billing = await apiGetBilling(rachao.id, month);
   }
-  if (!billing || !billing.payments) { billing = { payments: [] }; }
+  if (!billing || !billing.payments) { billing = { payments: [], totalCost: 0, perPerson: 0 }; }
+
+  _currentBillingId = billing.id;
+  _currentBillingValues = {
+    totalCost: billing.totalCost || 0,
+    perPerson: billing.perPerson || 0,
+    venuePaidAt: billing.venuePaidAt || null,
+  };
+
+  document.getElementById('finance-total-cost').textContent = formatCurrency(billing.totalCost || 0);
+  document.getElementById('finance-per-person').textContent = formatCurrency(billing.perPerson || 0);
+  document.getElementById('finance-members').textContent = members;
+  document.getElementById('btn-edit-finance-values').style.display = isAdmin ? 'flex' : 'none';
 
   const paid = billing.payments.filter(p => p.status === 'paid').length;
   const pending = billing.payments.filter(p => p.status !== 'paid').length;
   document.getElementById('finance-paid-count').textContent = paid;
   document.getElementById('finance-pending-count').textContent = pending;
+
+  // Caixa: arrecadado, saldo do mês, acumulado
+  const collected = paid * (billing.perPerson || 0);
+  const venuePaid = !!billing.venuePaidAt;
+  document.getElementById('finance-collected').textContent = formatCurrency(collected);
+
+  const netEl = document.getElementById('finance-net');
+  const netLabel = document.getElementById('finance-net-label');
+  if (venuePaid) {
+    const net = collected - (billing.totalCost || 0);
+    netEl.textContent = formatCurrency(net);
+    netEl.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
+    netLabel.textContent = 'Caixa do mês';
+  } else {
+    netEl.textContent = '—';
+    netEl.style.color = 'var(--text-muted)';
+    netLabel.textContent = 'Quadra não paga';
+  }
+
+  const cashFlow = await apiGetCashFlow(rachao.id).catch(() => ({ accumulated: 0 }));
+  const accEl = document.getElementById('finance-accumulated');
+  accEl.textContent = formatCurrency(cashFlow.accumulated || 0);
+  accEl.style.color = (cashFlow.accumulated || 0) >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Botão "marcar quadra paga" só pra admin
+  const btnVenue = document.getElementById('btn-toggle-venue-paid');
+  if (isAdmin) {
+    btnVenue.style.display = 'block';
+    if (venuePaid) {
+      btnVenue.innerHTML = '<i class="fas fa-undo"></i> DESMARCAR QUADRA PAGA';
+      btnVenue.className = 'btn-secondary';
+      btnVenue.style.width = '100%';
+      btnVenue.style.marginTop = '12px';
+    } else {
+      btnVenue.innerHTML = '<i class="fas fa-check-circle"></i> MARCAR QUADRA COMO PAGA';
+      btnVenue.className = 'btn-primary';
+      btnVenue.style.width = '100%';
+      btnVenue.style.marginTop = '12px';
+    }
+  } else {
+    btnVenue.style.display = 'none';
+  }
 
   const billingId = billing.id;
   const playerPromises = billing.payments.map(async pay => {
@@ -463,22 +517,74 @@ async function loadRachaoFinanceTab(rachao, user) {
     const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     const statusLabel = pay.status === 'paid' ? 'Pago' : pay.status === 'awaiting_confirmation' ? 'Aguardando' : 'Pendente';
     const statusClass = pay.status === 'paid' ? 'badge-paid' : 'badge-pending';
-    const isAdmin = rachao.createdBy === user.id;
     const pid = pay.player_id || pay.playerId;
     const adminBtn = isAdmin && pay.status !== 'paid'
       ? `<button class="btn-success btn-sm" onclick="confirmBillingPayment('${billingId}','${pid}')">✓</button>` : '';
     return `<div class="player-item">
       <div class="player-avatar">${ini}</div>
-      <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(perPerson)}</div></div>
+      <div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${formatCurrency(billing.perPerson || 0)}</div></div>
       <span class="payment-badge ${statusClass}">${statusLabel}</span>
       ${adminBtn}
     </div>`;
   }).join('');
 
-  document.getElementById('finance-pix-amount').textContent = 'Valor: ' + formatCurrency(perPerson);
+  document.getElementById('finance-pix-amount').textContent = 'Valor: ' + formatCurrency(billing.perPerson || 0);
   document.getElementById('finance-pix-key').value = rachao.pixKey || '';
 
   await loadFinancePixStatus(rachao, user);
+}
+
+// ===== ADMIN: editar valores do mês =====
+function abrirEditarValores() {
+  document.getElementById('edit-total-cost').value = _currentBillingValues.totalCost || '';
+  document.getElementById('edit-per-person').value = _currentBillingValues.perPerson || '';
+  document.getElementById('modal-edit-values').style.display = 'flex';
+}
+
+function fecharEditarValores() {
+  document.getElementById('modal-edit-values').style.display = 'none';
+}
+
+async function salvarValores() {
+  if (!_currentBillingId) { showToast('Billing não inicializado'); return; }
+  const totalCost = parseFloat(document.getElementById('edit-total-cost').value);
+  const perPerson = parseFloat(document.getElementById('edit-per-person').value);
+  if (isNaN(totalCost) || totalCost < 0) { showToast('Valor da quadra inválido'); return; }
+  if (isNaN(perPerson) || perPerson < 0) { showToast('Mensalidade inválida'); return; }
+
+  const btn = document.getElementById('btn-save-values');
+  try {
+    setLoading(btn, true);
+    await apiUpdateBillingValues(_currentBillingId, { totalCost, perPerson });
+    showToast('Valores atualizados!');
+    fecharEditarValores();
+    await loadRachaoDetail();
+  } catch (err) {
+    showToast(err.message || 'Erro ao salvar');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function toggleQuadraPaga() {
+  const user = apiGetCurrentUser();
+  if (!user || !_currentBillingId) return;
+  const btn = document.getElementById('btn-toggle-venue-paid');
+  const currentlyPaid = !!_currentBillingValues.venuePaidAt;
+  const confirmMsg = currentlyPaid
+    ? 'Desmarcar quadra como paga?'
+    : 'Confirmar que a quadra foi paga? Isso calcula o caixa do mês.';
+  if (!confirm(confirmMsg)) return;
+  try {
+    setLoading(btn, true);
+    await apiMarkVenuePaid(_currentBillingId, user.id, !currentlyPaid);
+    showToast(currentlyPaid ? 'Quadra desmarcada' : 'Quadra paga!');
+    await loadRachaoDetail();
+  } catch (err) {
+    showToast(err.message || 'Erro');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 async function loadFinancePixStatus(rachao, user) {
