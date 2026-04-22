@@ -325,6 +325,107 @@ async function apiConfirmPayment(billingId, playerId, status) {
   }).eq('billing_id', billingId).eq('player_id', playerId);
 }
 
+// ===== PAYMENT CONFIG (per rachão) =====
+async function apiGetPaymentStatus(rachaoId) {
+  const { data } = await initSupabase().from('rachao_payment_status')
+    .select('rachao_id, provider, mp_enabled, updated_at')
+    .eq('rachao_id', rachaoId)
+    .maybeSingle();
+  return data || { rachao_id: rachaoId, provider: 'mercado_pago', mp_enabled: false };
+}
+
+async function apiSavePaymentConfig(rachaoId, userId, { mpAccessToken, mpEnabled }) {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/save-payment-config`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({
+      rachao_id: rachaoId,
+      user_id: userId,
+      mp_access_token: mpAccessToken || null,
+      mp_enabled: !!mpEnabled,
+    }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || 'Erro ao salvar configuração');
+  return data;
+}
+
+// ===== PIX PAYMENTS =====
+async function apiCreatePixCharge(billingId, playerId, rachaoId, amount, description) {
+  const supabaseUrl = SUPABASE_URL;
+  const resp = await fetch(`${supabaseUrl}/functions/v1/create-pix-charge`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({
+      billing_id: billingId,
+      player_id: playerId,
+      rachao_id: rachaoId,
+      amount,
+      description,
+    }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || 'Erro ao criar cobrança PIX');
+  return data;
+}
+
+async function apiGetPixTransaction(billingId, playerId) {
+  const { data } = await initSupabase().from('pix_transactions')
+    .select('*')
+    .eq('billing_id', billingId)
+    .eq('player_id', playerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+async function apiGetPixTransactionById(txId) {
+  const { data } = await initSupabase().from('pix_transactions')
+    .select('*').eq('id', txId).single();
+  return data;
+}
+
+// Subscription Realtime para atualizações de pagamento PIX
+let _pixRealtimeChannel = null;
+
+function apiSubscribePixUpdates(callback) {
+  if (_pixRealtimeChannel) {
+    initSupabase().removeChannel(_pixRealtimeChannel);
+  }
+  _pixRealtimeChannel = initSupabase()
+    .channel('pix-payments-realtime')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'pix_transactions',
+    }, (payload) => {
+      callback({ type: 'pix_transaction', data: payload.new });
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'billing_payments',
+    }, (payload) => {
+      callback({ type: 'billing_payment', data: payload.new });
+    })
+    .subscribe();
+  return _pixRealtimeChannel;
+}
+
+function apiUnsubscribePixUpdates() {
+  if (_pixRealtimeChannel) {
+    initSupabase().removeChannel(_pixRealtimeChannel);
+    _pixRealtimeChannel = null;
+  }
+}
+
 // ===== STATS =====
 async function apiGetPendingStats() {
   const { data } = await initSupabase().from('pending_stats').select('*')

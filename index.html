@@ -393,11 +393,19 @@
             <h3>Pague via Pix</h3>
             <p class="text-muted" id="finance-pix-amount"></p>
           </div>
+          <div id="finance-pix-status-area"></div>
           <div class="pix-copy-group">
             <input type="text" class="input-field" id="finance-pix-key" readonly>
             <button class="btn-primary" onclick="copyFinancePix()"><i class="fas fa-copy"></i></button>
           </div>
-          <button class="btn-orange btn-large" style="margin-top:12px;width:100%" onclick="notifyPayment()"><i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO</button>
+          <button class="btn-secondary" style="margin-top:12px;width:100%;display:none" id="btn-config-pix-admin" onclick="abrirConfigPix()">
+            <i class="fas fa-cog"></i> CONFIGURAR PIX AUTOMÁTICO
+          </button>
+          <button class="btn-pix btn-large" style="margin-top:12px;width:100%;display:none" id="btn-pagar-pix" onclick="iniciarPagamentoPix()">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjNEJCOEE5IiBkPSJNMjQyLjQgMjkyLjVDMjQ3LjggMjg3LjEgMjU1LjEgMjg0LjIgMjYyLjggMjg0LjJDMjcwLjUgMjg0LjIgMjc3LjggMjg3LjEgMjgzLjIgMjkyLjVMMzM5LjcgMzQ5QzM0NC4yIDM1My41IDM0Ni42IDM1OS41IDM0Ni42IDM2NS45QzM0Ni42IDM3Mi4zIDM0NC4yIDM3OC4zIDMzOS43IDM4Mi44TDI4My4yIDQzOS4zQzI3Ny44IDQ0NC43IDI3MC41IDQ0Ny42IDI2Mi44IDQ0Ny42QzI1NS4xIDQ0Ny42IDI0Ny44IDQ0NC43IDI0Mi40IDQzOS4zTDE4NS45IDM4Mi44QzE4MS40IDM3OC4zIDE3OSAzNzIuMyAxNzkgMzY1LjlDMTc5IDM1OS41IDE4MS40IDM1My41IDE4NS45IDM0OUwyNDIuNCAyOTIuNVoiLz48L3N2Zz4=" alt="" style="width:18px;height:18px;vertical-align:middle;margin-right:6px;filter:brightness(0) invert(1)">
+            PAGAR COM PIX AUTOMÁTICO
+          </button>
+          <button class="btn-orange btn-large" style="margin-top:8px;width:100%" onclick="notifyPayment()"><i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO MANUAL</button>
         </div>
       </div>
 
@@ -1007,6 +1015,119 @@
 
       <h3>9. Contato</h3>
       <p>Para exercer seus direitos ou tirar dúvidas sobre privacidade, entre em contato com o administrador do aplicativo.</p>
+    </div>
+  </div>
+
+  <!-- ========== MODAL CONFIG PIX (ADMIN) ========== -->
+  <div id="modal-config-pix" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharConfigPix()">&times;</button>
+      <h3><i class="fas fa-cog"></i> Configurar PIX Automático</h3>
+      <p class="text-muted" style="font-size:13px;margin:8px 0 16px">
+        Cole aqui o <strong>Access Token</strong> do Mercado Pago da sua conta. O dinheiro dos pagamentos PIX cairá direto nela.
+      </p>
+      <p class="text-muted" style="font-size:12px;margin-bottom:16px">
+        Obtenha o token em:<br>
+        <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" style="color:var(--orange)">mercadopago.com.br/developers/panel/app</a>
+        → Suas integrações → Credenciais de produção
+      </p>
+
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Access Token</label>
+      <input type="password" class="input-field" id="config-pix-token" placeholder="APP_USR-xxxxxxxx-xxxxxx-xxxxxxx" autocomplete="off">
+
+      <div id="config-pix-current" style="margin:12px 0;font-size:13px;display:none">
+        <div style="background:var(--bg-card);padding:10px;border-radius:var(--radius);border:1px solid var(--border)">
+          <strong>Conta atual:</strong> <span id="config-pix-nickname">—</span>
+          <br><span class="text-muted" style="font-size:12px" id="config-pix-email"></span>
+        </div>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;margin:16px 0;cursor:pointer">
+        <input type="checkbox" id="config-pix-enabled" style="width:18px;height:18px">
+        <span>Ativar pagamento PIX automático para jogadores</span>
+      </label>
+
+      <button class="btn-primary btn-large" style="width:100%" id="btn-salvar-config-pix" onclick="salvarConfigPix()">
+        <i class="fas fa-save"></i> SALVAR CONFIGURAÇÃO
+      </button>
+      <p class="text-muted" style="font-size:11px;margin-top:12px;text-align:center">
+        O token é armazenado de forma segura e nunca é exibido aos outros usuários.
+      </p>
+    </div>
+  </div>
+
+  <!-- ========== MODAL PIX PAYMENT ========== -->
+  <div id="modal-pix-payment" class="modal" style="display:none">
+    <div class="modal-content pix-modal-content">
+      <button class="modal-close" onclick="fecharModalPix()">&times;</button>
+
+      <!-- Estado: Gerando -->
+      <div id="pix-state-loading" class="pix-state">
+        <div class="pix-spinner"></div>
+        <h3>Gerando cobrança PIX...</h3>
+        <p class="text-muted">Aguarde um momento</p>
+      </div>
+
+      <!-- Estado: QR Code pronto -->
+      <div id="pix-state-ready" class="pix-state" style="display:none">
+        <div class="pix-modal-icon">
+          <i class="fas fa-qrcode"></i>
+        </div>
+        <h3>Escaneie o QR Code</h3>
+        <p class="text-muted" id="pix-modal-amount"></p>
+
+        <div class="pix-qr-container">
+          <img id="pix-qr-image" alt="QR Code PIX" class="pix-qr-image">
+        </div>
+
+        <p class="text-muted" style="font-size:12px;margin:8px 0">ou copie o código PIX:</p>
+        <div class="pix-copy-group">
+          <input type="text" class="input-field" id="pix-modal-code" readonly>
+          <button class="btn-primary" onclick="copyPixCode()"><i class="fas fa-copy"></i></button>
+        </div>
+
+        <div class="pix-timer" id="pix-timer">
+          <i class="fas fa-clock"></i> Expira em <span id="pix-timer-countdown">30:00</span>
+        </div>
+
+        <div class="pix-waiting-indicator">
+          <div class="pix-pulse"></div>
+          <span>Aguardando pagamento...</span>
+        </div>
+      </div>
+
+      <!-- Estado: Pago -->
+      <div id="pix-state-paid" class="pix-state" style="display:none">
+        <div class="pix-success-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3>Pagamento Confirmado!</h3>
+        <p class="text-muted" id="pix-paid-amount"></p>
+        <p class="text-muted" style="font-size:12px;margin-top:4px">Atualizado automaticamente</p>
+        <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="fecharModalPix()">FECHAR</button>
+      </div>
+
+      <!-- Estado: Erro -->
+      <div id="pix-state-error" class="pix-state" style="display:none">
+        <div class="pix-error-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3>Erro ao gerar PIX</h3>
+        <p class="text-muted" id="pix-error-msg"></p>
+        <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="iniciarPagamentoPix()">TENTAR NOVAMENTE</button>
+        <button class="btn-secondary" style="margin-top:8px;width:100%" onclick="fecharModalPix()">CANCELAR</button>
+      </div>
+
+      <!-- Estado: Expirado -->
+      <div id="pix-state-expired" class="pix-state" style="display:none">
+        <div class="pix-error-icon">
+          <i class="fas fa-clock" style="color:var(--orange)"></i>
+        </div>
+        <h3>QR Code expirado</h3>
+        <p class="text-muted">O tempo para pagamento esgotou</p>
+        <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="iniciarPagamentoPix()">GERAR NOVO QR CODE</button>
+        <button class="btn-secondary" style="margin-top:8px;width:100%" onclick="fecharModalPix()">CANCELAR</button>
+      </div>
     </div>
   </div>
 

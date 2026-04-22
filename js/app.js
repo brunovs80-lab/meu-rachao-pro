@@ -477,6 +477,31 @@ async function loadRachaoFinanceTab(rachao, user) {
 
   document.getElementById('finance-pix-amount').textContent = 'Valor: ' + formatCurrency(perPerson);
   document.getElementById('finance-pix-key').value = rachao.pixKey || '';
+
+  await loadFinancePixStatus(rachao, user);
+}
+
+async function loadFinancePixStatus(rachao, user) {
+  const isAdmin = rachao.createdBy === user.id;
+  const btnConfig = document.getElementById('btn-config-pix-admin');
+  const btnPay = document.getElementById('btn-pagar-pix');
+  const statusArea = document.getElementById('finance-pix-status-area');
+
+  let status = { mp_enabled: false };
+  try { status = await apiGetPaymentStatus(rachao.id); } catch (e) { console.error(e); }
+
+  if (btnConfig) btnConfig.style.display = isAdmin ? 'block' : 'none';
+  if (btnPay) btnPay.style.display = status.mp_enabled ? 'block' : 'none';
+
+  if (statusArea) {
+    if (status.mp_enabled) {
+      statusArea.innerHTML = '<div style="background:rgba(50,188,173,0.1);border:1px solid #32BCAD;color:#32BCAD;padding:8px 12px;border-radius:var(--radius);font-size:12px;margin-bottom:8px;text-align:center"><i class="fas fa-check-circle"></i> PIX automático ativo</div>';
+    } else if (isAdmin) {
+      statusArea.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);padding:8px 12px;border-radius:var(--radius);font-size:12px;margin-bottom:8px;text-align:center"><i class="fas fa-info-circle"></i> PIX automático não configurado</div>';
+    } else {
+      statusArea.innerHTML = '';
+    }
+  }
 }
 
 async function confirmBillingPayment(billingId, playerId) {
@@ -501,6 +526,166 @@ async function notifyPayment() {
   await apiAddNotification({ type:'green', icon:'fa-money-bill-wave', title:'Pagamento informado', text: user.name + ' informou pagamento' });
   showToast('Pagamento informado! Admin será notificado.');
   await loadRachaoDetail();
+}
+
+// ===== PIX AUTOMATIC PAYMENT =====
+let _pixTimerInterval = null;
+let _pixExpiresAt = null;
+let _pixCurrentTxId = null;
+
+function showPixState(state) {
+  ['loading', 'ready', 'paid', 'error', 'expired'].forEach(s => {
+    const el = document.getElementById('pix-state-' + s);
+    if (el) el.style.display = s === state ? 'flex' : 'none';
+  });
+}
+
+function fecharModalPix() {
+  document.getElementById('modal-pix-payment').style.display = 'none';
+  if (_pixTimerInterval) {
+    clearInterval(_pixTimerInterval);
+    _pixTimerInterval = null;
+  }
+  if (typeof apiUnsubscribePixUpdates === 'function') apiUnsubscribePixUpdates();
+  _pixExpiresAt = null;
+  _pixCurrentTxId = null;
+  loadRachaoDetail();
+}
+
+function startPixTimer(expiresAt) {
+  _pixExpiresAt = new Date(expiresAt).getTime();
+  const el = document.getElementById('pix-timer-countdown');
+  const timerBox = document.getElementById('pix-timer');
+  const update = () => {
+    const remaining = _pixExpiresAt - Date.now();
+    if (remaining <= 0) {
+      clearInterval(_pixTimerInterval);
+      _pixTimerInterval = null;
+      showPixState('expired');
+      return;
+    }
+    const min = Math.floor(remaining / 60000);
+    const sec = Math.floor((remaining % 60000) / 1000);
+    el.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+    if (timerBox) timerBox.classList.toggle('expiring', remaining < 5 * 60000);
+  };
+  update();
+  if (_pixTimerInterval) clearInterval(_pixTimerInterval);
+  _pixTimerInterval = setInterval(update, 1000);
+}
+
+async function iniciarPagamentoPix() {
+  const user = apiGetCurrentUser();
+  const rachao = await apiGetRachaoById(currentRachaoId);
+  if (!rachao || !user) return;
+
+  const modal = document.getElementById('modal-pix-payment');
+  modal.style.display = 'flex';
+  showPixState('loading');
+
+  try {
+    const month = getCurrentMonth();
+    const billing = await apiGetBilling(rachao.id, month);
+    if (!billing) throw new Error('Cobrança mensal não encontrada');
+
+    const perPerson = billing.perPerson || 0;
+    if (!perPerson || perPerson <= 0) throw new Error('Valor inválido');
+
+    const description = `Mensalidade ${rachao.name} - ${month}`;
+    const result = await apiCreatePixCharge(billing.id, user.id, rachao.id, perPerson, description);
+
+    _pixCurrentTxId = result.transaction_id;
+
+    document.getElementById('pix-modal-amount').textContent = 'Valor: ' + formatCurrency(result.amount);
+    document.getElementById('pix-modal-code').value = result.qr_code || '';
+    const imgEl = document.getElementById('pix-qr-image');
+    if (result.qr_code_base64) {
+      imgEl.src = 'data:image/png;base64,' + result.qr_code_base64;
+      imgEl.style.display = 'block';
+    } else {
+      imgEl.style.display = 'none';
+    }
+
+    showPixState('ready');
+    startPixTimer(result.expires_at);
+
+    apiSubscribePixUpdates((evt) => {
+      if (evt.type === 'pix_transaction' && evt.data.id === _pixCurrentTxId && evt.data.status === 'paid') {
+        if (_pixTimerInterval) { clearInterval(_pixTimerInterval); _pixTimerInterval = null; }
+        document.getElementById('pix-paid-amount').textContent = formatCurrency(evt.data.amount);
+        showPixState('paid');
+      }
+    });
+  } catch (err) {
+    console.error('PIX error:', err);
+    document.getElementById('pix-error-msg').textContent = err.message || 'Erro desconhecido';
+    showPixState('error');
+  }
+}
+
+function copyPixCode() {
+  const text = document.getElementById('pix-modal-code').value;
+  if (!text) { showToast('Código indisponível'); return; }
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Código PIX copiado!'))
+    .catch(() => showToast('Copie manualmente'));
+}
+
+// ===== ADMIN: CONFIGURAR PIX AUTOMÁTICO =====
+async function abrirConfigPix() {
+  const modal = document.getElementById('modal-config-pix');
+  modal.style.display = 'flex';
+  document.getElementById('config-pix-token').value = '';
+  const status = await apiGetPaymentStatus(currentRachaoId).catch(() => null);
+  document.getElementById('config-pix-enabled').checked = !!(status && status.mp_enabled);
+  const current = document.getElementById('config-pix-current');
+  if (status && status.mp_enabled) {
+    current.style.display = 'block';
+    document.getElementById('config-pix-nickname').textContent = 'Configurado (token preservado)';
+    document.getElementById('config-pix-email').textContent = 'Deixe o campo de token em branco para manter o atual';
+  } else {
+    current.style.display = 'none';
+  }
+}
+
+function fecharConfigPix() {
+  document.getElementById('modal-config-pix').style.display = 'none';
+}
+
+async function salvarConfigPix() {
+  const user = apiGetCurrentUser();
+  if (!user) { showToast('Sessão expirada'); return; }
+  const token = document.getElementById('config-pix-token').value.trim();
+  const enabled = document.getElementById('config-pix-enabled').checked;
+  const btn = document.getElementById('btn-salvar-config-pix');
+
+  if (enabled && !token) {
+    const status = await apiGetPaymentStatus(currentRachaoId).catch(() => null);
+    if (!status || !status.mp_enabled) {
+      showToast('Cole o access token do Mercado Pago');
+      return;
+    }
+  }
+
+  try {
+    setLoading(btn, true);
+    const result = await apiSavePaymentConfig(currentRachaoId, user.id, {
+      mpAccessToken: token || null,
+      mpEnabled: enabled,
+    });
+    if (result.mp_user_info) {
+      document.getElementById('config-pix-nickname').textContent = result.mp_user_info.nickname || '—';
+      document.getElementById('config-pix-email').textContent = result.mp_user_info.email || '';
+      document.getElementById('config-pix-current').style.display = 'block';
+    }
+    showToast('Configuração salva!');
+    fecharConfigPix();
+    await loadRachaoDetail();
+  } catch (err) {
+    showToast(err.message || 'Erro ao salvar');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 // ===== SESSIONS =====
