@@ -298,19 +298,22 @@ async function loadRachaoGameTab(rachao, user) {
   const sessions = await apiGetSessions(rachao.id);
   const openSession = sessions.filter(s => s.status === 'open').sort((a,b) => a.date.localeCompare(b.date))[0];
   const doneSessions = sessions.filter(s => s.status === 'done').sort((a,b) => b.date.localeCompare(a.date));
+  const today = new Date().toISOString().slice(0, 10);
+  const recentDone = doneSessions.find(s => s.date === today);
+  const currentSession = openSession || recentDone;
 
   const createBtn = document.getElementById('btn-create-session');
   const activeArea = document.getElementById('session-active-area');
 
-  if (openSession) {
-    currentSessionId = openSession.id;
-    document.getElementById('session-date-display').textContent = formatDateBR(openSession.date);
-    document.getElementById('session-badge').textContent = 'PRÓXIMO JOGO';
-    document.getElementById('session-info').textContent = openSession.confirmed.length + ' confirmados';
+  if (currentSession) {
+    currentSessionId = currentSession.id;
+    document.getElementById('session-date-display').textContent = formatDateBR(currentSession.date);
+    document.getElementById('session-badge').textContent = currentSession.status === 'done' ? 'ENCERRADO' : 'PRÓXIMO JOGO';
+    document.getElementById('session-info').textContent = currentSession.confirmed.length + ' confirmados';
     createBtn.style.display = 'none';
     activeArea.style.display = 'block';
-    await loadSessionPresence(openSession, rachao, user);
-    loadSessionTeams(openSession);
+    await loadSessionPresence(currentSession, rachao, user);
+    loadSessionTeams(currentSession);
   } else {
     currentSessionId = null;
     document.getElementById('session-date-display').textContent = 'Nenhum jogo agendado';
@@ -391,6 +394,12 @@ async function loadSessionPresence(session, rachao, user) {
 }
 
 async function loadSessionTeams(session) {
+  const regBtn = document.getElementById('btn-register-stats');
+  const endBtn = document.getElementById('btn-end-session');
+  const sessionDone = session.status === 'done';
+  if (regBtn) regBtn.style.display = sessionDone ? '' : 'none';
+  if (endBtn) endBtn.style.display = sessionDone ? 'none' : '';
+
   if (session.teams) {
     document.getElementById('teams-result').style.display = 'block';
     renderAllTeams(session.teams);
@@ -399,7 +408,7 @@ async function loadSessionTeams(session) {
     if (rotState && rotState.active && rotState.sessionId === session.id) {
       rotBtn.innerHTML = '<i class="fas fa-play"></i> CONTINUAR PARTIDA';
       rotBtn.onclick = () => navigateTo('rotation');
-    } else if (session.status !== 'done') {
+    } else if (!sessionDone) {
       rotBtn.innerHTML = '<i class="fas fa-play"></i> INICIAR PARTIDA';
       rotBtn.onclick = () => startRotation();
     } else {
@@ -1106,6 +1115,16 @@ async function renderStatsTab(tab) {
 async function loadRegisterStats() {
   const session = await apiGetSessionById(currentSessionId);
   if (!session) return;
+  const listEl = document.getElementById('stats-register-list');
+  const saveBtn = document.querySelector('#page-register-stats .btn-primary');
+
+  if (session.status !== 'done') {
+    if (listEl) listEl.innerHTML = '<div class="empty-state" style="padding:20px"><i class="fas fa-hourglass-half"></i><p>Aguarde o admin encerrar o rachão para registrar estatísticas.</p></div>';
+    if (saveBtn) saveBtn.style.display = 'none';
+    return;
+  }
+  if (saveBtn) saveBtn.style.display = '';
+
   const currentUser = apiGetCurrentUser();
   const isAdmin = currentUser && currentUser.isAdmin;
   const allPlayers = (await Promise.all(session.confirmed.map(pid => apiGetPlayerById(pid).catch(() => null)))).filter(Boolean);
@@ -1113,7 +1132,8 @@ async function loadRegisterStats() {
   const players = isAdmin ? allPlayers : allPlayers.filter(p => p.id === currentUser.id);
 
   if (players.length === 0) {
-    document.getElementById('stats-register-list').innerHTML = '<div class="empty-state" style="padding:20px"><i class="fas fa-ban"></i><p>Você não está na lista de confirmados deste jogo</p></div>';
+    listEl.innerHTML = '<div class="empty-state" style="padding:20px"><i class="fas fa-ban"></i><p>Você não está na lista de confirmados deste jogo</p></div>';
+    if (saveBtn) saveBtn.style.display = 'none';
     return;
   }
 
@@ -1149,6 +1169,10 @@ async function saveMatchStats() {
   setLoading(btn, true);
   const session = await apiGetSessionById(currentSessionId);
   if (!session) return;
+  if (session.status !== 'done') {
+    showToast('Aguarde o admin encerrar o rachão para registrar estatísticas.');
+    return;
+  }
   const currentUser = apiGetCurrentUser();
   const isAdmin = currentUser && currentUser.isAdmin;
   const playerIds = isAdmin ? session.confirmed : session.confirmed.filter(pid => pid === currentUser.id);
