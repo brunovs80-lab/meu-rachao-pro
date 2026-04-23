@@ -115,6 +115,7 @@
       </div>
     </div>
     <div class="page-body">
+      <div id="dash-admin-alert" style="display:none"></div>
       <div id="dash-rachaos-list"></div>
       <div id="dash-no-rachao" class="card card-highlight" style="text-align:center;display:none">
         <i class="fas fa-futbol" style="font-size:36px;color:var(--orange);margin-bottom:8px"></i>
@@ -836,6 +837,25 @@
       <h2>Validar Estatísticas</h2>
     </div>
     <div class="page-body">
+      <div id="stats-bulk-bar" class="stats-bulk-bar" style="display:none">
+        <div class="stats-bulk-left">
+          <label class="stat-check-wrap">
+            <input type="checkbox" id="stats-select-all" onchange="toggleAllStats(this.checked)">
+            <span id="stats-bulk-count" class="text-muted" style="font-size:13px">0 pendentes</span>
+          </label>
+        </div>
+        <div class="stats-bulk-actions">
+          <button class="btn-success btn-sm" id="btn-approve-all" onclick="approveAllStats()">
+            <i class="fas fa-check-double"></i> Aprovar todas
+          </button>
+          <button class="btn-success btn-sm" id="btn-approve-selected" style="display:none" onclick="approveSelectedStats()">
+            <i class="fas fa-check"></i> Aprovar selecionadas
+          </button>
+          <button class="btn-danger btn-sm" id="btn-reject-selected" style="display:none" onclick="rejectSelectedStats()">
+            <i class="fas fa-xmark"></i> Rejeitar
+          </button>
+        </div>
+      </div>
       <div id="pending-stats-list" class="list"></div>
       <div id="pending-stats-empty" class="empty-state"><i class="fas fa-check-circle"></i><p>Nenhuma estatística pendente</p></div>
     </div>

@@ -104,6 +104,8 @@ async function loadDashboard() {
   if (!user) return;
   document.getElementById('dash-username').textContent = escapeHtml(user.name);
 
+  showAdminDashboardAlert();
+
   showListSkeleton('dash-rachaos-list', 2);
   const rachaos = (await apiGetRachaos()).filter(r => r.status === 'active' && r.participants.includes(user.id));
   const listEl = document.getElementById('dash-rachaos-list');

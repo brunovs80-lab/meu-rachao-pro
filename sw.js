@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rachao-v14';
+const CACHE_NAME = 'rachao-v15';
 const ASSETS = [
   '/',
   '/index.html',

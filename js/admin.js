@@ -133,8 +133,15 @@ async function loadAdminStats() {
   const pending = await apiGetPendingStats();
   const list = document.getElementById('pending-stats-list');
   const empty = document.getElementById('pending-stats-empty');
-  if (pending.length === 0) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
+  const bulkBar = document.getElementById('stats-bulk-bar');
+  if (pending.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'flex';
+    if (bulkBar) bulkBar.style.display = 'none';
+    return;
+  }
   empty.style.display = 'none';
+  if (bulkBar) bulkBar.style.display = 'flex';
 
   const html = await Promise.all(pending.map(async s => {
     const p = await apiGetPlayerById(s.playerId).catch(() => null);
@@ -154,7 +161,13 @@ async function loadAdminStats() {
       if (s.reds) chips += `<span class="stat-chip negative"><i class="fas fa-square"></i> ${s.reds} vermelho</span>`;
     }
     return `<div class="stat-validation-card">
-      <div class="stat-validation-header"><h4>${escapeHtml(p.name)}</h4><span class="match-label">${rachao ? escapeHtml(rachao.name) : ''}</span></div>
+      <div class="stat-validation-header">
+        <label class="stat-check-wrap">
+          <input type="checkbox" class="stat-check" data-stat-id="${s.id}" onchange="updateStatsBulkBar()">
+          <h4 style="margin:0">${escapeHtml(p.name)}</h4>
+        </label>
+        <span class="match-label">${rachao ? escapeHtml(rachao.name) : ''}</span>
+      </div>
       <div class="stat-validation-details">${chips}</div>
       <div class="stat-val-actions">
         <button class="btn-success" onclick="validateStat('${s.id}',true)"><i class="fas fa-check"></i> Aprovar</button>
@@ -163,12 +176,65 @@ async function loadAdminStats() {
     </div>`;
   }));
   list.innerHTML = html.join('');
+  updateStatsBulkBar();
+}
+
+function getSelectedStatIds() {
+  return Array.from(document.querySelectorAll('.stat-check:checked')).map(el => el.dataset.statId);
+}
+
+function updateStatsBulkBar() {
+  const count = getSelectedStatIds().length;
+  const total = document.querySelectorAll('.stat-check').length;
+  const countEl = document.getElementById('stats-bulk-count');
+  const actionAll = document.getElementById('btn-approve-all');
+  const actionSelected = document.getElementById('btn-approve-selected');
+  const rejectSelected = document.getElementById('btn-reject-selected');
+  if (countEl) countEl.textContent = count > 0 ? `${count}/${total} selecionadas` : `${total} pendente(s)`;
+  if (actionSelected) actionSelected.style.display = count > 0 ? 'inline-flex' : 'none';
+  if (rejectSelected) rejectSelected.style.display = count > 0 ? 'inline-flex' : 'none';
+  if (actionAll) actionAll.style.display = count > 0 ? 'none' : 'inline-flex';
+}
+
+function toggleAllStats(checked) {
+  document.querySelectorAll('.stat-check').forEach(el => { el.checked = checked; });
+  updateStatsBulkBar();
 }
 
 async function validateStat(statId, approved) {
   await apiValidateStat(statId, approved);
   showToast(approved ? 'Estatística aprovada!' : 'Estatística rejeitada');
   await loadAdminStats();
+  await loadAdminBadges();
+}
+
+async function approveAllStats() {
+  const pending = await apiGetPendingStats();
+  if (pending.length === 0) return;
+  if (!confirm(`Aprovar todas as ${pending.length} estatísticas pendentes?`)) return;
+  await apiValidateStatsBatch(pending.map(s => s.id), true);
+  showToast(`${pending.length} estatística(s) aprovada(s)!`);
+  await loadAdminStats();
+  await loadAdminBadges();
+}
+
+async function approveSelectedStats() {
+  const ids = getSelectedStatIds();
+  if (ids.length === 0) return;
+  await apiValidateStatsBatch(ids, true);
+  showToast(`${ids.length} estatística(s) aprovada(s)!`);
+  await loadAdminStats();
+  await loadAdminBadges();
+}
+
+async function rejectSelectedStats() {
+  const ids = getSelectedStatIds();
+  if (ids.length === 0) return;
+  if (!confirm(`Rejeitar ${ids.length} estatística(s) selecionada(s)?`)) return;
+  await apiValidateStatsBatch(ids, false);
+  showToast(`${ids.length} estatística(s) rejeitada(s)`);
+  await loadAdminStats();
+  await loadAdminBadges();
 }
 
 async function loadAdminBadges() {
@@ -176,4 +242,41 @@ async function loadAdminBadges() {
   const releases = await apiGetReleaseRequests();
   document.getElementById('admin-pending-count').textContent = pending.length > 0 ? pending.length : '';
   document.getElementById('admin-release-count').textContent = releases.length > 0 ? releases.length : '';
+}
+
+async function showAdminDashboardAlert() {
+  const container = document.getElementById('dash-admin-alert');
+  if (!container) return;
+  const user = apiGetCurrentUser();
+  if (!user) { container.style.display = 'none'; return; }
+
+  // Só mostrar se o usuário é dono de algum rachão
+  const rachaos = await apiGetRachaos().catch(() => []);
+  const isOwner = rachaos.some(r => r.createdBy === user.id);
+  if (!isOwner) { container.style.display = 'none'; return; }
+
+  const [pending, releases] = await Promise.all([
+    apiGetPendingStats().catch(() => []),
+    apiGetReleaseRequests().catch(() => []),
+  ]);
+
+  const parts = [];
+  if (pending.length > 0) parts.push({ count: pending.length, label: 'estatística(s)', target: 'admin-stats' });
+  if (releases.length > 0) parts.push({ count: releases.length, label: 'pedido(s) de liberação', target: 'admin-blocked' });
+
+  if (parts.length === 0) { container.style.display = 'none'; return; }
+
+  const primary = parts[0];
+  const totalCount = parts.reduce((sum, p) => sum + p.count, 0);
+  const text = parts.map(p => `${p.count} ${p.label}`).join(' · ');
+
+  container.innerHTML = `<div class="admin-alert-banner" onclick="navigateTo('${primary.target}')">
+    <div class="aab-icon"><i class="fas fa-bell"></i></div>
+    <div class="aab-content">
+      <div class="aab-title">${totalCount} aprovação(ões) pendente(s)</div>
+      <div class="aab-text">${escapeHtml(text)}</div>
+    </div>
+    <div class="aab-chevron"><i class="fas fa-chevron-right"></i></div>
+  </div>`;
+  container.style.display = 'block';
 }

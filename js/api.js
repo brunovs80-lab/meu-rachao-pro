@@ -533,6 +533,12 @@ async function apiValidateStat(statId, approved) {
   await initSupabase().rpc('validate_stat', { p_stat_id: statId, p_approved: approved });
 }
 
+async function apiValidateStatsBatch(statIds, approved) {
+  if (!Array.isArray(statIds) || statIds.length === 0) return { count: 0 };
+  await Promise.all(statIds.map(id => apiValidateStat(id, approved)));
+  return { count: statIds.length };
+}
+
 // ===== FANTASY =====
 async function apiGetFantasyTeams(rachaoId, userId) {
   let query = initSupabase().from('fantasy_teams').select('*');
