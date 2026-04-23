@@ -47,6 +47,8 @@ Deno.serve(async (req) => {
     const expirationDate = new Date(Date.now() + 30 * 60 * 1000)
     const idempotencyKey = `${billing_id}-${player_id}-${Date.now()}`
 
+    const notificationUrl = `${supabaseUrl}/functions/v1/pix-webhook`
+
     const mpPayload = {
       transaction_amount: Number(amount),
       description: description || 'Mensalidade Rachão',
@@ -55,6 +57,8 @@ Deno.serve(async (req) => {
         email: payer_email || 'pagador@email.com',
       },
       date_of_expiration: expirationDate.toISOString(),
+      notification_url: notificationUrl,
+      external_reference: `${rachao_id}:${billing_id}:${player_id}`,
     }
 
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {

@@ -1208,6 +1208,11 @@ select.input-field {
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: 20px;
   overflow-y: auto;
+  position: relative;
+}
+
+.modal-content:has(.modal-close) {
+  padding-top: 56px;
 }
 
 .modal-header {
