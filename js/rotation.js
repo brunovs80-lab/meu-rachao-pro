@@ -5,7 +5,6 @@ async function loadRotation() {
   const state = await apiGetRotationState();
   const active = document.getElementById('rotation-active');
   const empty = document.getElementById('rotation-empty');
-  const historyCard = document.getElementById('rotation-history-card');
 
   if (state && state.active) {
     active.style.display = 'block';
@@ -14,13 +13,6 @@ async function loadRotation() {
   } else {
     active.style.display = 'none';
     empty.style.display = 'flex';
-  }
-
-  if (state && state.rounds && state.rounds.length > 0) {
-    historyCard.style.display = 'block';
-    renderRotationHistory(state.rounds);
-  } else {
-    historyCard.style.display = 'none';
   }
 }
 
@@ -90,8 +82,6 @@ async function finishRound() {
     await apiSaveRotationState(state);
     showToast(`Rodada ${state.round - 1} encerrada!`);
     renderRotationState(state);
-    renderRotationHistory(state.rounds);
-    document.getElementById('rotation-history-card').style.display = 'block';
     return;
   }
 
@@ -151,8 +141,6 @@ async function finishRound() {
   state.round++; state.scoreA = 0; state.scoreB = 0;
   await apiSaveRotationState(state);
   renderRotationState(state);
-  renderRotationHistory(state.rounds);
-  document.getElementById('rotation-history-card').style.display = 'block';
   showToast(`Rodada ${state.round - 1} encerrada!`);
 }
 
@@ -171,16 +159,6 @@ async function endRotation() {
   await apiAddNotification({ type: 'purple', icon: 'fa-flag-checkered', title: 'Rachão encerrado!', text: `${state.rounds.length} rodadas jogadas` });
   showToast('Rachão encerrado!');
   navigateTo('dashboard');
-}
-
-function renderRotationHistory(rounds) {
-  document.getElementById('rotation-history').innerHTML = rounds.map(r => {
-    const resultText = r.scoreA > r.scoreB ? `${r.teamA} venceu` : r.scoreB > r.scoreA ? `${r.teamB} venceu` : 'Empate';
-    return `<div class="rotation-round-item">
-      <div class="round-number">${r.round}</div>
-      <div class="round-result">${r.teamA} vs ${r.teamB} — <span class="round-score">${r.scoreA} x ${r.scoreB}</span> • ${resultText}</div>
-    </div>`;
-  }).join('');
 }
 
 // ===== TIMER =====
