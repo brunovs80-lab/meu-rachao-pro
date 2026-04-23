@@ -63,17 +63,7 @@ function renderRotationState(state) {
   document.querySelector('#rot-team-b h4').textContent = state.teamB.name;
 
   const nextCard = document.getElementById('rot-next-team-card');
-  if (state.queue.length > 0) {
-    nextCard.style.display = 'block';
-    const next = state.queue[0];
-    const nameInput = document.getElementById('rot-next-team-name');
-    nameInput.value = next.name || '';
-    nameInput.placeholder = 'Nome do próximo time';
-    document.getElementById('rot-next-team-list').innerHTML = next.players.map(p => {
-      const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
-      return `<div class="player-item"><div class="player-avatar" style="background:var(--orange)">${ini}</div><div class="player-info"><div class="player-name">${escapeHtml(p.name)}</div><div class="player-detail">${escapeHtml(p.position)}</div></div></div>`;
-    }).join('');
-  } else { nextCard.style.display = 'none'; }
+  if (nextCard) nextCard.style.display = 'none';
 }
 
 async function addGoalRotation(team) {

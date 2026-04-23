@@ -422,7 +422,7 @@
             <p class="text-muted" id="finance-pix-amount"></p>
           </div>
           <div id="finance-pix-status-area"></div>
-          <div class="pix-copy-group">
+          <div class="pix-copy-group" id="finance-pix-manual-group">
             <input type="text" class="input-field" id="finance-pix-key" readonly>
             <button class="btn-primary" onclick="copyFinancePix()"><i class="fas fa-copy"></i></button>
           </div>
@@ -431,7 +431,7 @@
           </button>
           <button class="btn-pix btn-large" style="margin-top:12px;width:100%;display:none" id="btn-pagar-pix" onclick="iniciarPagamentoPix()">
             <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjNEJCOEE5IiBkPSJNMjQyLjQgMjkyLjVDMjQ3LjggMjg3LjEgMjU1LjEgMjg0LjIgMjYyLjggMjg0LjJDMjcwLjUgMjg0LjIgMjc3LjggMjg3LjEgMjgzLjIgMjkyLjVMMzM5LjcgMzQ5QzM0NC4yIDM1My41IDM0Ni42IDM1OS41IDM0Ni42IDM2NS45QzM0Ni42IDM3Mi4zIDM0NC4yIDM3OC4zIDMzOS43IDM4Mi44TDI4My4yIDQzOS4zQzI3Ny44IDQ0NC43IDI3MC41IDQ0Ny42IDI2Mi44IDQ0Ny42QzI1NS4xIDQ0Ny42IDI0Ny44IDQ0NC43IDI0Mi40IDQzOS4zTDE4NS45IDM4Mi44QzE4MS40IDM3OC4zIDE3OSAzNzIuMyAxNzkgMzY1LjlDMTc5IDM1OS41IDE4MS40IDM1My41IDE4NS45IDM0OUwyNDIuNCAyOTIuNVoiLz48L3N2Zz4=" alt="" style="width:18px;height:18px;vertical-align:middle;margin-right:6px;filter:brightness(0) invert(1)">
-            PAGAR COM PIX AUTOMÁTICO
+            PAGAR COM PIX
           </button>
           <button class="btn-orange btn-large" style="margin-top:8px;width:100%" onclick="notifyPayment()"><i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO MANUAL</button>
         </div>
@@ -486,6 +486,21 @@
           </div>
         </div>
 
+        <div class="score-controls">
+          <div class="score-btn-group">
+            <span>Time A</span>
+            <div>
+              <button class="btn-score" onclick="addGoalRotation('a')"><i class="fas fa-plus"></i> GOL</button>
+            </div>
+          </div>
+          <div class="score-btn-group">
+            <span>Time B</span>
+            <div>
+              <button class="btn-score" onclick="addGoalRotation('b')"><i class="fas fa-plus"></i> GOL</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Cronômetro -->
         <div class="card" id="timer-card">
           <h3><i class="fas fa-stopwatch" style="color:var(--orange);margin-right:6px"></i>Cronômetro</h3>
@@ -513,29 +528,6 @@
             <h3 style="color:var(--orange)">TEMPO ESGOTADO!</h3>
             <button class="btn-primary" style="margin-top:12px" onclick="resetTimer()">REINICIAR</button>
           </div>
-        </div>
-
-        <div class="score-controls">
-          <div class="score-btn-group">
-            <span>Time A</span>
-            <div>
-              <button class="btn-score" onclick="addGoalRotation('a')"><i class="fas fa-plus"></i> GOL</button>
-            </div>
-          </div>
-          <div class="score-btn-group">
-            <span>Time B</span>
-            <div>
-              <button class="btn-score" onclick="addGoalRotation('b')"><i class="fas fa-plus"></i> GOL</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" id="rot-next-team-card" style="display:none">
-          <h3><i class="fas fa-arrow-right-arrow-left" style="color:var(--orange)"></i> Próximo Time</h3>
-          <div class="form-group" style="margin-top:8px;margin-bottom:8px">
-            <input type="text" id="rot-next-team-name" class="input-field" placeholder="Nome do time">
-          </div>
-          <div id="rot-next-team-list" class="player-list"></div>
         </div>
 
         <button class="btn-orange btn-large" onclick="finishRound()"><i class="fas fa-flag-checkered"></i> FINALIZAR PARTIDA</button>

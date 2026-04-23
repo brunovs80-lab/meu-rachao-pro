@@ -599,6 +599,9 @@ async function loadFinancePixStatus(rachao, user) {
   if (btnConfig) btnConfig.style.display = isAdmin ? 'block' : 'none';
   if (btnPay) btnPay.style.display = status.mp_enabled ? 'block' : 'none';
 
+  const manualGroup = document.getElementById('finance-pix-manual-group');
+  if (manualGroup) manualGroup.style.display = status.mp_enabled ? 'none' : 'flex';
+
   if (statusArea) {
     if (status.mp_enabled) {
       statusArea.innerHTML = '<div style="background:rgba(50,188,173,0.1);border:1px solid #32BCAD;color:#32BCAD;padding:8px 12px;border-radius:var(--radius);font-size:12px;margin-bottom:8px;text-align:center"><i class="fas fa-check-circle"></i> PIX automático ativo</div>';
