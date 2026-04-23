@@ -838,3 +838,64 @@
   color: var(--orange);
   font-size: 14px;
 }
+
+/* ========== MEMBER BADGES ========== */
+.member-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.member-badge.admin {
+  background: rgba(255, 122, 0, 0.15);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+}
+
+.member-badge.coadmin {
+  background: rgba(123, 44, 191, 0.15);
+  color: var(--purple-light);
+  border: 1px solid var(--purple-light);
+}
+
+/* ========== PERMISSION ROWS ========== */
+.perm-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 13px;
+}
+
+.perm-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.perm-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--purple);
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.perm-row i {
+  color: var(--purple-light);
+  width: 16px;
+  text-align: center;
+}
+
+.perm-row span {
+  flex: 1;
+}

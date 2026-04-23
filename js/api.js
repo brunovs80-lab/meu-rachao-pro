@@ -539,6 +539,96 @@ async function apiValidateStatsBatch(statIds, approved) {
   return { count: statIds.length };
 }
 
+// ===== CO-ADMINS / PERMISSÕES =====
+const COADMIN_PERMISSIONS = [
+  { key: 'approve_stats', label: 'Aprovar estatísticas', icon: 'fa-check-double' },
+  { key: 'manage_payments', label: 'Gerenciar pagamentos', icon: 'fa-money-bill' },
+  { key: 'edit_values', label: 'Editar valores (quadra/mensalidade)', icon: 'fa-pen-to-square' },
+  { key: 'mark_venue_paid', label: 'Marcar quadra como paga', icon: 'fa-check' },
+  { key: 'config_pix', label: 'Configurar PIX automático', icon: 'fa-qrcode' },
+  { key: 'end_session', label: 'Encerrar jogo/sessão', icon: 'fa-flag-checkered' },
+  { key: 'draw_teams', label: 'Sortear times', icon: 'fa-shuffle' },
+  { key: 'block_players', label: 'Bloquear/liberar jogadores', icon: 'fa-ban' },
+];
+
+async function apiListRachaoAdmins(rachaoId) {
+  const { data, error } = await initSupabase().rpc('list_rachao_admins', { p_rachao_id: rachaoId });
+  if (error) { console.error(error); return []; }
+  return (data || []).map(r => ({
+    playerId: r.player_id,
+    playerName: r.player_name,
+    permissions: r.permissions || {},
+    grantedBy: r.granted_by,
+    grantedAt: r.granted_at,
+  }));
+}
+
+async function apiCheckPermission(rachaoId, playerId, permission) {
+  if (!rachaoId || !playerId || !permission) return false;
+  const { data, error } = await initSupabase().rpc('check_rachao_permission', {
+    p_rachao_id: rachaoId,
+    p_player_id: playerId,
+    p_permission: permission,
+  });
+  if (error) { console.error(error); return false; }
+  return !!data;
+}
+
+const _coAdminCache = new Map();
+
+async function getCoAdminsCached(rachaoId) {
+  if (!_coAdminCache.has(rachaoId)) {
+    _coAdminCache.set(rachaoId, apiListRachaoAdmins(rachaoId));
+  }
+  return await _coAdminCache.get(rachaoId);
+}
+
+function invalidateCoAdminCache(rachaoId) {
+  if (rachaoId) _coAdminCache.delete(rachaoId);
+  else _coAdminCache.clear();
+}
+
+async function hasRachaoPermission(rachao, user, perm) {
+  if (!rachao || !user) return false;
+  if (rachao.createdBy === user.id) return true;
+  const admins = await getCoAdminsCached(rachao.id);
+  const coAdmin = admins.find(a => a.playerId === user.id);
+  return !!(coAdmin && coAdmin.permissions && coAdmin.permissions[perm]);
+}
+
+// Retorna os rachaoIds onde o user tem uma permissão (owner OU co-admin com ela)
+async function getRachaosWithPermission(user, perm) {
+  if (!user) return [];
+  const rachaos = await apiGetRachaos();
+  const results = [];
+  for (const r of rachaos) {
+    if (r.createdBy === user.id) { results.push(r.id); continue; }
+    const admins = await getCoAdminsCached(r.id);
+    const coAdmin = admins.find(a => a.playerId === user.id);
+    if (coAdmin && coAdmin.permissions && coAdmin.permissions[perm]) results.push(r.id);
+  }
+  return results;
+}
+
+async function apiManageCoAdmin(action, { rachaoId, playerId, userId, permissions }) {
+  const url = `${SUPABASE_URL}/functions/v1/manage-coadmin`;
+  const body = { action, rachao_id: rachaoId, player_id: playerId, user_id: userId };
+  if (permissions) body.permissions = permissions;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'apikey': SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Erro ao gerenciar co-admin');
+  invalidateCoAdminCache(rachaoId);
+  return json;
+}
+
 // ===== FANTASY =====
 async function apiGetFantasyTeams(rachaoId, userId) {
   let query = initSupabase().from('fantasy_teams').select('*');

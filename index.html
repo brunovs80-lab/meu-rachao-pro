@@ -1053,6 +1053,24 @@
     </div>
   </div>
 
+  <!-- ========== MODAL GERENCIAR CO-ADMIN ========== -->
+  <div id="modal-manage-coadmin" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharModalCoAdmin()">&times;</button>
+      <h3><i class="fas fa-user-shield"></i> <span id="coadmin-modal-title">Permissões</span></h3>
+      <p class="text-muted" style="font-size:13px;margin:8px 0 16px">
+        Selecione o que este jogador poderá fazer neste rachão.
+      </p>
+      <div id="coadmin-permissions-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+      <button class="btn-primary btn-large" style="width:100%" id="btn-save-coadmin" onclick="salvarCoAdmin()">
+        <i class="fas fa-save"></i> SALVAR
+      </button>
+      <button class="btn-outline" style="width:100%;margin-top:8px;border-color:var(--red);color:var(--red);display:none" id="btn-remove-coadmin" onclick="removerCoAdmin()">
+        <i class="fas fa-user-minus"></i> REMOVER COMO CO-ADMIN
+      </button>
+    </div>
+  </div>
+
   <!-- ========== MODAL EDITAR VALORES (ADMIN) ========== -->
   <div id="modal-edit-values" class="modal" style="display:none">
     <div class="modal-content">

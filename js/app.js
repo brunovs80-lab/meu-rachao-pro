@@ -411,23 +411,120 @@ async function loadSessionTeams(session) {
 }
 
 async function loadRachaoMembersTab(rachao) {
+  const user = apiGetCurrentUser();
+  const isOwner = user && rachao.createdBy === user.id;
   document.getElementById('members-total').textContent = rachao.participants.length + ' participantes';
-  const players = (await Promise.all(rachao.participants.map(pid => apiGetPlayerById(pid).catch(() => null)))).filter(Boolean);
+
+  const [players, coAdmins] = await Promise.all([
+    Promise.all(rachao.participants.map(pid => apiGetPlayerById(pid).catch(() => null))).then(arr => arr.filter(Boolean)),
+    apiListRachaoAdmins(rachao.id).catch(() => []),
+  ]);
+  const coAdminMap = Object.fromEntries(coAdmins.map(c => [c.playerId, c]));
+
   document.getElementById('rachao-members-list').innerHTML = players.map(p => {
     const ini = escapeHtml(p.name.split(' ').map(w => w[0]).join('').substring(0, 2));
     const isCreator = p.id === rachao.createdBy;
+    const isCoAdmin = !!coAdminMap[p.id];
+    let badge = '';
+    if (isCreator) badge = '<span class="member-badge admin">ADMIN</span>';
+    else if (isCoAdmin) badge = '<span class="member-badge coadmin">CO-ADMIN</span>';
+
+    const manageBtn = (isOwner && !isCreator)
+      ? `<button class="btn-outline btn-sm" onclick="abrirModalCoAdmin('${p.id}','${escapeHtml(p.name)}')"><i class="fas fa-user-shield"></i> ${isCoAdmin ? 'Gerenciar' : 'Admin'}</button>`
+      : '';
+
     return `<div class="player-item">
       <div class="player-avatar">${ini}</div>
-      <div class="player-info"><div class="player-name">${escapeHtml(p.name)} ${isCreator ? '<span style="color:var(--orange);font-size:10px">ADMIN</span>' : ''}</div><div class="player-detail">${escapeHtml(p.position)} • ${p.goals}G ${p.assists}A</div></div>
+      <div class="player-info">
+        <div class="player-name">${escapeHtml(p.name)} ${badge}</div>
+        <div class="player-detail">${escapeHtml(p.position)} • ${p.goals}G ${p.assists}A</div>
+      </div>
+      ${manageBtn}
     </div>`;
   }).join('');
+}
+
+// ===== MODAL CO-ADMIN =====
+let _coAdminContext = { rachaoId: null, playerId: null, isExisting: false };
+
+async function abrirModalCoAdmin(playerId, playerName) {
+  const rachao = await apiGetRachaoById(currentRachaoId);
+  if (!rachao) return;
+  _coAdminContext = { rachaoId: rachao.id, playerId, isExisting: false };
+
+  const existing = (await apiListRachaoAdmins(rachao.id)).find(c => c.playerId === playerId);
+  _coAdminContext.isExisting = !!existing;
+  const currentPerms = existing ? existing.permissions : {};
+
+  document.getElementById('coadmin-modal-title').textContent = playerName;
+
+  const listHtml = COADMIN_PERMISSIONS.map(p => `
+    <label class="perm-row">
+      <input type="checkbox" class="perm-check" data-perm="${p.key}" ${currentPerms[p.key] ? 'checked' : ''}>
+      <i class="fas ${p.icon}"></i>
+      <span>${p.label}</span>
+    </label>
+  `).join('');
+  document.getElementById('coadmin-permissions-list').innerHTML = listHtml;
+
+  document.getElementById('btn-remove-coadmin').style.display = existing ? 'block' : 'none';
+  document.getElementById('modal-manage-coadmin').style.display = 'flex';
+}
+
+function fecharModalCoAdmin() {
+  document.getElementById('modal-manage-coadmin').style.display = 'none';
+}
+
+async function salvarCoAdmin() {
+  const user = apiGetCurrentUser();
+  if (!user || !_coAdminContext.rachaoId || !_coAdminContext.playerId) return;
+  const perms = {};
+  document.querySelectorAll('.perm-check').forEach(el => { perms[el.dataset.perm] = el.checked; });
+  const hasAny = Object.values(perms).some(Boolean);
+  const btn = document.getElementById('btn-save-coadmin');
+  try {
+    setLoading(btn, true);
+    if (!hasAny && _coAdminContext.isExisting) {
+      await apiManageCoAdmin('remove', { rachaoId: _coAdminContext.rachaoId, playerId: _coAdminContext.playerId, userId: user.id });
+      showToast('Co-admin removido');
+    } else if (hasAny) {
+      await apiManageCoAdmin('upsert', { rachaoId: _coAdminContext.rachaoId, playerId: _coAdminContext.playerId, userId: user.id, permissions: perms });
+      showToast(_coAdminContext.isExisting ? 'Permissões atualizadas' : 'Co-admin adicionado');
+    } else {
+      showToast('Selecione ao menos uma permissão');
+      return;
+    }
+    fecharModalCoAdmin();
+    await loadRachaoDetail();
+  } catch (err) {
+    showToast(err.message || 'Erro ao salvar');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function removerCoAdmin() {
+  const user = apiGetCurrentUser();
+  if (!user || !_coAdminContext.rachaoId || !_coAdminContext.playerId) return;
+  if (!confirm('Remover este jogador como co-admin?')) return;
+  try {
+    await apiManageCoAdmin('remove', { rachaoId: _coAdminContext.rachaoId, playerId: _coAdminContext.playerId, userId: user.id });
+    showToast('Co-admin removido');
+    fecharModalCoAdmin();
+    await loadRachaoDetail();
+  } catch (err) {
+    showToast(err.message || 'Erro ao remover');
+  }
 }
 
 let _currentBillingId = null;
 let _currentBillingValues = { totalCost: 0, perPerson: 0, venuePaidAt: null };
 
 async function loadRachaoFinanceTab(rachao, user) {
-  const isAdmin = rachao.createdBy === user.id;
+  const isOwner = rachao.createdBy === user.id;
+  const canEditValues = isOwner || await hasRachaoPermission(rachao, user, 'edit_values');
+  const canMarkPaid = isOwner || await hasRachaoPermission(rachao, user, 'mark_venue_paid');
+  const canManagePayments = isOwner || await hasRachaoPermission(rachao, user, 'manage_payments');
   const defaultCost = rachao.monthlyVenueCost || 0;
   const members = rachao.participants.length;
 
@@ -458,7 +555,7 @@ async function loadRachaoFinanceTab(rachao, user) {
   document.getElementById('finance-total-cost').textContent = formatCurrency(billing.totalCost || 0);
   document.getElementById('finance-per-person').textContent = formatCurrency(billing.perPerson || 0);
   document.getElementById('finance-members').textContent = members;
-  document.getElementById('btn-edit-finance-values').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('btn-edit-finance-values').style.display = canEditValues ? 'flex' : 'none';
 
   const paid = billing.payments.filter(p => p.status === 'paid').length;
   const pending = billing.payments.filter(p => p.status !== 'paid').length;
@@ -490,7 +587,7 @@ async function loadRachaoFinanceTab(rachao, user) {
 
   // Botão "marcar quadra paga" só pra admin
   const btnVenue = document.getElementById('btn-toggle-venue-paid');
-  if (isAdmin) {
+  if (canMarkPaid) {
     btnVenue.style.display = 'block';
     if (venuePaid) {
       btnVenue.innerHTML = '<i class="fas fa-undo"></i> DESMARCAR QUADRA PAGA';
@@ -520,7 +617,7 @@ async function loadRachaoFinanceTab(rachao, user) {
     const statusLabel = pay.status === 'paid' ? 'Pago' : pay.status === 'awaiting_confirmation' ? 'Aguardando' : 'Pendente';
     const statusClass = pay.status === 'paid' ? 'badge-paid' : 'badge-pending';
     const pid = pay.player_id || pay.playerId;
-    const adminBtn = isAdmin && pay.status !== 'paid'
+    const adminBtn = canManagePayments && pay.status !== 'paid'
       ? `<button class="btn-success btn-sm" onclick="confirmBillingPayment('${billingId}','${pid}')">✓</button>` : '';
     return `<div class="player-item">
       <div class="player-avatar">${ini}</div>
@@ -590,7 +687,8 @@ async function toggleQuadraPaga() {
 }
 
 async function loadFinancePixStatus(rachao, user) {
-  const isAdmin = rachao.createdBy === user.id;
+  const isOwner = rachao.createdBy === user.id;
+  const canConfigPix = isOwner || await hasRachaoPermission(rachao, user, 'config_pix');
   const btnConfig = document.getElementById('btn-config-pix-admin');
   const btnPay = document.getElementById('btn-pagar-pix');
   const statusArea = document.getElementById('finance-pix-status-area');
@@ -598,7 +696,7 @@ async function loadFinancePixStatus(rachao, user) {
   let status = { mp_enabled: false };
   try { status = await apiGetPaymentStatus(rachao.id); } catch (e) { console.error(e); }
 
-  if (btnConfig) btnConfig.style.display = isAdmin ? 'block' : 'none';
+  if (btnConfig) btnConfig.style.display = canConfigPix ? 'block' : 'none';
   if (btnPay) btnPay.style.display = status.mp_enabled ? 'block' : 'none';
 
   const manualGroup = document.getElementById('finance-pix-manual-group');
@@ -607,7 +705,7 @@ async function loadFinancePixStatus(rachao, user) {
   if (statusArea) {
     if (status.mp_enabled) {
       statusArea.innerHTML = '<div style="background:rgba(50,188,173,0.1);border:1px solid #32BCAD;color:#32BCAD;padding:8px 12px;border-radius:var(--radius);font-size:12px;margin-bottom:8px;text-align:center"><i class="fas fa-check-circle"></i> PIX automático ativo</div>';
-    } else if (isAdmin) {
+    } else if (canConfigPix) {
       statusArea.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);padding:8px 12px;border-radius:var(--radius);font-size:12px;margin-bottom:8px;text-align:center"><i class="fas fa-info-circle"></i> PIX automático não configurado</div>';
     } else {
       statusArea.innerHTML = '';

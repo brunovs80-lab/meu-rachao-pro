@@ -3,7 +3,10 @@
 // ===== ADMIN PAYMENTS =====
 async function loadAdminPayments() {
   const user = apiGetCurrentUser();
-  const rachaos = (await apiGetRachaos()).filter(r => r.createdBy === user.id && r.monthlyVenueCost > 0);
+  const allowedIds = await getRachaosWithPermission(user, 'manage_payments');
+  const rachaos = (await apiGetRachaos()).filter(r =>
+    r.monthlyVenueCost > 0 && (r.createdBy === user.id || allowedIds.includes(r.id))
+  );
   const list = document.getElementById('admin-payment-list');
   if (rachaos.length === 0) { list.innerHTML = '<p class="text-muted" style="padding:16px;text-align:center">Nenhum rachão com cobrança</p>'; return; }
 
@@ -130,7 +133,12 @@ async function denyRelease(reqId) {
 
 // ===== ADMIN STATS VALIDATION =====
 async function loadAdminStats() {
-  const pending = await apiGetPendingStats();
+  const user = apiGetCurrentUser();
+  const allPending = await apiGetPendingStats();
+  const rachaos = await apiGetRachaos().catch(() => []);
+  const ownedIds = new Set(rachaos.filter(r => r.createdBy === user.id).map(r => r.id));
+  const allowedIds = new Set(await getRachaosWithPermission(user, 'approve_stats'));
+  const pending = allPending.filter(s => !s.rachaoId || ownedIds.has(s.rachaoId) || allowedIds.has(s.rachaoId));
   const list = document.getElementById('pending-stats-list');
   const empty = document.getElementById('pending-stats-empty');
   const bulkBar = document.getElementById('stats-bulk-bar');
@@ -209,7 +217,12 @@ async function validateStat(statId, approved) {
 }
 
 async function approveAllStats() {
-  const pending = await apiGetPendingStats();
+  const user = apiGetCurrentUser();
+  const allPending = await apiGetPendingStats();
+  const rachaos = await apiGetRachaos().catch(() => []);
+  const ownedIds = new Set(rachaos.filter(r => r.createdBy === user.id).map(r => r.id));
+  const allowedIds = new Set(await getRachaosWithPermission(user, 'approve_stats'));
+  const pending = allPending.filter(s => !s.rachaoId || ownedIds.has(s.rachaoId) || allowedIds.has(s.rachaoId));
   if (pending.length === 0) return;
   if (!confirm(`Aprovar todas as ${pending.length} estatísticas pendentes?`)) return;
   await apiValidateStatsBatch(pending.map(s => s.id), true);
@@ -238,9 +251,17 @@ async function rejectSelectedStats() {
 }
 
 async function loadAdminBadges() {
-  const pending = await apiGetPendingStats();
+  const user = apiGetCurrentUser();
+  const allPending = await apiGetPendingStats();
   const releases = await apiGetReleaseRequests();
-  document.getElementById('admin-pending-count').textContent = pending.length > 0 ? pending.length : '';
+  let pendingCount = allPending.length;
+  if (user) {
+    const rachaos = await apiGetRachaos().catch(() => []);
+    const ownedIds = new Set(rachaos.filter(r => r.createdBy === user.id).map(r => r.id));
+    const allowedIds = new Set(await getRachaosWithPermission(user, 'approve_stats'));
+    pendingCount = allPending.filter(s => !s.rachaoId || ownedIds.has(s.rachaoId) || allowedIds.has(s.rachaoId)).length;
+  }
+  document.getElementById('admin-pending-count').textContent = pendingCount > 0 ? pendingCount : '';
   document.getElementById('admin-release-count').textContent = releases.length > 0 ? releases.length : '';
 }
 
@@ -250,19 +271,23 @@ async function showAdminDashboardAlert() {
   const user = apiGetCurrentUser();
   if (!user) { container.style.display = 'none'; return; }
 
-  // Só mostrar se o usuário é dono de algum rachão
+  // Mostrar se é dono OU tem permissões administrativas em algum rachão
   const rachaos = await apiGetRachaos().catch(() => []);
-  const isOwner = rachaos.some(r => r.createdBy === user.id);
-  if (!isOwner) { container.style.display = 'none'; return; }
+  const ownedIds = new Set(rachaos.filter(r => r.createdBy === user.id).map(r => r.id));
+  const canApproveIds = new Set(await getRachaosWithPermission(user, 'approve_stats'));
+  const canBlockIds = await getRachaosWithPermission(user, 'block_players');
+  const hasAnyAdminPerm = ownedIds.size > 0 || canApproveIds.size > 0 || canBlockIds.length > 0;
+  if (!hasAnyAdminPerm) { container.style.display = 'none'; return; }
 
-  const [pending, releases] = await Promise.all([
+  const [allPending, releases] = await Promise.all([
     apiGetPendingStats().catch(() => []),
     apiGetReleaseRequests().catch(() => []),
   ]);
+  const pending = allPending.filter(s => !s.rachaoId || ownedIds.has(s.rachaoId) || canApproveIds.has(s.rachaoId));
 
   const parts = [];
   if (pending.length > 0) parts.push({ count: pending.length, label: 'estatística(s)', target: 'admin-stats' });
-  if (releases.length > 0) parts.push({ count: releases.length, label: 'pedido(s) de liberação', target: 'admin-blocked' });
+  if (releases.length > 0 && (ownedIds.size > 0 || canBlockIds.length > 0)) parts.push({ count: releases.length, label: 'pedido(s) de liberação', target: 'admin-blocked' });
 
   if (parts.length === 0) { container.style.display = 'none'; return; }
 
