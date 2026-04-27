@@ -207,6 +207,9 @@
         <button type="button" id="btn-capture-location" class="btn-outline" style="width:100%;margin-top:8px" onclick="captureRachaoLocation()">
           <i class="fas fa-location-crosshairs"></i> <span id="capture-location-label">USAR MINHA LOCALIZAÇÃO ATUAL</span>
         </button>
+        <button type="button" id="btn-geocode-location" class="btn-outline" style="width:100%;margin-top:6px" onclick="geocodeRachaoLocation()">
+          <i class="fas fa-magnifying-glass-location"></i> <span id="geocode-location-label">BUSCAR ENDEREÇO DIGITADO</span>
+        </button>
         <p class="text-muted hint" id="captured-coords-display" style="display:none"></p>
         <input type="hidden" id="rachao-lat">
         <input type="hidden" id="rachao-lng">
@@ -376,6 +379,9 @@
             </button>
             <button id="btn-end-session" class="btn-outline" style="width:100%;border-color:var(--red);color:var(--red)" onclick="endSession()">
               <i class="fas fa-flag-checkered"></i> ENCERRAR JOGO
+            </button>
+            <button id="btn-cancel-session" class="btn-outline" style="width:100%;border-color:var(--red);color:var(--red);display:none" onclick="cancelarJogo()">
+              <i class="fas fa-ban"></i> CANCELAR JOGO
             </button>
           </div>
 

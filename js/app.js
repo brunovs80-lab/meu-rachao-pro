@@ -267,6 +267,45 @@ async function captureRachaoLocation() {
   }
 }
 
+async function geocodeRachaoLocation() {
+  const btn = document.getElementById('btn-geocode-location');
+  const label = document.getElementById('geocode-location-label');
+  const display = document.getElementById('captured-coords-display');
+  const address = (document.getElementById('rachao-location').value || '').trim();
+  if (!address) { showToast('Digite o endereço primeiro'); return; }
+
+  try {
+    setLoading(btn, true);
+    if (label) label.textContent = 'BUSCANDO...';
+    // Nominatim — política de uso: 1 req/seg, sem header User-Agent o navegador adiciona o seu próprio
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(address)}`;
+    const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+    if (!resp.ok) throw new Error('Falha na busca (' + resp.status + ')');
+    const data = await resp.json();
+    if (!data || !data.length) {
+      showToast('Endereço não encontrado. Tente algo mais específico (rua, nº, cidade).');
+      if (label) label.textContent = 'BUSCAR ENDEREÇO DIGITADO';
+      return;
+    }
+    const lat = parseFloat(data[0].lat);
+    const lng = parseFloat(data[0].lon);
+    document.getElementById('rachao-lat').value = lat;
+    document.getElementById('rachao-lng').value = lng;
+    if (display) {
+      display.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)} (via OSM)`;
+      display.style.display = 'block';
+    }
+    if (label) label.textContent = 'BUSCAR OUTRO ENDEREÇO';
+    showToast('✅ Endereço localizado');
+  } catch (err) {
+    console.error('[Geocode] erro:', err);
+    showToast('Erro ao buscar endereço: ' + err.message);
+    if (label) label.textContent = 'BUSCAR ENDEREÇO DIGITADO';
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
 // Estado do form: null = criando; ID = editando rachão existente
 let _editingRachaoId = null;
 
@@ -614,6 +653,11 @@ async function loadGuestsArea(session, rachao, user) {
     cfgBtn.style.display = canManage ? '' : 'none';
     if (cfgLabel) cfgLabel.textContent = session.allow_guests ? 'EDITAR AVULSOS' : 'LIBERAR AVULSOS';
   }
+  // Botão "CANCELAR JOGO" — só admin/co-admin e enquanto sessão estiver aberta
+  const cancelBtn = document.getElementById('btn-cancel-session');
+  if (cancelBtn) {
+    cancelBtn.style.display = (canManage && session.status === 'open') ? '' : 'none';
+  }
 
   // Card de lista
   if (!session.allow_guests) {
@@ -623,23 +667,46 @@ async function loadGuestsArea(session, rachao, user) {
   if (card) card.style.display = 'block';
 
   const guests = await apiListSessionGuests(session.id).catch(() => []);
-  const paid = guests.filter(g => g.status === 'paid');
+  const paid     = guests.filter(g => g.status === 'paid');
+  const pending  = guests.filter(g => g.status === 'pending');
+  const refunded = guests.filter(g => g.status === 'refunded');
 
   document.getElementById('guests-paid-count').textContent = paid.length;
   document.getElementById('guests-slots').textContent = session.guest_slots || 0;
   const fee = Number(session.guest_fee || 0);
   document.getElementById('guests-fee-label').textContent = fee > 0 ? `R$ ${fee.toFixed(2).replace('.', ',')} / vaga` : '';
 
-  document.getElementById('guests-list').innerHTML = paid.length
-    ? paid.map(g => {
-        const ini = escapeHtml((g.player_name || '?').split(' ').map(w => w[0]).join('').substring(0, 2));
-        return `<div class="player-item">
-          <div class="player-avatar" style="background:var(--orange)">${ini}</div>
-          <div class="player-info"><div class="player-name">${escapeHtml(g.player_name)}</div>
-            <div class="player-detail">${escapeHtml(g.player_position || 'Avulso')} • R$ ${Number(g.fee_paid).toFixed(2).replace('.',',')}</div></div>
-          <span class="confirmed-badge"><i class="fas fa-check-circle"></i></span>
-        </div>`;
-      }).join('')
+  const renderRow = (g, kind) => {
+    const ini = escapeHtml((g.player_name || '?').split(' ').map(w => w[0]).join('').substring(0, 2));
+    const valor = `R$ ${Number(g.fee_paid).toFixed(2).replace('.',',')}`;
+    let avatarColor = 'var(--orange)';
+    let badge = '';
+    let detailExtra = '';
+    if (kind === 'paid')     badge = '<span class="confirmed-badge"><i class="fas fa-check-circle"></i></span>';
+    if (kind === 'pending') {
+      avatarColor = 'var(--text-muted)';
+      badge = '<span class="text-muted" style="font-size:11px"><i class="fas fa-hourglass-half"></i> Aguardando</span>';
+    }
+    if (kind === 'refunded') {
+      avatarColor = 'var(--red)';
+      badge = '<span style="color:var(--red);font-size:11px;font-weight:700"><i class="fas fa-rotate-left"></i> Estorno</span>';
+      detailExtra = ' • <span style="color:var(--red)">estornar via MP</span>';
+    }
+    return `<div class="player-item">
+      <div class="player-avatar" style="background:${avatarColor}">${ini}</div>
+      <div class="player-info"><div class="player-name">${escapeHtml(g.player_name)}</div>
+        <div class="player-detail">${escapeHtml(g.player_position || 'Avulso')} • ${valor}${detailExtra}</div></div>
+      ${badge}
+    </div>`;
+  };
+
+  const sections = [];
+  if (paid.length)     sections.push(paid.map(g => renderRow(g, 'paid')).join(''));
+  if (pending.length)  sections.push(pending.map(g => renderRow(g, 'pending')).join(''));
+  if (refunded.length) sections.push(refunded.map(g => renderRow(g, 'refunded')).join(''));
+
+  document.getElementById('guests-list').innerHTML = sections.length
+    ? sections.join('')
     : '<p class="text-muted" style="font-size:12px;padding:8px;text-align:center">Ninguém pagou ainda</p>';
 }
 
@@ -1273,6 +1340,48 @@ async function endSession() {
   await apiUpdateSession(currentSessionId, { status: 'done' });
   showToast('Jogo encerrado');
   await loadRachaoDetail();
+}
+
+async function cancelarJogo() {
+  if (!currentSessionId) return;
+  // Verifica se há avulsos pagos para alertar sobre estorno
+  let warning = 'Tem certeza que quer cancelar este jogo?';
+  try {
+    const guests = await apiListSessionGuests(currentSessionId);
+    const paid = guests.filter(g => g.status === 'paid');
+    if (paid.length > 0) {
+      const total = paid.reduce((s, g) => s + Number(g.fee_paid || 0), 0);
+      warning = `⚠️ Este jogo tem ${paid.length} avulso(s) pago(s) — total R$ ${total.toFixed(2).replace('.', ',')}.\n\n` +
+        `Você precisará ESTORNAR MANUALMENTE no painel do Mercado Pago. ` +
+        `O sistema vai marcar todos como "estorno pendente".\n\nProsseguir?`;
+    }
+  } catch (_) { /* segue mesmo se falhar */ }
+
+  if (!confirm(warning)) return;
+
+  try {
+    const result = await apiCancelSession(currentSessionId);
+    if (!result.ok) {
+      const msgs = {
+        SESSAO_INVALIDA: 'Sessão inválida',
+        SEM_PERMISSAO:   'Sem permissão para cancelar',
+        JA_CANCELADA:    'Sessão já cancelada',
+        JA_ENCERRADA:    'Sessão já encerrada — use o histórico',
+      };
+      showToast(msgs[result.error] || result.error || 'Erro ao cancelar');
+      return;
+    }
+    if (result.refund_count > 0) {
+      const total = Number(result.refund_total || 0).toFixed(2).replace('.', ',');
+      showToast(`Jogo cancelado. ${result.refund_count} estorno(s) pendente(s): R$ ${total}`);
+    } else {
+      showToast('Jogo cancelado');
+    }
+    await loadRachaoDetail();
+  } catch (err) {
+    console.error('cancelarJogo error:', err);
+    showToast('Erro ao cancelar: ' + (err.message || ''));
+  }
 }
 
 // ===== DRAW TEAMS =====

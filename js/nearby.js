@@ -14,10 +14,12 @@ async function searchNearby() {
   try {
     setLoading(btn, true);
     const coords = await getCurrentCoords();
+    const user = (typeof apiGetCurrentUser === 'function') ? apiGetCurrentUser() : null;
     const { data, error } = await initSupabase().rpc('list_open_guest_sessions_nearby', {
       p_lat: coords.latitude,
       p_lng: coords.longitude,
       p_radius_km: radius,
+      p_player_id: user?.id || null,
     });
     if (error) throw error;
     _lastNearbyResults = data || [];

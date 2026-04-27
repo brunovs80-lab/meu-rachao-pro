@@ -835,6 +835,16 @@ async function apiListOpenGuestSessions() {
   return data || [];
 }
 
+async function apiCancelSession(sessionId) {
+  const user = apiGetCurrentUser();
+  const { data, error } = await initSupabase().rpc('cancel_session', {
+    p_session_id: sessionId,
+    p_caller_id: user?.id || null,
+  });
+  if (error) throw error;
+  return data || { ok: false };
+}
+
 async function apiGetSessionGuestConfig(sessionId) {
   const { data, error } = await initSupabase()
     .from('sessions')
