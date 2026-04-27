@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build script - copia apenas os assets web para www/
+ * Build script - copia assets web + bundla módulo billing (RevenueCat) para www/
  * Usado pelo Capacitor para gerar os apps nativos.
  */
 const fs = require('fs');
@@ -9,7 +9,6 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'www');
 
-// Arquivos e pastas que compõem o app web
 const ITEMS = [
   'index.html',
   'manifest.json',
@@ -20,9 +19,7 @@ const ITEMS = [
 ];
 
 function cleanDir(dir) {
-  if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true });
-  }
+  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
   fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -50,6 +47,30 @@ for (const item of ITEMS) {
   }
   copyRecursive(src, dest);
   console.log(`  ✔ ${item}`);
+}
+
+// Bundla o módulo billing (depende de @revenuecat/purchases-capacitor + @capacitor/core)
+const billingSrc = path.join(ROOT, 'src-billing', 'billing.src.js');
+const billingOut = path.join(OUT, 'js', 'billing.bundle.js');
+if (fs.existsSync(billingSrc)) {
+  console.log('🔨 Bundling billing module (RevenueCat)...');
+  try {
+    const esbuild = require('esbuild');
+    esbuild.buildSync({
+      entryPoints: [billingSrc],
+      bundle: true,
+      outfile: billingOut,
+      format: 'iife',
+      platform: 'browser',
+      target: ['es2017'],
+      minify: true,
+      logLevel: 'warning',
+    });
+    console.log('  ✔ js/billing.bundle.js');
+  } catch (err) {
+    console.error('  ✖ falha ao bundlar billing:', err.message);
+    process.exit(1);
+  }
 }
 
 console.log('✅ Build complete → www/');

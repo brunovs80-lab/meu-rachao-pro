@@ -217,6 +217,7 @@ async function validateStat(statId, approved) {
 }
 
 async function approveAllStats() {
+  if (!ProManager.requirePro('aprovar-lote')) return;
   const user = apiGetCurrentUser();
   const allPending = await apiGetPendingStats();
   const rachaos = await apiGetRachaos().catch(() => []);

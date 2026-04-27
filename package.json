@@ -31,15 +31,19 @@
   },
   "homepage": "https://github.com/brunovs80-lab/meu-rachao-pro#readme",
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "puppeteer": "^24.41.0",
     "sharp": "^0.34.5"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
+    "@capacitor/geolocation": "^8.2.0",
     "@capacitor/ios": "^8.3.0",
+    "@revenuecat/purchases-capacitor": "^13.0.1",
     "@supabase/supabase-js": "^2.103.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.9.0",

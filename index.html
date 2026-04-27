@@ -116,20 +116,28 @@
     </div>
     <div class="page-body">
       <div id="dash-admin-alert" style="display:none"></div>
+      <button class="profile-upgrade-cta" data-upgrade-btn onclick="navigateTo('paywall')" style="margin-bottom:12px">
+        <i class="fas fa-crown"></i>
+        <div class="profile-upgrade-cta-body">
+          <strong>Torne-se Pro</strong>
+          <span>Rachões e jogadores ilimitados, fantasy, caixa e mais</span>
+        </div>
+        <i class="fas fa-chevron-right"></i>
+      </button>
       <div id="dash-rachaos-list"></div>
       <div id="dash-no-rachao" class="card card-highlight" style="text-align:center;display:none">
         <i class="fas fa-futbol" style="font-size:36px;color:var(--orange);margin-bottom:8px"></i>
         <h3>Nenhum rachão</h3>
         <p class="text-muted">Crie ou entre em um rachão para começar</p>
         <div class="card-actions" style="margin-top:12px">
-          <button class="btn-primary btn-sm" onclick="navigateTo('match-create')">CRIAR</button>
-          <button class="btn-orange btn-sm" onclick="navigateTo('match-join')">ENTRAR</button>
+          <button class="btn-primary btn-sm" onclick="iniciarCriarRachao()">CRIAR</button>
+          <button class="btn-orange btn-sm" onclick="navigateTo('match-join')">ENTRAR EM UM RACHÃO</button>
         </div>
       </div>
 
       <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn-primary btn-large" style="flex:1" onclick="navigateTo('match-create')"><i class="fas fa-plus"></i> CRIAR RACHÃO</button>
-        <button class="btn-orange btn-large" style="flex:1" onclick="navigateTo('match-join')"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
+        <button class="btn-primary btn-large" style="flex:1" onclick="iniciarCriarRachao()"><i class="fas fa-plus"></i> CRIAR RACHÃO</button>
+        <button class="btn-orange btn-large" style="flex:1" onclick="navigateTo('match-join')"><i class="fas fa-right-to-bracket"></i> ENTRAR EM UM RACHÃO</button>
       </div>
     </div>
     <nav class="bottom-nav">
@@ -146,7 +154,7 @@
       <h2>Rachões</h2>
       <div style="display:flex;gap:4px">
         <button class="btn-icon" onclick="navigateTo('match-join')" title="Entrar no Rachão"><i class="fas fa-right-to-bracket"></i></button>
-        <button class="btn-icon" onclick="navigateTo('match-create')" title="Criar Rachão"><i class="fas fa-plus"></i></button>
+        <button class="btn-icon" onclick="iniciarCriarRachao()" title="Criar Rachão"><i class="fas fa-plus"></i></button>
       </div>
     </div>
     <div class="page-body">
@@ -159,18 +167,18 @@
         <i class="fas fa-calendar-plus"></i>
         <p>Nenhum rachão agendado</p>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn-primary btn-sm" onclick="navigateTo('match-create')">CRIAR RACHÃO</button>
-          <button class="btn-orange btn-sm" onclick="navigateTo('match-join')">ENTRAR NO RACHÃO</button>
+          <button class="btn-primary btn-sm" onclick="iniciarCriarRachao()">CRIAR RACHÃO</button>
+          <button class="btn-orange btn-sm" onclick="navigateTo('match-join')">ENTRAR EM UM RACHÃO</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ========== CRIAR RACHÃO ========== -->
+  <!-- ========== CRIAR / EDITAR RACHÃO ========== -->
   <div id="page-match-create" class="page">
     <div class="page-header">
-      <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Novo Rachão</h2>
+      <button class="btn-back" onclick="cancelEditRachao()"><i class="fas fa-arrow-left"></i></button>
+      <h2 id="match-create-title">Novo Rachão</h2>
     </div>
     <div class="page-body">
       <div class="form-group">
@@ -196,6 +204,12 @@
       <div class="form-group">
         <label>Local</label>
         <input type="text" id="rachao-location" class="input-field" placeholder="Ex: Quadra Society Central">
+        <button type="button" id="btn-capture-location" class="btn-outline" style="width:100%;margin-top:8px" onclick="captureRachaoLocation()">
+          <i class="fas fa-location-crosshairs"></i> <span id="capture-location-label">USAR MINHA LOCALIZAÇÃO ATUAL</span>
+        </button>
+        <p class="text-muted hint" id="captured-coords-display" style="display:none"></p>
+        <input type="hidden" id="rachao-lat">
+        <input type="hidden" id="rachao-lng">
       </div>
       <div class="form-group">
         <label>Jogadores de linha por time</label>
@@ -223,6 +237,9 @@
         <input type="text" id="rachao-pix" class="input-field" placeholder="CPF, email ou telefone">
       </div>
       <button id="btn-create-rachao" class="btn-primary btn-large">CRIAR RACHÃO</button>
+      <button id="btn-delete-rachao" class="btn-outline" style="width:100%;margin-top:8px;border-color:var(--red);color:var(--red);display:none" onclick="confirmDeleteRachao()">
+        <i class="fas fa-trash"></i> EXCLUIR RACHÃO
+      </button>
     </div>
   </div>
 
@@ -233,16 +250,56 @@
       <h2>Entrar no Rachão</h2>
     </div>
     <div class="page-body">
-      <div class="card card-highlight" style="text-align:center">
-        <i class="fas fa-ticket" style="font-size:48px;color:var(--orange);margin-bottom:12px"></i>
-        <h3>Digite o código do Rachão</h3>
-        <p class="text-muted">Peça o código de 6 dígitos para quem criou o rachão</p>
+      <div class="tabs" style="margin-bottom:12px">
+        <button class="tab active" data-tab="join-code">Tenho o código</button>
+        <button class="tab" data-tab="join-nearby">Perto de mim</button>
       </div>
-      <div class="form-group">
-        <label>Código do Rachão</label>
-        <input type="text" id="join-code" class="input-field" placeholder="Ex: 482A7F" maxlength="6" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;text-transform:uppercase">
+
+      <div id="join-code-content">
+        <div class="card card-highlight" style="text-align:center">
+          <i class="fas fa-ticket" style="font-size:48px;color:var(--orange);margin-bottom:12px"></i>
+          <h3>Digite o código do Rachão</h3>
+          <p class="text-muted">Peça o código de 6 dígitos para quem criou o rachão</p>
+        </div>
+        <div class="form-group">
+          <label>Código do Rachão</label>
+          <input type="text" id="join-code" class="input-field" placeholder="Ex: 482A7F" maxlength="6" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;text-transform:uppercase">
+        </div>
+        <button class="btn-orange btn-large" onclick="joinRachaoByCode()"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
       </div>
-      <button class="btn-orange btn-large" onclick="joinRachaoByCode()"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
+
+      <div id="join-nearby-content" style="display:none">
+        <div class="card card-highlight" style="text-align:center">
+          <i class="fas fa-location-crosshairs" style="font-size:36px;color:var(--orange);margin-bottom:8px"></i>
+          <h3>Rachões abertos perto de você</h3>
+          <p class="text-muted" style="font-size:13px">Encontre jogos que aceitam avulsos pagantes próximos da sua localização</p>
+        </div>
+
+        <div class="form-group" style="margin-top:12px">
+          <label>Distância máxima</label>
+          <select id="nearby-radius" class="input-field" onchange="searchNearby()">
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="25" selected>25 km</option>
+            <option value="50">50 km</option>
+            <option value="100">100 km</option>
+          </select>
+        </div>
+
+        <button class="btn-primary btn-large" style="width:100%" id="btn-search-nearby" onclick="searchNearby()">
+          <i class="fas fa-magnifying-glass-location"></i> BUSCAR RACHÕES
+        </button>
+
+        <div id="nearby-results" style="margin-top:16px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MODAL DETALHE RACHÃO PRÓXIMO ========== -->
+  <div id="modal-nearby-detail" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharNearbyDetail()">&times;</button>
+      <div id="nearby-detail-body"></div>
     </div>
   </div>
 
@@ -250,7 +307,8 @@
   <div id="page-match-detail" class="page">
     <div class="page-header">
       <button class="btn-back" onclick="navigateTo('matches')"><i class="fas fa-arrow-left"></i></button>
-      <h2 id="detail-rachao-title">Rachão</h2>
+      <h2 id="detail-rachao-title" style="flex:1">Rachão</h2>
+      <button class="btn-icon" id="btn-edit-rachao" style="display:none" title="Editar configurações" onclick="abrirEditarRachao()"><i class="fas fa-pen"></i></button>
     </div>
     <div class="page-body">
       <!-- Info do Rachão -->
@@ -275,9 +333,9 @@
       <div class="tabs" style="flex-wrap:wrap">
         <button class="tab active" data-tab="rachao-game">Jogo</button>
         <button class="tab" data-tab="rachao-members">Jogadores</button>
-        <button class="tab" data-tab="rachao-finance">Financeiro</button>
-        <button class="tab" data-tab="rachao-stats">Stats</button>
-        <button class="tab" data-tab="rachao-ranking">Ranking</button>
+        <button class="tab" data-tab="rachao-finance">Financeiro<span class="pro-badge pro-badge-mini" data-upgrade-btn>PRO</span></button>
+        <button class="tab" data-tab="rachao-stats">Stats<span class="pro-badge pro-badge-mini" data-upgrade-btn>PRO</span></button>
+        <button class="tab" data-tab="rachao-ranking">Ranking<span class="pro-badge pro-badge-mini" data-upgrade-btn>PRO</span></button>
       </div>
 
       <!-- TAB: Próximo Jogo -->
@@ -313,9 +371,20 @@
             <button id="btn-register-stats" class="btn-outline" onclick="navigateTo('register-stats')" style="width:100%;display:none">
               <i class="fas fa-chart-bar"></i> REGISTRAR ESTATÍSTICAS
             </button>
+            <button id="btn-config-guests" class="btn-outline" style="width:100%;display:none" onclick="abrirConfigGuests()">
+              <i class="fas fa-user-plus"></i> <span id="btn-config-guests-label">LIBERAR AVULSOS</span><span class="pro-badge pro-badge-mini" data-upgrade-btn>PRO</span>
+            </button>
             <button id="btn-end-session" class="btn-outline" style="width:100%;border-color:var(--red);color:var(--red)" onclick="endSession()">
               <i class="fas fa-flag-checkered"></i> ENCERRAR JOGO
             </button>
+          </div>
+
+          <div class="card" id="guests-card" style="display:none">
+            <div class="card-title-row">
+              <h3><i class="fas fa-user-plus" style="color:var(--orange);margin-right:6px"></i>Avulsos pagos (<span id="guests-paid-count">0</span>/<span id="guests-slots">0</span>)</h3>
+              <span class="text-muted" id="guests-fee-label" style="font-size:12px"></span>
+            </div>
+            <div id="guests-list" class="player-list"></div>
           </div>
 
           <div class="card" style="margin-top:12px">
@@ -430,8 +499,8 @@
           <button class="btn-secondary" style="margin-top:12px;width:100%;display:none" id="btn-config-pix-admin" onclick="abrirConfigPix()">
             <i class="fas fa-cog"></i> CONFIGURAR PIX AUTOMÁTICO
           </button>
-          <button class="btn-pix btn-large" style="margin-top:12px;width:100%;display:none" id="btn-pagar-pix" onclick="iniciarPagamentoPix()">
-            <i class="fas fa-qrcode" style="margin-right:6px"></i>PAGAR COM PIX
+          <button class="btn-pix btn-large" style="margin-top:12px;width:100%;display:none" id="btn-pagar-pix" onclick="pixRetry()">
+            <i class="fas fa-qrcode" style="margin-right:6px"></i>PAGAR COM PIX<span class="pro-badge pro-badge-mini" data-upgrade-btn>PRO</span>
           </button>
           <button class="btn-orange btn-large" style="margin-top:8px;width:100%" onclick="notifyPayment()"><i class="fas fa-paper-plane"></i> INFORMAR PAGAMENTO MANUAL</button>
         </div>
@@ -807,7 +876,18 @@
         <div class="pstat"><span class="pstat-value" id="profile-assists">0</span><span class="pstat-label">Assist.</span></div>
         <div class="pstat"><span class="pstat-value" id="profile-desarmes">0</span><span class="pstat-label">Desarmes</span></div>
       </div>
+      <button class="profile-upgrade-cta" data-upgrade-btn onclick="navigateTo('paywall')">
+        <i class="fas fa-crown"></i>
+        <div class="profile-upgrade-cta-body">
+          <strong>Assinar Meu Rachão Pro</strong>
+          <span>Desbloqueie todas as funções premium</span>
+        </div>
+        <i class="fas fa-chevron-right"></i>
+      </button>
       <div class="profile-menu">
+        <div class="profile-menu-item" data-pro-badge style="display:none;cursor:default">
+          <i class="fas fa-crown" style="color:var(--orange)"></i><span>Você é Pro <span id="profile-pro-status" class="text-muted" style="font-size:12px;font-weight:400"></span></span>
+        </div>
         <button class="profile-menu-item" onclick="navigateTo('settings')"><i class="fas fa-gear"></i><span>Configurações</span><i class="fas fa-chevron-right"></i></button>
         <button class="profile-menu-item" onclick="navigateTo('admin')"><i class="fas fa-shield"></i><span>Painel Admin</span><i class="fas fa-chevron-right"></i></button>
         <button class="profile-menu-item text-red" onclick="logout()"><i class="fas fa-right-from-bracket"></i><span>Sair</span><i class="fas fa-chevron-right"></i></button>
@@ -826,6 +906,7 @@
         <button class="card admin-card" onclick="navigateTo('admin-stats')"><i class="fas fa-chart-bar"></i><div><h4>Validar Estatísticas</h4><p class="text-muted">Aprovar gols, assistências e desarmes</p></div><span class="admin-badge" id="admin-pending-count"></span></button>
         <button class="card admin-card" onclick="navigateTo('admin-payments')"><i class="fas fa-money-bill-wave"></i><div><h4>Gerenciar Pagamentos</h4><p class="text-muted">Confirmar e bloquear</p></div></button>
         <button class="card admin-card" onclick="navigateTo('admin-blocked')"><i class="fas fa-ban"></i><div><h4>Jogadores Bloqueados</h4><p class="text-muted">Inadimplentes e pedidos de liberação</p></div><span class="admin-badge" id="admin-release-count"></span></button>
+        <button class="card admin-card" onclick="navigateTo('admin-coupons')"><i class="fas fa-ticket"></i><div><h4>Cupons Pro</h4><p class="text-muted">Gerar cupons de teste grátis ou vitalício</p></div></button>
       </div>
     </div>
   </div>
@@ -846,7 +927,7 @@
         </div>
         <div class="stats-bulk-actions">
           <button class="btn-success btn-sm" id="btn-approve-all" onclick="approveAllStats()">
-            <i class="fas fa-check-double"></i> Aprovar todas
+            <i class="fas fa-check-double"></i> Aprovar todas<span class="pro-badge pro-badge-mini" data-upgrade-btn>PRO</span>
           </button>
           <button class="btn-success btn-sm" id="btn-approve-selected" style="display:none" onclick="approveSelectedStats()">
             <i class="fas fa-check"></i> Aprovar selecionadas
@@ -1053,6 +1134,134 @@
     </div>
   </div>
 
+  <!-- ========== PAYWALL / ASSINATURA PRO ========== -->
+  <div id="page-paywall" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Meu Rachão Pro</h2>
+    </div>
+    <div class="page-body">
+      <div class="paywall-hero">
+        <div class="paywall-crown"><i class="fas fa-crown"></i></div>
+        <h2 class="paywall-title">Desbloqueie tudo</h2>
+        <p class="paywall-subtitle" id="paywall-trigger-msg">Acesso completo a todas as funções premium do app.</p>
+      </div>
+
+      <div class="paywall-features">
+        <div class="paywall-feature"><i class="fas fa-check"></i> Rachões ilimitados</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Jogadores ilimitados (Free: até 15)</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Sortear times ilimitados (Free: 1 vez)</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Liberar jogadores avulsos pagantes</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Pagamentos PIX automáticos</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Caixa e fluxo financeiro</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Fantasy / ranking de craques</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Co-admin com permissões</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Histórico completo de stats</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Aprovar estatísticas em lote</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Exportar dados (CSV/PDF)</div>
+        <div class="paywall-feature"><i class="fas fa-check"></i> Backup na nuvem</div>
+      </div>
+
+      <h3 class="paywall-section-title">Escolha seu plano</h3>
+
+      <div class="paywall-plans">
+        <button class="paywall-plan" data-plan="monthly" onclick="paywallSelectPlan('monthly')">
+          <div class="plan-head">
+            <span class="plan-name">Mensal</span>
+          </div>
+          <div class="plan-price"><span class="plan-price-value" id="plan-price-monthly">R$ 9,90</span><span class="plan-price-period">/mês</span></div>
+          <div class="plan-desc">Cancela quando quiser</div>
+        </button>
+
+        <button class="paywall-plan paywall-plan-featured" data-plan="yearly" onclick="paywallSelectPlan('yearly')">
+          <div class="plan-badge">MAIS POPULAR · 50% OFF</div>
+          <div class="plan-head">
+            <span class="plan-name">Anual</span>
+          </div>
+          <div class="plan-price"><span class="plan-price-value" id="plan-price-yearly">R$ 59,90</span><span class="plan-price-period">/ano</span></div>
+          <div class="plan-desc">Equivale a R$ 4,99/mês · 7 dias grátis</div>
+        </button>
+
+        <button class="paywall-plan" data-plan="lifetime" onclick="paywallSelectPlan('lifetime')">
+          <div class="plan-head">
+            <span class="plan-name">Vitalício</span>
+            <span class="plan-tag"><i class="fas fa-infinity"></i> Para sempre</span>
+          </div>
+          <div class="plan-price"><span class="plan-price-value" id="plan-price-lifetime">R$ 149,90</span><span class="plan-price-period">uma vez</span></div>
+          <div class="plan-desc">Pague uma vez, use para sempre</div>
+        </button>
+      </div>
+
+      <div class="paywall-coupon">
+        <button type="button" class="paywall-coupon-toggle" onclick="paywallToggleCoupon()">
+          <i class="fas fa-ticket"></i> Tem um cupom?
+        </button>
+        <div id="paywall-coupon-box" class="paywall-coupon-box" style="display:none">
+          <input type="text" id="paywall-coupon-input" class="input-field paywall-coupon-input" placeholder="Digite seu cupom" maxlength="32" autocapitalize="characters" autocomplete="off">
+          <button class="btn-primary" id="btn-redeem-coupon" onclick="paywallRedeemCoupon()">RESGATAR</button>
+        </div>
+      </div>
+
+      <button class="paywall-restore" onclick="paywallRestore()"><i class="fas fa-rotate"></i> Restaurar compras</button>
+
+      <p class="paywall-legal">
+        Pagamento processado pela loja de aplicativos. Renovação automática para planos mensal/anual — pode ser cancelada nas configurações da conta da loja.<br>
+        <a href="#" onclick="event.preventDefault();navigateTo('terms')">Termos</a> · <a href="#" onclick="event.preventDefault();navigateTo('privacy')">Privacidade</a>
+      </p>
+
+      <!-- Estado: já é Pro -->
+      <div id="paywall-already-pro" class="paywall-already-pro" style="display:none">
+        <div class="paywall-success-icon"><i class="fas fa-circle-check"></i></div>
+        <h3>Você já é Pro!</h3>
+        <p class="text-muted" id="paywall-pro-info">Aproveite todas as funções premium.</p>
+        <button class="btn-primary btn-large" style="width:100%;margin-top:16px" onclick="navigateTo('dashboard')">VOLTAR AO APP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ADMIN: CUPONS ========== -->
+  <div id="page-admin-coupons" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('admin')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Cupons Pro</h2>
+    </div>
+    <div class="page-body">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:12px"><i class="fas fa-plus-circle"></i> Gerar novo cupom</h3>
+
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Tipo</label>
+        <select id="coupon-type" class="input-field" onchange="onCouponTypeChange()">
+          <option value="trial">Teste grátis (libera Pro por X dias)</option>
+          <option value="lifetime">Vitalício (libera Pro para sempre)</option>
+        </select>
+
+        <div id="coupon-duration-wrap" style="margin-top:12px">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Duração (dias)</label>
+          <input type="number" id="coupon-duration" class="input-field" placeholder="Ex: 30" min="1" max="3650" value="30">
+        </div>
+
+        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Código do cupom <span class="text-muted" style="font-weight:400">(deixe vazio para gerar automático)</span></label>
+        <input type="text" id="coupon-code" class="input-field" placeholder="EX: BETATESTER" maxlength="32" autocapitalize="characters">
+
+        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Máximo de usos <span class="text-muted" style="font-weight:400">(vazio = ilimitado)</span></label>
+        <input type="number" id="coupon-max-uses" class="input-field" placeholder="Ex: 100" min="1">
+
+        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Validade do cupom <span class="text-muted" style="font-weight:400">(opcional)</span></label>
+        <input type="date" id="coupon-expires" class="input-field">
+
+        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Descrição interna <span class="text-muted" style="font-weight:400">(opcional)</span></label>
+        <input type="text" id="coupon-description" class="input-field" placeholder="Ex: Cupom para influencer X" maxlength="100">
+
+        <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-create-coupon" onclick="adminCreateCoupon()">
+          <i class="fas fa-magic-wand-sparkles"></i> GERAR CUPOM
+        </button>
+      </div>
+
+      <h3 style="margin:8px 0 12px"><i class="fas fa-list"></i> Cupons existentes</h3>
+      <div id="admin-coupons-list"></div>
+    </div>
+  </div>
+
   <!-- ========== MODAL GERENCIAR CO-ADMIN ========== -->
   <div id="modal-manage-coadmin" class="modal" style="display:none">
     <div class="modal-content">
@@ -1067,6 +1276,36 @@
       </button>
       <button class="btn-outline" style="width:100%;margin-top:8px;border-color:var(--red);color:var(--red);display:none" id="btn-remove-coadmin" onclick="removerCoAdmin()">
         <i class="fas fa-user-minus"></i> REMOVER COMO CO-ADMIN
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL LIBERAR AVULSOS (ADMIN) ========== -->
+  <div id="modal-config-guests" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharConfigGuests()">&times;</button>
+      <h3><i class="fas fa-user-plus"></i> Avulsos para este jogo</h3>
+      <p class="text-muted" style="font-size:12px;margin:8px 0 16px">
+        Libere vagas para jogadores avulsos pagarem uma diária e participarem desta sessão.
+      </p>
+
+      <label style="display:flex;align-items:center;gap:8px;margin:8px 0 16px;cursor:pointer">
+        <input type="checkbox" id="guests-allow" style="width:18px;height:18px">
+        <span>Permitir avulsos pagantes</span>
+      </label>
+
+      <div id="guests-fields">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Valor da diária (R$)</label>
+        <input type="number" step="0.50" min="0" class="input-field" id="guests-fee" placeholder="25.00">
+
+        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Quantidade de vagas avulsas</label>
+        <input type="number" step="1" min="1" max="50" class="input-field" id="guests-slots-input" placeholder="4">
+
+        <p class="text-muted" id="guests-paid-info" style="font-size:11px;margin-top:8px;display:none"></p>
+      </div>
+
+      <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-save-guests" onclick="salvarConfigGuests()">
+        <i class="fas fa-save"></i> SALVAR
       </button>
     </div>
   </div>
@@ -1188,7 +1427,7 @@
         </div>
         <h3>Erro ao gerar PIX</h3>
         <p class="text-muted" id="pix-error-msg"></p>
-        <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="iniciarPagamentoPix()">TENTAR NOVAMENTE</button>
+        <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="pixRetry()">TENTAR NOVAMENTE</button>
         <button class="btn-secondary" style="margin-top:8px;width:100%" onclick="fecharModalPix()">CANCELAR</button>
       </div>
 
@@ -1199,7 +1438,7 @@
         </div>
         <h3>QR Code expirado</h3>
         <p class="text-muted">O tempo para pagamento esgotou</p>
-        <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="iniciarPagamentoPix()">GERAR NOVO QR CODE</button>
+        <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="pixRetry()">GERAR NOVO QR CODE</button>
         <button class="btn-secondary" style="margin-top:8px;width:100%" onclick="fecharModalPix()">CANCELAR</button>
       </div>
     </div>
@@ -1211,10 +1450,14 @@
   <script src="js/config.js"></script>
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/pro.js"></script>
+  <script src="js/billing.bundle.js" onerror="console.warn('billing.bundle.js não encontrado — IAP desabilitado neste contexto')"></script>
   <script src="js/app.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/rotation.js"></script>
   <script src="js/admin.js"></script>
   <script src="js/fantasy.js"></script>
+  <script src="js/paywall.js"></script>
+  <script src="js/nearby.js"></script>
 </body>
 </html>

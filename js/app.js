@@ -36,11 +36,31 @@ function initOfflineDetection() {
 }
 
 async function checkAuth() {
-  if (apiGetCurrentUser()) navigateTo('dashboard');
+  const user = apiGetCurrentUser();
+  if (user) {
+    ProManager.syncFromServer(user.id).catch(() => {});
+    ProManager.updateProBadgeUI();
+    if (window.Billing) Billing.init(user.id).catch(err => console.warn('[Billing] init falhou:', err));
+    navigateTo('dashboard');
+  } else {
+    ProManager.updateProBadgeUI();
+  }
 }
+
+// Páginas que exigem Pro: page → feature key
+const PRO_GATED_PAGES = {
+  'fantasy':  'fantasy',
+  'payments': 'pagamentos',
+  'stats':    'historico-stats',
+};
 
 // ===== NAVIGATION WITH HISTORY API =====
 function navigateTo(page, pushState) {
+  // Gate Pro: redireciona pra paywall se a página for premium e o usuário não tiver Pro
+  if (PRO_GATED_PAGES[page] && typeof ProManager !== 'undefined' && !ProManager.isPro()) {
+    ProManager.requirePro(PRO_GATED_PAGES[page]);
+    return;
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const el = document.getElementById('page-' + page);
   if (el) {
@@ -91,9 +111,11 @@ function onPageLoad(page) {
     'admin-stats': loadAdminStats,
     'admin-payments': loadAdminPayments,
     'admin-blocked': loadAdminBlocked,
+    'admin-coupons': loadAdminCoupons,
     'register-stats': loadRegisterStats,
     'notifications': loadNotifications,
     'admin': loadAdminBadges,
+    'paywall': loadPaywall,
   };
   if (handlers[page]) handlers[page]();
 }
@@ -103,6 +125,9 @@ async function loadDashboard() {
   const user = apiGetCurrentUser();
   if (!user) return;
   document.getElementById('dash-username').textContent = escapeHtml(user.name);
+
+  // Atualiza badges/CTAs Pro (esconde "Torne-se Pro" se já for Pro)
+  ProManager.updateProBadgeUI();
 
   showAdminDashboardAlert();
 
@@ -190,6 +215,61 @@ function updateTotalPerTeam() {
   document.getElementById('total-per-team').textContent = n + 1;
 }
 
+// ===== GEOLOCALIZAÇÃO =====
+async function getCurrentCoords() {
+  const Geo = window.Capacitor?.Plugins?.Geolocation;
+  if (Geo) {
+    try {
+      const perm = await Geo.checkPermissions();
+      if (perm.location !== 'granted') {
+        const req = await Geo.requestPermissions();
+        if (req.location !== 'granted') throw new Error('Permissão de localização negada');
+      }
+      const pos = await Geo.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+      return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+    } catch (err) {
+      console.warn('[Geo] Capacitor falhou, tentando navigator:', err.message);
+    }
+  }
+  // Fallback para Web (testes no navegador)
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('Geolocalização não disponível neste dispositivo'));
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      err => reject(new Error(err.message || 'Erro ao obter localização')),
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  });
+}
+
+async function captureRachaoLocation() {
+  const btn = document.getElementById('btn-capture-location');
+  const label = document.getElementById('capture-location-label');
+  const display = document.getElementById('captured-coords-display');
+  try {
+    setLoading(btn, true);
+    if (label) label.textContent = 'OBTENDO LOCALIZAÇÃO...';
+    const { latitude, longitude } = await getCurrentCoords();
+    document.getElementById('rachao-lat').value = latitude;
+    document.getElementById('rachao-lng').value = longitude;
+    if (display) {
+      display.textContent = `📍 ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+      display.style.display = 'block';
+    }
+    if (label) label.textContent = 'ATUALIZAR LOCALIZAÇÃO';
+    showToast('✅ Localização capturada');
+  } catch (err) {
+    console.error('[Geo] erro:', err);
+    showToast('Não foi possível obter a localização: ' + err.message);
+    if (label) label.textContent = 'USAR MINHA LOCALIZAÇÃO ATUAL';
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// Estado do form: null = criando; ID = editando rachão existente
+let _editingRachaoId = null;
+
 async function createRachao() {
   const name = document.getElementById('rachao-name').value.trim().substring(0, 60);
   const dayOfWeek = parseInt(document.getElementById('rachao-day').value);
@@ -203,14 +283,47 @@ async function createRachao() {
   if (!name || !time || !location) { showToast('Preencha todos os campos'); return; }
 
   const btn = document.getElementById('btn-create-rachao');
+  const lat = parseFloat(document.getElementById('rachao-lat').value || '');
+  const lng = parseFloat(document.getElementById('rachao-lng').value || '');
+  const latVal = Number.isFinite(lat) ? lat : null;
+  const lngVal = Number.isFinite(lng) ? lng : null;
+
   try {
     setLoading(btn, true);
     const user = apiGetCurrentUser();
+
+    // ===== Modo EDIÇÃO =====
+    if (_editingRachaoId) {
+      await apiUpdateRachao(_editingRachaoId, {
+        name, location, dayOfWeek, time,
+        playersPerTeam: players, tieRule,
+        monthlyVenueCost: venueCost, pixKey: pix,
+        latitude: latVal, longitude: lngVal,
+      });
+      const editedId = _editingRachaoId;
+      _editingRachaoId = null;
+      showToast('✅ Rachão atualizado!');
+      currentRachaoId = editedId;
+      navigateTo('match-detail');
+      return;
+    }
+
+    // ===== Modo CRIAÇÃO =====
+    if (!ProManager.isPro()) {
+      const meusAtivos = (await apiGetRachaos()).filter(r => r.createdBy === user.id && r.status === 'active');
+      if (meusAtivos.length >= 1) {
+        setLoading(btn, false);
+        ProManager.requirePro('multi-rachao');
+        return;
+      }
+    }
+
     const code = generateRachaoCode();
     const result = await apiCreateRachao({
       code, name, location, dayOfWeek, time,
       playersPerTeam: players, tieRule,
       monthlyVenueCost: venueCost, pixKey: pix,
+      latitude: latVal, longitude: lngVal,
       createdBy: user.id, participants: [user.id]
     });
 
@@ -219,10 +332,99 @@ async function createRachao() {
     currentRachaoId = result.id;
     navigateTo('match-detail');
   } catch (err) {
-    console.error('Erro ao criar rachão:', err);
-    showToast('Erro ao criar rachão. Tente novamente.');
+    console.error('Erro ao salvar rachão:', err);
+    showToast('Erro ao salvar. Tente novamente.');
   } finally {
     setLoading(btn, false);
+  }
+}
+
+// ===== EDITAR RACHÃO =====
+async function abrirEditarRachao() {
+  if (!currentRachaoId) return;
+  const rachao = await apiGetRachaoById(currentRachaoId);
+  if (!rachao) { showToast('Rachão não encontrado'); return; }
+
+  _editingRachaoId = rachao.id;
+
+  // Popula o form
+  document.getElementById('rachao-name').value = rachao.name || '';
+  document.getElementById('rachao-day').value = rachao.dayOfWeek ?? 0;
+  document.getElementById('rachao-time').value = rachao.time || '';
+  document.getElementById('rachao-location').value = rachao.location || '';
+  document.getElementById('rachao-players').value = rachao.playersPerTeam || 5;
+  document.getElementById('rachao-tie-rule').value = rachao.tieRule || 'playing_leaves';
+  document.getElementById('rachao-venue-cost').value = rachao.monthlyVenueCost || '';
+  document.getElementById('rachao-pix').value = rachao.pixKey || '';
+  document.getElementById('rachao-lat').value = rachao.latitude ?? '';
+  document.getElementById('rachao-lng').value = rachao.longitude ?? '';
+  updateTotalPerTeam();
+
+  // Atualiza UI da tela em modo edição
+  document.getElementById('match-create-title').textContent = 'Editar Rachão';
+  document.getElementById('btn-create-rachao').textContent = 'SALVAR ALTERAÇÕES';
+  document.getElementById('btn-delete-rachao').style.display = 'block';
+
+  const display = document.getElementById('captured-coords-display');
+  const label = document.getElementById('capture-location-label');
+  if (rachao.latitude != null && rachao.longitude != null) {
+    if (display) {
+      display.textContent = `📍 ${Number(rachao.latitude).toFixed(5)}, ${Number(rachao.longitude).toFixed(5)}`;
+      display.style.display = 'block';
+    }
+    if (label) label.textContent = 'ATUALIZAR LOCALIZAÇÃO';
+  } else {
+    if (display) display.style.display = 'none';
+    if (label) label.textContent = 'USAR MINHA LOCALIZAÇÃO ATUAL';
+  }
+
+  navigateTo('match-create');
+}
+
+function resetRachaoFormToCreateMode() {
+  _editingRachaoId = null;
+  document.getElementById('match-create-title').textContent = 'Novo Rachão';
+  document.getElementById('btn-create-rachao').textContent = 'CRIAR RACHÃO';
+  document.getElementById('btn-delete-rachao').style.display = 'none';
+  ['rachao-name','rachao-time','rachao-location','rachao-venue-cost','rachao-pix','rachao-lat','rachao-lng']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('rachao-players').value = 5;
+  document.getElementById('rachao-day').value = 0;
+  document.getElementById('rachao-tie-rule').value = 'playing_leaves';
+  const display = document.getElementById('captured-coords-display');
+  if (display) display.style.display = 'none';
+  const label = document.getElementById('capture-location-label');
+  if (label) label.textContent = 'USAR MINHA LOCALIZAÇÃO ATUAL';
+  updateTotalPerTeam();
+}
+
+function iniciarCriarRachao() {
+  resetRachaoFormToCreateMode();
+  navigateTo('match-create');
+}
+
+function cancelEditRachao() {
+  if (_editingRachaoId) {
+    const id = _editingRachaoId;
+    resetRachaoFormToCreateMode();
+    currentRachaoId = id;
+    navigateTo('match-detail');
+  } else {
+    navigateTo('matches');
+  }
+}
+
+async function confirmDeleteRachao() {
+  if (!_editingRachaoId) return;
+  if (!confirm('Excluir este rachão? Todos os jogos, presenças e estatísticas serão perdidos. Essa ação NÃO pode ser desfeita.')) return;
+  try {
+    await apiUpdateRachao(_editingRachaoId, { status: 'archived' });
+    showToast('Rachão arquivado');
+    _editingRachaoId = null;
+    navigateTo('dashboard');
+  } catch (err) {
+    console.error('Erro ao arquivar rachão:', err);
+    showToast('Erro ao excluir');
   }
 }
 
@@ -281,6 +483,8 @@ async function loadRachaoDetail() {
   const user = apiGetCurrentUser();
 
   document.getElementById('detail-rachao-title').textContent = rachao.name;
+  const editBtn = document.getElementById('btn-edit-rachao');
+  if (editBtn) editBtn.style.display = (user && rachao.createdBy === user.id) ? '' : 'none';
   document.getElementById('detail-day').textContent = getDayName(rachao.dayOfWeek);
   document.getElementById('detail-time').textContent = rachao.time;
   document.getElementById('detail-location').textContent = rachao.location;
@@ -391,6 +595,114 @@ async function loadSessionPresence(session, rachao, user) {
     }
     btn.onclick = async () => { await togglePresence(); await loadRachaoDetail(); };
   }
+
+  // Avulsos: render config + lista
+  await loadGuestsArea(session, rachao, user);
+}
+
+// ===== AVULSOS (config admin + lista) =====
+async function loadGuestsArea(session, rachao, user) {
+  const cfgBtn   = document.getElementById('btn-config-guests');
+  const cfgLabel = document.getElementById('btn-config-guests-label');
+  const card     = document.getElementById('guests-card');
+
+  const isOwner = user && rachao.createdBy === user.id;
+  const canManage = isOwner || await hasRachaoPermission(rachao, user, 'manage_session');
+
+  // Botão admin
+  if (cfgBtn) {
+    cfgBtn.style.display = canManage ? '' : 'none';
+    if (cfgLabel) cfgLabel.textContent = session.allow_guests ? 'EDITAR AVULSOS' : 'LIBERAR AVULSOS';
+  }
+
+  // Card de lista
+  if (!session.allow_guests) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = 'block';
+
+  const guests = await apiListSessionGuests(session.id).catch(() => []);
+  const paid = guests.filter(g => g.status === 'paid');
+
+  document.getElementById('guests-paid-count').textContent = paid.length;
+  document.getElementById('guests-slots').textContent = session.guest_slots || 0;
+  const fee = Number(session.guest_fee || 0);
+  document.getElementById('guests-fee-label').textContent = fee > 0 ? `R$ ${fee.toFixed(2).replace('.', ',')} / vaga` : '';
+
+  document.getElementById('guests-list').innerHTML = paid.length
+    ? paid.map(g => {
+        const ini = escapeHtml((g.player_name || '?').split(' ').map(w => w[0]).join('').substring(0, 2));
+        return `<div class="player-item">
+          <div class="player-avatar" style="background:var(--orange)">${ini}</div>
+          <div class="player-info"><div class="player-name">${escapeHtml(g.player_name)}</div>
+            <div class="player-detail">${escapeHtml(g.player_position || 'Avulso')} • R$ ${Number(g.fee_paid).toFixed(2).replace('.',',')}</div></div>
+          <span class="confirmed-badge"><i class="fas fa-check-circle"></i></span>
+        </div>`;
+      }).join('')
+    : '<p class="text-muted" style="font-size:12px;padding:8px;text-align:center">Ninguém pagou ainda</p>';
+}
+
+async function abrirConfigGuests() {
+  if (!ProManager.requirePro('avulsos')) return;
+  if (!currentSessionId) { showToast('Crie uma sessão primeiro'); return; }
+  const cfg = await apiGetSessionGuestConfig(currentSessionId);
+  document.getElementById('guests-allow').checked = !!cfg?.allow_guests;
+  document.getElementById('guests-fee').value = cfg?.guest_fee || '';
+  document.getElementById('guests-slots-input').value = cfg?.guest_slots || '';
+
+  // Mostra info de quantos já pagaram (não pode reduzir abaixo)
+  const guests = await apiListSessionGuests(currentSessionId).catch(() => []);
+  const paidCount = guests.filter(g => g.status === 'paid').length;
+  const paidInfo = document.getElementById('guests-paid-info');
+  if (paidCount > 0) {
+    paidInfo.textContent = `${paidCount} avulso(s) já pagou — vagas não podem ser menores que isso.`;
+    paidInfo.style.display = 'block';
+  } else {
+    paidInfo.style.display = 'none';
+  }
+
+  document.getElementById('modal-config-guests').style.display = 'flex';
+}
+
+function fecharConfigGuests() {
+  document.getElementById('modal-config-guests').style.display = 'none';
+}
+
+async function salvarConfigGuests() {
+  const allow = document.getElementById('guests-allow').checked;
+  const fee   = parseFloat(document.getElementById('guests-fee').value || '0');
+  const slots = parseInt(document.getElementById('guests-slots-input').value || '0', 10);
+  const btn = document.getElementById('btn-save-guests');
+
+  if (allow) {
+    if (!(fee > 0)) { showToast('Informe um valor válido'); return; }
+    if (!(slots > 0)) { showToast('Informe a quantidade de vagas'); return; }
+  }
+
+  try {
+    setLoading(btn, true);
+    const result = await apiUpdateSessionGuestConfig(currentSessionId, allow, fee, slots);
+    if (!result.ok) {
+      const msgs = {
+        SESSAO_INVALIDA:        'Sessão inválida',
+        SEM_PERMISSAO:          'Sem permissão para gerenciar avulsos',
+        VALOR_INVALIDO:         'Valor da diária inválido',
+        VAGAS_INVALIDAS:        'Quantidade de vagas inválida',
+        VAGAS_MENOR_QUE_PAGOS:  `Já há ${result.pagos} avulsos pagos — não pode reduzir vagas abaixo disso.`,
+      };
+      showToast(msgs[result.error] || result.error || 'Erro ao salvar');
+      return;
+    }
+    showToast(allow ? '✅ Avulsos liberados!' : 'Avulsos desativados');
+    fecharConfigGuests();
+    await loadRachaoDetail();
+  } catch (err) {
+    console.error('[Avulsos] salvar falhou:', err);
+    showToast('Erro ao salvar');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 async function loadSessionTeams(session) {
@@ -457,6 +769,7 @@ async function loadRachaoMembersTab(rachao) {
 let _coAdminContext = { rachaoId: null, playerId: null, isExisting: false };
 
 async function abrirModalCoAdmin(playerId, playerName) {
+  if (!ProManager.requirePro('co-admin')) return;
   const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao) return;
   _coAdminContext = { rachaoId: rachao.id, playerId, isExisting: false };
@@ -750,12 +1063,18 @@ async function notifyPayment() {
 let _pixTimerInterval = null;
 let _pixExpiresAt = null;
 let _pixCurrentTxId = null;
+let _pixRetryFn = null;
 
 function showPixState(state) {
   ['loading', 'ready', 'paid', 'error', 'expired'].forEach(s => {
     const el = document.getElementById('pix-state-' + s);
     if (el) el.style.display = s === state ? 'flex' : 'none';
   });
+}
+
+function pixRetry() {
+  const fn = _pixRetryFn || iniciarPagamentoPix;
+  fn();
 }
 
 function fecharModalPix() {
@@ -767,7 +1086,8 @@ function fecharModalPix() {
   if (typeof apiUnsubscribePixUpdates === 'function') apiUnsubscribePixUpdates();
   _pixExpiresAt = null;
   _pixCurrentTxId = null;
-  loadRachaoDetail();
+  _pixRetryFn = null;
+  if (currentRachaoId) loadRachaoDetail();
 }
 
 function startPixTimer(expiresAt) {
@@ -793,10 +1113,12 @@ function startPixTimer(expiresAt) {
 }
 
 async function iniciarPagamentoPix() {
+  if (!ProManager.requirePro('pagamentos')) return;
   const user = apiGetCurrentUser();
   const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao || !user) return;
 
+  _pixRetryFn = iniciarPagamentoPix;
   const modal = document.getElementById('modal-pix-payment');
   modal.style.display = 'flex';
   showPixState('loading');
@@ -954,8 +1276,21 @@ async function endSession() {
 }
 
 // ===== DRAW TEAMS =====
+// Conta quantas vezes o usuário Free já usou o sorteio (1 grátis)
+function _drawCountKey() {
+  const u = apiGetCurrentUser();
+  return 'rachao_drawCount_' + (u?.id || 'anon');
+}
+function _getDrawCount() { return parseInt(localStorage.getItem(_drawCountKey()) || '0', 10); }
+function _incDrawCount() { localStorage.setItem(_drawCountKey(), String(_getDrawCount() + 1)); }
+
 async function drawTeams() {
   const btn = document.getElementById('btn-draw-teams');
+  // Gate Pro: usuário Free pode sortear apenas 1 vez (lifetime, por conta)
+  if (!ProManager.isPro() && _getDrawCount() >= 1) {
+    ProManager.requirePro('sortear-times');
+    return;
+  }
   try {
   setLoading(btn, true);
   const session = await apiGetSessionById(currentSessionId);
@@ -1020,6 +1355,7 @@ async function drawTeams() {
   document.getElementById('teams-result').style.display = 'block';
   renderAllTeams(teams);
   await apiAddNotification({ type:'orange', icon:'fa-shuffle', title:'Times sorteados!', text: `${numTeams} times formados` });
+  if (!ProManager.isPro()) _incDrawCount();
   showToast(`${numTeams} times sorteados!`);
   await loadRachaoDetail();
   } catch (err) {
@@ -1237,6 +1573,16 @@ async function addPlayer() {
   const phone = document.getElementById('player-add-phone').value.replace(/\D/g, '');
   const position = document.getElementById('player-add-position').value;
   if (!name) { showToast('Digite o nome'); return; }
+
+  // Gate Pro: máximo 15 jogadores no plano Free
+  if (!ProManager.isPro()) {
+    const total = (await apiGetPlayers()).length;
+    if (total >= 15) {
+      ProManager.requirePro('jogadores-ilimitados');
+      return;
+    }
+  }
+
   await apiCreatePlayer({ name, phone, position });
   showToast('Jogador adicionado!');
   navigateTo('players');
@@ -1307,14 +1653,26 @@ async function loadRachaoFantasyRanking(period) {
   }).join('');
 }
 
+// Tabs do match-detail que são Pro: tab → feature
+const PRO_GATED_TABS = {
+  'rachao-finance': 'caixa',
+  'rachao-ranking': 'fantasy',
+  'rachao-stats':   'historico-stats',
+};
+
 // ===== TABS =====
 function initTabs() {
   document.addEventListener('click', e => {
     if (e.target.classList.contains('tab')) {
+      const tab = e.target.dataset.tab;
+      // Gate Pro de tabs premium
+      if (PRO_GATED_TABS[tab] && !ProManager.isPro()) {
+        ProManager.requirePro(PRO_GATED_TABS[tab]);
+        return;
+      }
       const parent = e.target.closest('.tabs');
       parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       e.target.classList.add('active');
-      const tab = e.target.dataset.tab;
       if (['ranking','artilharia','assists','desarmes'].includes(tab)) renderStatsTab(tab);
       if (tab === 'fantasy-ranking') { show('fantasy-ranking-content'); hide('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
       if (tab === 'fantasy-team') { hide('fantasy-ranking-content'); show('fantasy-team-content'); hide('fantasy-scoring-content'); hide('fantasy-prizes-content'); }
@@ -1326,6 +1684,8 @@ function initTabs() {
       if (tab === 'rachao-stats') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); show('rachao-stats-content'); hide('rachao-ranking-content'); loadRachaoStats('r-ranking'); }
       if (tab === 'rachao-ranking') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); show('rachao-ranking-content'); loadRachaoFantasyRanking('daily'); }
       if (['r-ranking','r-artilharia','r-assists','r-desarmes'].includes(tab)) loadRachaoStats(tab);
+      if (tab === 'join-code')   { show('join-code-content');  hide('join-nearby-content'); }
+      if (tab === 'join-nearby') { hide('join-code-content');  show('join-nearby-content'); }
     }
     if (e.target.classList.contains('pill')) {
       e.target.closest('.fantasy-period-toggle').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));

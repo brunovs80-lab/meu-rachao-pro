@@ -64,6 +64,8 @@ async function handlePasswordLogin() {
     setLoading(btn, true);
     const user = await apiLoginWithPassword(phone, password);
     apiSetCurrentUser(user);
+    ProManager.syncFromServer(user.id).catch(() => {});
+    if (window.Billing) Billing.init(user.id).catch(err => console.warn('[Billing] init falhou:', err));
     navigateTo('dashboard');
     showToast('Bem-vindo de volta, ' + user.name + '!');
   } catch (err) {
@@ -91,6 +93,8 @@ document.getElementById('btn-register').addEventListener('click', async () => {
     setLoading(btn, true);
     const newUser = await apiRegisterUser(phone, password, name, position || 'Meia');
     apiSetCurrentUser(newUser);
+    ProManager.syncFromServer(newUser.id).catch(() => {});
+    if (window.Billing) Billing.init(newUser.id).catch(err => console.warn('[Billing] init falhou:', err));
     navigateTo('dashboard');
     showToast('Conta criada!');
     await apiAddNotification({ type:'purple', icon:'fa-user-plus', title:'Bem-vindo!', text:'Sua conta foi criada.' });
@@ -114,6 +118,21 @@ async function loadProfile() {
   document.getElementById('profile-goals').textContent = fresh.goals || 0;
   document.getElementById('profile-assists').textContent = fresh.assists || 0;
   document.getElementById('profile-desarmes').textContent = fresh.tackles || 0;
+
+  // Atualiza estado Pro (badge no menu + esconder CTA de upgrade)
+  await ProManager.syncFromServer(user.id);
+  const status = ProManager.getStatus();
+  const proInfoEl = document.getElementById('profile-pro-status');
+  if (proInfoEl) {
+    if (status.is_lifetime) proInfoEl.textContent = '· Vitalício';
+    else if (status.expires_at) proInfoEl.textContent = '· até ' + new Date(status.expires_at).toLocaleDateString('pt-BR');
+    else proInfoEl.textContent = '';
+  }
 }
 
-function logout() { apiLogout(); navigateTo('login'); showToast('Até a próxima!'); }
+function logout() {
+  apiLogout();
+  if (window.Billing) Billing.logout().catch(() => {});
+  navigateTo('login');
+  showToast('Até a próxima!');
+}

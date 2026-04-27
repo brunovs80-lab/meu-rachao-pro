@@ -150,6 +150,7 @@ async function apiCreateRachao(rachao) {
     tie_rule: rachao.tieRule || 'playing_leaves',
     monthly_venue_cost: rachao.monthlyVenueCost || 0,
     pix_key: rachao.pixKey || '',
+    latitude: rachao.latitude ?? null, longitude: rachao.longitude ?? null,
     created_by: rachao.createdBy, status: 'active'
   }).select().single();
   if (error) throw error;
@@ -174,6 +175,8 @@ async function apiUpdateRachao(id, fields) {
   if (fields.monthlyVenueCost !== undefined) mapped.monthly_venue_cost = fields.monthlyVenueCost;
   if (fields.pixKey !== undefined) mapped.pix_key = fields.pixKey;
   if (fields.status !== undefined) mapped.status = fields.status;
+  if (fields.latitude !== undefined) mapped.latitude = fields.latitude;
+  if (fields.longitude !== undefined) mapped.longitude = fields.longitude;
 
   if (Object.keys(mapped).length > 0) {
     await initSupabase().from('rachaos').update(mapped).eq('id', id);
@@ -205,7 +208,8 @@ async function apiGetSessions(rachaoId) {
       id: s.id, rachaoId: s.rachao_id, date: s.date, status: s.status,
       confirmed: sConfs.filter(c => c.type === 'confirmed').map(c => c.player_id),
       waiting: sConfs.filter(c => c.type === 'waiting').map(c => c.player_id),
-      teams: s.teams, leftover: s.leftover || []
+      teams: s.teams, leftover: s.leftover || [],
+      allow_guests: !!s.allow_guests, guest_fee: s.guest_fee, guest_slots: s.guest_slots
     };
   });
 }
@@ -218,7 +222,8 @@ async function apiGetSessionById(id) {
     id: data.id, rachaoId: data.rachao_id, date: data.date, status: data.status,
     confirmed: (confs || []).filter(c => c.type === 'confirmed').map(c => c.player_id),
     waiting: (confs || []).filter(c => c.type === 'waiting').map(c => c.player_id),
-    teams: data.teams, leftover: data.leftover || []
+    teams: data.teams, leftover: data.leftover || [],
+    allow_guests: !!data.allow_guests, guest_fee: data.guest_fee, guest_slots: data.guest_slots
   };
 }
 
@@ -440,6 +445,31 @@ async function apiCreatePixCharge(billingId, playerId, rachaoId, amount, descrip
   });
   const data = await resp.json();
   if (!resp.ok) throw new Error(data.error || 'Erro ao criar cobrança PIX');
+  return data;
+}
+
+async function apiCreateGuestPixCharge(sessionId, playerId, rachaoId, payerEmail, description) {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/create-pix-charge`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({
+      purpose: 'guest_fee',
+      session_id: sessionId,
+      player_id: playerId,
+      rachao_id: rachaoId,
+      payer_email: payerEmail || undefined,
+      description,
+    }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) {
+    const err = new Error(data.error || 'Erro ao criar cobrança PIX');
+    err.code = data.code;
+    throw err;
+  }
   return data;
 }
 
@@ -734,6 +764,85 @@ function apiSetCurrentUser(user) {
 
 function apiLogout() {
   localStorage.removeItem('rachao_currentUser');
+  localStorage.removeItem('rachao_proStatus');
+}
+
+// ===== PRO / ASSINATURA =====
+async function apiGetProStatus(userId) {
+  const { data, error } = await initSupabase().rpc('get_pro_status', { p_user_id: userId });
+  if (error) throw error;
+  // RPC retorna array; pegamos a primeira (única) linha
+  const row = Array.isArray(data) ? data[0] : data;
+  return row || { is_pro: false };
+}
+
+async function apiRedeemCoupon(code, userId) {
+  const { data, error } = await initSupabase().rpc('redeem_coupon', { p_code: code, p_user_id: userId });
+  if (error) throw error;
+  return data || { ok: false, error: 'RPC_FAIL' };
+}
+
+async function apiCreateCoupon({ code, type, durationDays, maxUses, expiresAt, description }) {
+  const user = apiGetCurrentUser();
+  const { data, error } = await initSupabase().rpc('create_coupon', {
+    p_code: code,
+    p_type: type,
+    p_duration_days: durationDays || null,
+    p_max_uses: maxUses || null,
+    p_expires_at: expiresAt || null,
+    p_description: description || null,
+    p_created_by: user?.id || null,
+  });
+  if (error) throw error;
+  return data || { ok: false };
+}
+
+async function apiListCoupons() {
+  const { data, error } = await initSupabase().rpc('list_coupons');
+  if (error) throw error;
+  return data || [];
+}
+
+async function apiDeleteCoupon(id) {
+  const { error } = await initSupabase().rpc('delete_coupon', { p_id: id });
+  if (error) throw error;
+  return { ok: true };
+}
+
+// ===== JOGADORES AVULSOS (sessões abertas para pagantes) =====
+async function apiUpdateSessionGuestConfig(sessionId, allowGuests, guestFee, guestSlots) {
+  const user = apiGetCurrentUser();
+  const { data, error } = await initSupabase().rpc('update_session_guest_config', {
+    p_session_id: sessionId,
+    p_allow_guests: !!allowGuests,
+    p_guest_fee: guestFee != null ? Number(guestFee) : null,
+    p_guest_slots: guestSlots != null ? parseInt(guestSlots, 10) : null,
+    p_caller_id: user?.id || null,
+  });
+  if (error) throw error;
+  return data || { ok: false };
+}
+
+async function apiListSessionGuests(sessionId) {
+  const { data, error } = await initSupabase().rpc('list_session_guests', { p_session_id: sessionId });
+  if (error) throw error;
+  return data || [];
+}
+
+async function apiListOpenGuestSessions() {
+  const { data, error } = await initSupabase().rpc('list_open_guest_sessions');
+  if (error) throw error;
+  return data || [];
+}
+
+async function apiGetSessionGuestConfig(sessionId) {
+  const { data, error } = await initSupabase()
+    .from('sessions')
+    .select('id, allow_guests, guest_fee, guest_slots')
+    .eq('id', sessionId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 // ===== SEED (via Supabase, verificar se tem dados) =====
