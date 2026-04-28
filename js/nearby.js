@@ -2,8 +2,18 @@
 
 let _lastNearbyResults = [];
 let _selectedNearby = null;
+let _nearbySearched = false;
 
 const DAY_NAMES_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+// Limpa estado nearby (chamado no logout pra evitar dados de outro usuário).
+function _resetNearbyResults() {
+  _lastNearbyResults = [];
+  _selectedNearby = null;
+  _nearbySearched = false;
+  const list = document.getElementById('nearby-results');
+  if (list) list.innerHTML = '';
+}
 
 async function searchNearby() {
   const btn  = document.getElementById('btn-search-nearby');
@@ -23,6 +33,7 @@ async function searchNearby() {
     });
     if (error) throw error;
     _lastNearbyResults = data || [];
+    _nearbySearched = true;
     renderNearbyResults();
   } catch (err) {
     console.error('[Nearby] erro:', err);
@@ -35,17 +46,55 @@ async function searchNearby() {
   }
 }
 
+// Aplica filtros client-side (raio já vem do backend; aqui filtramos valor e dia).
+// Mantém o índice original em _lastNearbyResults pra que `openNearbyDetail(idx)`
+// continue funcionando.
+function _filteredNearby() {
+  const maxFeeRaw = document.getElementById('nearby-max-fee')?.value;
+  const maxFee = maxFeeRaw ? parseFloat(maxFeeRaw) : null;
+  const dayRaw = document.getElementById('nearby-day')?.value;
+  const day = dayRaw === '' || dayRaw == null ? null : parseInt(dayRaw, 10);
+
+  return _lastNearbyResults
+    .map((r, originalIdx) => ({ r, originalIdx }))
+    .filter(({ r }) => {
+      if (maxFee != null && Number(r.guest_fee || 0) > maxFee) return false;
+      if (day != null && r.rachao_day_of_week !== day) return false;
+      return true;
+    });
+}
+
 function renderNearbyResults() {
   const list = document.getElementById('nearby-results');
-  if (!_lastNearbyResults.length) {
+  if (!list) return;
+
+  // Pré-busca: usuário ainda não clicou em BUSCAR
+  if (!_nearbySearched) {
     list.innerHTML = `<div class="card" style="text-align:center;padding:24px">
-      <i class="fas fa-futbol" style="font-size:36px;color:var(--text-muted);margin-bottom:8px"></i>
-      <h4>Nenhum rachão encontrado</h4>
-      <p class="text-muted" style="font-size:13px;margin-top:4px">Tente aumentar a distância ou volte mais tarde.</p>
+      <i class="fas fa-magnifying-glass-location" style="font-size:36px;color:var(--orange);margin-bottom:8px"></i>
+      <h4>Pronto pra começar?</h4>
+      <p class="text-muted" style="font-size:13px;margin-top:4px">Clique em BUSCAR RACHÕES pra ver jogos abertos perto de você.</p>
     </div>`;
     return;
   }
-  list.innerHTML = _lastNearbyResults.map((r, idx) => {
+
+  const filtered = _filteredNearby();
+  if (!filtered.length) {
+    const totalFound = _lastNearbyResults.length;
+    const msg = totalFound
+      ? 'Nenhum rachão bate com os filtros'
+      : 'Nenhum rachão encontrado';
+    const hint = totalFound
+      ? 'Afrouxe valor máximo ou dia da semana'
+      : 'Tente aumentar a distância ou volte mais tarde.';
+    list.innerHTML = `<div class="card" style="text-align:center;padding:24px">
+      <i class="fas fa-futbol" style="font-size:36px;color:var(--text-muted);margin-bottom:8px"></i>
+      <h4>${escapeHtml(msg)}</h4>
+      <p class="text-muted" style="font-size:13px;margin-top:4px">${escapeHtml(hint)}</p>
+    </div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(({ r, originalIdx: idx }) => {
     const fee = Number(r.guest_fee || 0).toFixed(2).replace('.', ',');
     const slotsLeft = Math.max(0, (r.guest_slots || 0) - (r.guests_paid || 0));
     const slotsBadge = slotsLeft > 0
@@ -109,6 +158,17 @@ function openNearbyDetail(idx) {
         Membros fixos confirmados: ${r.confirmed_count || 0}
       </p>
     </div>
+
+    ${Array.isArray(r.needed_positions) && r.needed_positions.length ? `
+      <div style="background:rgba(255,138,0,0.10);padding:10px 12px;border-radius:var(--radius);border:1px solid rgba(255,138,0,0.35);margin-bottom:14px">
+        <p style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:6px">
+          <i class="fas fa-bullseye"></i> Posições mais necessárias
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${r.needed_positions.map(p => `<span class="stat-chip" style="background:rgba(255,138,0,0.18);color:var(--orange)">${escapeHtml(p)}</span>`).join('')}
+        </div>
+      </div>
+    ` : ''}
 
     ${slotsLeft > 0 ? `
       <button class="btn-orange btn-large" style="width:100%" onclick="iniciarPagamentoAvulso()">

@@ -142,6 +142,7 @@
     </div>
     <nav class="bottom-nav">
       <button class="nav-item active" onclick="navigateTo('dashboard')"><i class="fas fa-home"></i><span>Início</span></button>
+      <button class="nav-item" onclick="navigateTo('nearby')"><i class="fas fa-location-crosshairs"></i><span>Avulsos</span></button>
       <button class="nav-item" onclick="navigateTo('profile')"><i class="fas fa-user"></i><span>Perfil</span></button>
       <button class="nav-item" onclick="logout()"><i class="fas fa-right-from-bracket"></i><span>Sair</span></button>
     </nav>
@@ -253,11 +254,6 @@
       <h2>Entrar no Rachão</h2>
     </div>
     <div class="page-body">
-      <div class="tabs" style="margin-bottom:12px">
-        <button class="tab active" data-tab="join-code">Tenho o código</button>
-        <button class="tab" data-tab="join-nearby">Perto de mim</button>
-      </div>
-
       <div id="join-code-content">
         <div class="card card-highlight" style="text-align:center">
           <i class="fas fa-ticket" style="font-size:48px;color:var(--orange);margin-bottom:12px"></i>
@@ -269,32 +265,67 @@
           <input type="text" id="join-code" class="input-field" placeholder="Ex: 482A7F" maxlength="6" style="text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;text-transform:uppercase">
         </div>
         <button class="btn-orange btn-large" onclick="joinRachaoByCode()"><i class="fas fa-right-to-bracket"></i> ENTRAR</button>
+
+        <div class="card" style="margin-top:16px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="navigateTo('nearby')">
+          <i class="fas fa-location-crosshairs" style="font-size:24px;color:var(--orange)"></i>
+          <div style="flex:1">
+            <p style="font-size:13px;font-weight:700">Sem código?</p>
+            <p class="text-muted" style="font-size:12px">Procure rachões abertos perto de você</p>
+          </div>
+          <i class="fas fa-chevron-right" style="color:var(--text-muted)"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== AVULSOS (descoberta de rachões abertos) ========== -->
+  <div id="page-nearby" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Avulsos</h2>
+    </div>
+    <div class="page-body">
+      <div class="card card-highlight" style="text-align:center">
+        <i class="fas fa-location-crosshairs" style="font-size:36px;color:var(--orange);margin-bottom:8px"></i>
+        <h3>Rachões abertos perto de você</h3>
+        <p class="text-muted" style="font-size:13px">Pague uma diária por PIX e jogue como avulso em rachões da galera.</p>
       </div>
 
-      <div id="join-nearby-content" style="display:none">
-        <div class="card card-highlight" style="text-align:center">
-          <i class="fas fa-location-crosshairs" style="font-size:36px;color:var(--orange);margin-bottom:8px"></i>
-          <h3>Rachões abertos perto de você</h3>
-          <p class="text-muted" style="font-size:13px">Encontre jogos que aceitam avulsos pagantes próximos da sua localização</p>
-        </div>
-
-        <div class="form-group" style="margin-top:12px">
-          <label>Distância máxima</label>
-          <select id="nearby-radius" class="input-field" onchange="searchNearby()">
-            <option value="5">5 km</option>
-            <option value="10">10 km</option>
-            <option value="25" selected>25 km</option>
-            <option value="50">50 km</option>
-            <option value="100">100 km</option>
-          </select>
-        </div>
-
-        <button class="btn-primary btn-large" style="width:100%" id="btn-search-nearby" onclick="searchNearby()">
-          <i class="fas fa-magnifying-glass-location"></i> BUSCAR RACHÕES
-        </button>
-
-        <div id="nearby-results" style="margin-top:16px"></div>
+      <div class="form-group" style="margin-top:12px">
+        <label>Distância máxima</label>
+        <select id="nearby-radius" class="input-field" onchange="renderNearbyResults()">
+          <option value="5">5 km</option>
+          <option value="10">10 km</option>
+          <option value="25" selected>25 km</option>
+          <option value="50">50 km</option>
+          <option value="100">100 km</option>
+        </select>
       </div>
+
+      <div class="form-group">
+        <label>Valor máximo da diária (R$)</label>
+        <input type="number" step="1" min="0" class="input-field" id="nearby-max-fee" placeholder="Sem limite" oninput="renderNearbyResults()">
+      </div>
+
+      <div class="form-group">
+        <label>Dia da semana</label>
+        <select id="nearby-day" class="input-field" onchange="renderNearbyResults()">
+          <option value="">Qualquer dia</option>
+          <option value="0">Domingo</option>
+          <option value="1">Segunda</option>
+          <option value="2">Terça</option>
+          <option value="3">Quarta</option>
+          <option value="4">Quinta</option>
+          <option value="5">Sexta</option>
+          <option value="6">Sábado</option>
+        </select>
+      </div>
+
+      <button class="btn-primary btn-large" style="width:100%" id="btn-search-nearby" onclick="searchNearby()">
+        <i class="fas fa-magnifying-glass-location"></i> BUSCAR RACHÕES
+      </button>
+
+      <div id="nearby-results" style="margin-top:16px"></div>
     </div>
   </div>
 
@@ -1306,6 +1337,17 @@
 
         <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Quantidade de vagas avulsas</label>
         <input type="number" step="1" min="1" max="50" class="input-field" id="guests-slots-input" placeholder="4">
+
+        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Posições mais necessárias <span class="text-muted" style="font-weight:400;font-size:11px">(opcional)</span></label>
+        <div id="guests-positions" style="display:flex;flex-wrap:wrap;gap:6px">
+          <label class="chip-check"><input type="checkbox" value="Goleiro"> Goleiro</label>
+          <label class="chip-check"><input type="checkbox" value="Zagueiro"> Zagueiro</label>
+          <label class="chip-check"><input type="checkbox" value="Lateral"> Lateral</label>
+          <label class="chip-check"><input type="checkbox" value="Volante"> Volante</label>
+          <label class="chip-check"><input type="checkbox" value="Meia"> Meia</label>
+          <label class="chip-check"><input type="checkbox" value="Atacante"> Atacante</label>
+        </div>
+        <p class="text-muted" style="font-size:11px;margin-top:6px">Aparece pra avulsos no detalhe do rachão. Deixe em branco se aceita qualquer posição.</p>
 
         <p class="text-muted" id="guests-paid-info" style="font-size:11px;margin-top:8px;display:none"></p>
       </div>

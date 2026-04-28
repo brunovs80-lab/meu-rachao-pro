@@ -117,8 +117,25 @@ function onPageLoad(page) {
     'notifications': loadNotifications,
     'admin': loadAdminBadges,
     'paywall': loadPaywall,
+    'nearby': loadNearby,
   };
   if (handlers[page]) handlers[page]();
+}
+
+// ===== AVULSOS (NEARBY) =====
+// Auto-busca na primeira vez que o usuário entra; depois respeita o cache.
+let _nearbyAutoSearched = false;
+function loadNearby() {
+  if (_nearbyAutoSearched) {
+    if (typeof renderNearbyResults === 'function') renderNearbyResults();
+    return;
+  }
+  _nearbyAutoSearched = true;
+  if (typeof searchNearby === 'function') searchNearby().catch(() => {});
+}
+function resetNearbyState() {
+  _nearbyAutoSearched = false;
+  if (typeof _resetNearbyResults === 'function') _resetNearbyResults();
 }
 
 // ===== DASHBOARD =====
@@ -720,12 +737,17 @@ async function loadGuestsArea(session, rachao, user) {
 }
 
 async function abrirConfigGuests() {
-  if (!ProManager.requirePro('avulsos')) return;
+  // Não bloqueia abertura: admin que perdeu Pro precisa conseguir abrir o modal
+  // pra desligar a feature. O gate Pro fica em salvarConfigGuests só quando ligando.
   if (!currentSessionId) { showToast('Crie uma sessão primeiro'); return; }
   const cfg = await apiGetSessionGuestConfig(currentSessionId);
   document.getElementById('guests-allow').checked = !!cfg?.allow_guests;
   document.getElementById('guests-fee').value = cfg?.guest_fee || '';
   document.getElementById('guests-slots-input').value = cfg?.guest_slots || '';
+  const positions = Array.isArray(cfg?.needed_positions) ? cfg.needed_positions : [];
+  document.querySelectorAll('#guests-positions input[type="checkbox"]').forEach(cb => {
+    cb.checked = positions.includes(cb.value);
+  });
 
   // Mostra info de quantos já pagaram (não pode reduzir abaixo)
   const guests = await apiListSessionGuests(currentSessionId).catch(() => []);
@@ -749,17 +771,29 @@ async function salvarConfigGuests() {
   const allow = document.getElementById('guests-allow').checked;
   const fee   = parseFloat(document.getElementById('guests-fee').value || '0');
   const slots = parseInt(document.getElementById('guests-slots-input').value || '0', 10);
+  const positions = Array.from(
+    document.querySelectorAll('#guests-positions input[type="checkbox"]:checked')
+  ).map(cb => cb.value);
   const btn = document.getElementById('btn-save-guests');
 
   if (allow) {
+    // Gate Pro: só na ativação. Desativar é livre pra qualquer admin.
+    if (!ProManager.requirePro('avulsos')) return;
     if (!(fee > 0)) { showToast('Informe um valor válido'); return; }
     if (!(slots > 0)) { showToast('Informe a quantidade de vagas'); return; }
   }
 
   try {
     setLoading(btn, true);
-    const result = await apiUpdateSessionGuestConfig(currentSessionId, allow, fee, slots);
+    const result = await apiUpdateSessionGuestConfig(currentSessionId, allow, fee, slots, positions);
     if (!result.ok) {
+      // PRO_REQUERIDO vem do backend quando o dono do rachão não é Pro.
+      // Ressincroniza cache e abre paywall (cobre cache desatualizado e co-admin
+      // Pro tentando liberar em rachão de dono Free).
+      if (result.error === 'PRO_REQUERIDO') {
+        ProManager.requirePro('avulsos');
+        return;
+      }
       const msgs = {
         SESSAO_INVALIDA:        'Sessão inválida',
         SEM_PERMISSAO:          'Sem permissão para gerenciar avulsos',
@@ -1809,8 +1843,6 @@ function initTabs() {
       if (tab === 'rachao-stats') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); show('rachao-stats-content'); hide('rachao-ranking-content'); loadRachaoStats('r-ranking'); }
       if (tab === 'rachao-ranking') { hide('rachao-game-content'); hide('rachao-members-content'); hide('rachao-finance-content'); hide('rachao-stats-content'); show('rachao-ranking-content'); loadRachaoFantasyRanking('daily'); }
       if (['r-ranking','r-artilharia','r-assists','r-desarmes'].includes(tab)) loadRachaoStats(tab);
-      if (tab === 'join-code')   { show('join-code-content');  hide('join-nearby-content'); }
-      if (tab === 'join-nearby') { hide('join-code-content');  show('join-nearby-content'); }
     }
     if (e.target.classList.contains('pill')) {
       e.target.closest('.fantasy-period-toggle').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));

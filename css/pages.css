@@ -285,6 +285,34 @@
 .stat-chip.positive { background: rgba(0,200,83,0.15); color: var(--green); }
 .stat-chip.negative { background: rgba(255,61,61,0.15); color: var(--red); }
 
+/* Chip de checkbox (posições necessárias, etc) */
+.chip-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+}
+.chip-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+.chip-check:has(input:checked) {
+  background: rgba(255,138,0,0.18);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
 .stat-val-actions {
   display: flex;
   gap: 8px;

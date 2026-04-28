@@ -810,7 +810,7 @@ async function apiDeleteCoupon(id) {
 }
 
 // ===== JOGADORES AVULSOS (sessões abertas para pagantes) =====
-async function apiUpdateSessionGuestConfig(sessionId, allowGuests, guestFee, guestSlots) {
+async function apiUpdateSessionGuestConfig(sessionId, allowGuests, guestFee, guestSlots, neededPositions) {
   const user = apiGetCurrentUser();
   const { data, error } = await initSupabase().rpc('update_session_guest_config', {
     p_session_id: sessionId,
@@ -818,6 +818,7 @@ async function apiUpdateSessionGuestConfig(sessionId, allowGuests, guestFee, gue
     p_guest_fee: guestFee != null ? Number(guestFee) : null,
     p_guest_slots: guestSlots != null ? parseInt(guestSlots, 10) : null,
     p_caller_id: user?.id || null,
+    p_needed_positions: Array.isArray(neededPositions) && neededPositions.length ? neededPositions : null,
   });
   if (error) throw error;
   return data || { ok: false };
@@ -825,12 +826,6 @@ async function apiUpdateSessionGuestConfig(sessionId, allowGuests, guestFee, gue
 
 async function apiListSessionGuests(sessionId) {
   const { data, error } = await initSupabase().rpc('list_session_guests', { p_session_id: sessionId });
-  if (error) throw error;
-  return data || [];
-}
-
-async function apiListOpenGuestSessions() {
-  const { data, error } = await initSupabase().rpc('list_open_guest_sessions');
   if (error) throw error;
   return data || [];
 }
@@ -879,7 +874,7 @@ async function apiCancelSession(sessionId) {
 async function apiGetSessionGuestConfig(sessionId) {
   const { data, error } = await initSupabase()
     .from('sessions')
-    .select('id, allow_guests, guest_fee, guest_slots')
+    .select('id, allow_guests, guest_fee, guest_slots, needed_positions')
     .eq('id', sessionId)
     .maybeSingle();
   if (error) throw error;

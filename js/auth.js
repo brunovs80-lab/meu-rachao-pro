@@ -136,6 +136,7 @@ function logout() {
   apiLogout();
   if (window.Billing) Billing.logout().catch(() => {});
   if (window.Push) Push.logout().catch(() => {});
+  if (typeof resetNearbyState === 'function') resetNearbyState();
   navigateTo('login');
   showToast('Até a próxima!');
 }
