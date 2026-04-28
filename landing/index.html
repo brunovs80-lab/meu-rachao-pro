@@ -150,15 +150,8 @@
 <!-- Navbar -->
 <header class="fixed top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-50">
   <nav class="glass-strong rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between max-w-6xl mx-auto">
-    <a href="#top" class="flex items-center gap-2.5 group">
-      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-orange to-brand-orange-light grid place-items-center shadow-lg shadow-brand-orange/30">
-        <!-- soccer ball icon -->
-        <svg viewBox="0 0 24 24" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>
-        </svg>
-      </span>
-      <span class="font-display tracking-wider text-lg sm:text-xl">MEU RACHÃO <span class="text-brand-orange">PRO</span></span>
+    <a href="#top" class="flex items-center gap-2.5 group" aria-label="Meu Rachão Pro - Início">
+      <img src="../assets/logo.png" alt="Meu Rachão Pro" class="h-10 sm:h-12 w-auto drop-shadow-[0_4px_16px_rgba(255,122,0,0.3)] group-hover:scale-105 transition-transform duration-200">
     </a>
     <div class="hidden md:flex items-center gap-7 text-sm text-white/70">
       <a href="#recursos" class="hover:text-white transition-colors">Recursos</a>
@@ -306,8 +299,9 @@
         <p class="text-sm text-white/60 leading-relaxed">Mensalidade e diária cobradas direto no app. Confirmação automática via webhook do Mercado Pago.</p>
       </article>
 
-      <!-- Feature 3 -->
-      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+      <!-- Feature 3 (Pro) -->
+      <article class="glass rounded-2xl p-6 hover:border-brand-orange/40 transition-colors duration-200 group relative overflow-hidden border border-brand-orange/25">
+        <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold tracking-wider uppercase shadow-lg shadow-brand-orange/30">Pro</div>
         <div class="w-12 h-12 rounded-xl bg-brand-purple/20 grid place-items-center mb-5 group-hover:bg-brand-purple/35 transition-colors">
           <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-purple-light" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         </div>
@@ -333,8 +327,9 @@
         <p class="text-sm text-white/60 leading-relaxed">Push real (FCM) avisa: pagamento confirmado, rachão lotando, novo convite de co-admin. Sem precisar abrir o grupo.</p>
       </article>
 
-      <!-- Feature 6 -->
-      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+      <!-- Feature 6 (Pro) -->
+      <article class="glass rounded-2xl p-6 hover:border-brand-orange/40 transition-colors duration-200 group relative overflow-hidden border border-brand-orange/25">
+        <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold tracking-wider uppercase shadow-lg shadow-brand-orange/30">Pro</div>
         <div class="w-12 h-12 rounded-xl bg-brand-purple/20 grid place-items-center mb-5 group-hover:bg-brand-purple/35 transition-colors">
           <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-purple-light" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
         </div>
@@ -386,72 +381,160 @@
 
 <!-- Pro -->
 <section id="pro" class="relative py-24 sm:py-32 overflow-hidden">
+  <!-- atmospheric background -->
   <div class="absolute inset-0 bg-gradient-to-br from-brand-orange/10 via-transparent to-brand-purple/10" aria-hidden="true"></div>
-  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-orange/15 rounded-full blur-3xl" aria-hidden="true"></div>
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-brand-orange/20 rounded-full blur-3xl animate-pulse-glow" aria-hidden="true"></div>
+  <div class="absolute bottom-0 right-0 w-[400px] h-[400px] bg-brand-purple/15 rounded-full blur-3xl" aria-hidden="true"></div>
 
-  <div class="relative z-10 max-w-5xl mx-auto px-5 sm:px-8">
+  <div class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8">
 
-    <div class="glass-strong rounded-3xl p-8 sm:p-12 lg:p-16 relative overflow-hidden">
-
-      <div class="absolute top-6 right-6 px-3 py-1 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold tracking-wider uppercase">Pro</div>
-
-      <div class="grid lg:grid-cols-[1.3fr,1fr] gap-10 items-center">
-        <div>
-          <span class="inline-block text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-3">Versão Pro</span>
-          <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl leading-tight mb-5">
-            Desbloqueie o <span class="text-brand-orange">modo profissional</span>.
-          </h2>
-          <p class="text-white/70 mb-6 leading-relaxed">Pra quem leva o rachão a sério. Tudo do plano grátis + recursos avançados.</p>
-
-          <ul class="space-y-3 mb-8">
-            <li class="flex items-start gap-3 text-sm">
-              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-              <span><strong class="text-white">Jogadores avulsos com PIX</strong> — libere vagas, cobre diária, receba na hora</span>
-            </li>
-            <li class="flex items-start gap-3 text-sm">
-              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-              <span><strong class="text-white">Estatísticas avançadas</strong> — fantasy ranking, MVP, performance histórica</span>
-            </li>
-            <li class="flex items-start gap-3 text-sm">
-              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-              <span><strong class="text-white">Co-administradores</strong> com permissões granulares por rachão</span>
-            </li>
-            <li class="flex items-start gap-3 text-sm">
-              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-              <span><strong class="text-white">Estorno automático</strong> via API do Mercado Pago em caso de cancelamento</span>
-            </li>
-          </ul>
-
-          <a href="#download" class="btn-primary text-white font-semibold px-6 py-3.5 rounded-xl inline-flex items-center gap-2 cursor-pointer transition-all duration-200">
-            Quero o Pro
-            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        </div>
-
-        <div class="space-y-3">
-          <div class="glass rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <p class="text-xs text-white/50 uppercase tracking-wide">Mensal</p>
-              <p class="font-display text-3xl">R$ 9<span class="text-base align-top">,90</span><span class="text-sm text-white/50 font-sans font-normal">/mês</span></p>
-            </div>
-          </div>
-          <div class="glass rounded-xl p-4 flex items-center justify-between border-2 border-brand-orange/40 relative">
-            <div class="absolute -top-2 left-4 px-2 py-0.5 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold uppercase tracking-wider">Melhor</div>
-            <div>
-              <p class="text-xs text-white/50 uppercase tracking-wide">Anual <span class="text-brand-green">· 7 dias grátis</span></p>
-              <p class="font-display text-3xl">R$ 59<span class="text-base align-top">,90</span><span class="text-sm text-white/50 font-sans font-normal">/ano</span></p>
-            </div>
-          </div>
-          <div class="glass rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <p class="text-xs text-white/50 uppercase tracking-wide">Vitalício</p>
-              <p class="font-display text-3xl">R$ 149<span class="text-base align-top">,90</span><span class="text-sm text-white/50 font-sans font-normal"> · 1x</span></p>
-            </div>
-          </div>
-        </div>
-
-      </div>
+    <!-- Section header -->
+    <div class="text-center mb-14 sm:mb-20 max-w-2xl mx-auto">
+      <span class="inline-flex items-center gap-2 glass-strong px-3 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-5 border border-brand-orange/30">
+        <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+        Versão Pro
+      </span>
+      <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.05] mb-5">
+        Desbloqueie o <span class="headline-grad">modo profissional</span>.
+      </h2>
+      <p class="text-white/65 leading-relaxed">Pra quem leva o rachão a sério. Tudo do plano grátis <strong class="text-white">+ 6 recursos exclusivos</strong> que pagam o app sozinhos.</p>
     </div>
+
+    <!-- Pro features grid -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-12 sm:mb-16">
+
+      <!-- Pro 1: Avulsos com PIX -->
+      <article class="glass-strong rounded-2xl p-6 border border-brand-orange/30 hover:border-brand-orange/60 transition-all duration-200 group relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-orange/15 rounded-full blur-2xl group-hover:bg-brand-orange/30 transition-colors" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-orange to-brand-orange-light grid place-items-center mb-5 shadow-lg shadow-brand-orange/30">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+          </div>
+          <h3 class="font-display text-2xl tracking-wide mb-2">Avulsos com PIX</h3>
+          <p class="text-sm text-white/65 leading-relaxed">Libere vagas, defina diária, receba pagamento na hora. <strong class="text-white">Estorno automático</strong> se o jogo for cancelado.</p>
+        </div>
+      </article>
+
+      <!-- Pro 2: Geolocalização -->
+      <article class="glass-strong rounded-2xl p-6 border border-brand-orange/30 hover:border-brand-orange/60 transition-all duration-200 group relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-purple/15 rounded-full blur-2xl group-hover:bg-brand-purple/30 transition-colors" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-purple to-brand-purple-light grid place-items-center mb-5 shadow-lg shadow-brand-purple/30">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <h3 class="font-display text-2xl tracking-wide mb-2">Descoberta por GPS</h3>
+          <p class="text-sm text-white/65 leading-relaxed">Avulsos do bairro acham seu rachão na hora. <strong class="text-white">Mais jogadores, menos vagas vazias.</strong></p>
+        </div>
+      </article>
+
+      <!-- Pro 3: Estatísticas avançadas -->
+      <article class="glass-strong rounded-2xl p-6 border border-brand-orange/30 hover:border-brand-orange/60 transition-all duration-200 group relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-green/15 rounded-full blur-2xl group-hover:bg-brand-green/30 transition-colors" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-green to-emerald-400 grid place-items-center mb-5 shadow-lg shadow-brand-green/30">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 14l4-4 4 4 5-6"/></svg>
+          </div>
+          <h3 class="font-display text-2xl tracking-wide mb-2">Stats avançadas</h3>
+          <p class="text-sm text-white/65 leading-relaxed">Fantasy ranking, MVP, performance histórica e comparativo entre jogadores. <strong class="text-white">Treta saudável garantida.</strong></p>
+        </div>
+      </article>
+
+      <!-- Pro 4: Co-admin granular -->
+      <article class="glass-strong rounded-2xl p-6 border border-brand-orange/30 hover:border-brand-orange/60 transition-all duration-200 group relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-orange/15 rounded-full blur-2xl group-hover:bg-brand-orange/30 transition-colors" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-orange to-amber-400 grid place-items-center mb-5 shadow-lg shadow-brand-orange/30">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h3 class="font-display text-2xl tracking-wide mb-2">Co-admin granular</h3>
+          <p class="text-sm text-white/65 leading-relaxed">Convide co-admins com permissões finas: jogadores, sessões, finanças. <strong class="text-white">Você decide o que cada um vê.</strong></p>
+        </div>
+      </article>
+
+      <!-- Pro 5: Posições necessárias -->
+      <article class="glass-strong rounded-2xl p-6 border border-brand-orange/30 hover:border-brand-orange/60 transition-all duration-200 group relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-purple/15 rounded-full blur-2xl group-hover:bg-brand-purple/30 transition-colors" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center mb-5 shadow-lg shadow-brand-purple/30">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <h3 class="font-display text-2xl tracking-wide mb-2">Posições necessárias</h3>
+          <p class="text-sm text-white/65 leading-relaxed">Marca quais posições o rachão precisa (goleiro, zagueiro, etc). <strong class="text-white">Avulso certo no jogo certo.</strong></p>
+        </div>
+      </article>
+
+      <!-- Pro 6: Estorno auto Mercado Pago -->
+      <article class="glass-strong rounded-2xl p-6 border border-brand-orange/30 hover:border-brand-orange/60 transition-all duration-200 group relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-green/15 rounded-full blur-2xl group-hover:bg-brand-green/30 transition-colors" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 grid place-items-center mb-5 shadow-lg shadow-brand-green/30">
+            <svg viewBox="0 0 24 24" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+          </div>
+          <h3 class="font-display text-2xl tracking-wide mb-2">Estorno automático</h3>
+          <p class="text-sm text-white/65 leading-relaxed">Cancelou o jogo? Os avulsos pagantes recebem refund automático via API do Mercado Pago. <strong class="text-white">Zero dor de cabeça.</strong></p>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- Pricing -->
+    <div class="text-center mb-8">
+      <p class="text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-2">Escolha seu plano</p>
+      <h3 class="font-display text-3xl sm:text-4xl tracking-wide">A partir de <span class="text-brand-green">R$ 0,16/dia</span></h3>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+
+      <!-- Mensal -->
+      <div class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 flex flex-col">
+        <p class="text-xs text-white/50 uppercase tracking-[0.15em] font-bold mb-3">Mensal</p>
+        <p class="font-display text-5xl mb-1">R$ 9<span class="text-2xl align-top">,90</span></p>
+        <p class="text-sm text-white/50 mb-5">por mês · cancele quando quiser</p>
+        <ul class="text-xs text-white/65 space-y-2 mb-6 flex-1">
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Tudo do plano grátis</li>
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>6 recursos Pro</li>
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Sem fidelidade</li>
+        </ul>
+        <a href="#download" class="btn-ghost text-white font-semibold px-5 py-3 rounded-xl text-center cursor-pointer transition-all duration-200 text-sm">Assinar mensal</a>
+      </div>
+
+      <!-- Anual (destacado) -->
+      <div class="glass-strong rounded-2xl p-6 border-2 border-brand-orange relative flex flex-col -translate-y-2 shadow-2xl shadow-brand-orange/20">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Melhor escolha</div>
+        <p class="text-xs text-brand-orange uppercase tracking-[0.15em] font-bold mb-3">Anual</p>
+        <p class="font-display text-5xl mb-1">R$ 59<span class="text-2xl align-top">,90</span></p>
+        <p class="text-sm text-white/65 mb-5">por ano · <span class="text-brand-green font-semibold">economia de 50%</span></p>
+        <ul class="text-xs text-white/75 space-y-2 mb-6 flex-1">
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Tudo do mensal</li>
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><strong class="text-white">7 dias grátis</strong> pra testar</li>
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Equivale a <strong class="text-white">R$ 4,99/mês</strong></li>
+        </ul>
+        <a href="#download" class="btn-primary text-white font-bold px-5 py-3 rounded-xl text-center cursor-pointer transition-all duration-200 text-sm">Quero o Pro</a>
+      </div>
+
+      <!-- Vitalício -->
+      <div class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 flex flex-col">
+        <p class="text-xs text-white/50 uppercase tracking-[0.15em] font-bold mb-3 flex items-center gap-2">
+          Vitalício
+          <span class="px-1.5 py-0.5 rounded bg-brand-purple/30 text-brand-purple-light text-[9px] font-bold">1x</span>
+        </p>
+        <p class="font-display text-5xl mb-1">R$ 149<span class="text-2xl align-top">,90</span></p>
+        <p class="text-sm text-white/50 mb-5">pagou, é seu pra sempre</p>
+        <ul class="text-xs text-white/65 space-y-2 mb-6 flex-1">
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Tudo do anual</li>
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><strong class="text-white">Sem renovação</strong></li>
+          <li class="flex gap-2"><svg class="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Recursos futuros incluídos</li>
+        </ul>
+        <a href="#download" class="btn-ghost text-white font-semibold px-5 py-3 rounded-xl text-center cursor-pointer transition-all duration-200 text-sm">Comprar 1x</a>
+      </div>
+
+    </div>
+
+    <!-- Reassurance -->
+    <p class="text-center text-xs text-white/45 mt-8 max-w-md mx-auto">
+      Cobrança via Google Play. Sem cartão de crédito até a sua decisão final. Cancele em 1 toque a qualquer momento.
+    </p>
+
   </div>
 </section>
 
@@ -565,11 +648,8 @@
 <footer class="border-t border-white/5 py-12">
   <div class="max-w-6xl mx-auto px-5 sm:px-8 grid md:grid-cols-[1.5fr,1fr,1fr] gap-10">
     <div>
-      <a href="#top" class="flex items-center gap-2.5 mb-4">
-        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-orange to-brand-orange-light grid place-items-center">
-          <svg viewBox="0 0 24 24" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>
-        </span>
-        <span class="font-display tracking-wider text-lg">MEU RACHÃO <span class="text-brand-orange">PRO</span></span>
+      <a href="#top" class="inline-flex mb-4" aria-label="Meu Rachão Pro - Início">
+        <img src="../assets/logo.png" alt="Meu Rachão Pro" class="h-14 w-auto">
       </a>
       <p class="text-sm text-white/50 max-w-sm leading-relaxed">Feito por quem joga, pra quem joga. Brasil, 2026.</p>
     </div>
