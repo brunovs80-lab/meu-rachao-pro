@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A0A0A">
+<title>Meu Rachão Pro — Organize peladas como profissional</title>
+<meta name="description" content="App brasileiro pra organizar rachões de futebol: times balanceados, pagamento por PIX, jogadores avulsos, estatísticas e ranking. Grátis no Android, PWA pelo iPhone.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Meu Rachão Pro — Organize peladas como profissional">
+<meta property="og:description" content="Times balanceados em segundos, PIX automático, jogadores avulsos. O app feito por quem joga.">
+<meta property="og:image" content="../assets/screenshot-wide.png">
+
+<!-- Apple PWA -->
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rachão Pro">
+
+<link rel="icon" type="image/png" href="../assets/icon-192.png">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Tailwind via Play CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { orange: '#FF7A00', 'orange-light': '#FF9A3C', purple: '#7B2CBF', 'purple-light': '#9D4EDD', green: '#00C853', dark: '#0A0A0A', card: '#141414', surface: '#1C1C1C' },
+        },
+        fontFamily: {
+          display: ['"Bebas Neue"', 'system-ui', 'sans-serif'],
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+        },
+        animation: {
+          'float-slow': 'float 8s ease-in-out infinite',
+          'float-mid':  'float 6s ease-in-out infinite',
+          'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
+          'shimmer': 'shimmer 3s linear infinite',
+        },
+        keyframes: {
+          float:     { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-18px)' } },
+          pulseGlow: { '0%,100%': { opacity: '0.5' }, '50%': { opacity: '1' } },
+          shimmer:   { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { background: #0A0A0A; color: #fff; font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* Mesh background */
+  .mesh-bg::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 0%,   rgba(255,122,0,0.18), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 30%,  rgba(123,44,191,0.20), transparent 65%),
+      radial-gradient(ellipse 40% 40% at 50% 100%, rgba(0,200,83,0.10),   transparent 65%);
+  }
+  .grid-bg::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%);
+  }
+
+  /* Glass cards */
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .glass-strong {
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Animated headline gradient */
+  .headline-grad {
+    background: linear-gradient(90deg, #FF7A00, #FF9A3C, #7B2CBF, #FF7A00);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 6s linear infinite;
+  }
+
+  /* Phone shell */
+  .phone {
+    border-radius: 38px;
+    background: linear-gradient(180deg, #1f1f1f, #0a0a0a);
+    box-shadow:
+      0 30px 80px rgba(255,122,0,0.18),
+      0 10px 40px rgba(0,0,0,0.6),
+      inset 0 0 0 2px rgba(255,255,255,0.06);
+    padding: 10px;
+  }
+  .phone-screen { border-radius: 28px; overflow: hidden; background: #000; }
+
+  /* Number ticker subtle highlight */
+  .stat-num { background: linear-gradient(180deg, #fff, #c7c7c7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* Buttons */
+  .btn-primary {
+    background: linear-gradient(135deg, #FF7A00, #FF9A3C);
+    box-shadow: 0 12px 28px rgba(255,122,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-ghost {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.07); }
+
+  /* FAQ */
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  details[open] .chev { transform: rotate(180deg); }
+  .chev { transition: transform .2s ease; }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto; }
+  }
+
+  /* Focus states */
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid #FF9A3C; outline-offset: 3px; border-radius: 8px;
+  }
+</style>
+</head>
+
+<body class="overflow-x-hidden">
+
+<!-- Navbar -->
+<header class="fixed top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-50">
+  <nav class="glass-strong rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between max-w-6xl mx-auto">
+    <a href="#top" class="flex items-center gap-2.5 group">
+      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-orange to-brand-orange-light grid place-items-center shadow-lg shadow-brand-orange/30">
+        <!-- soccer ball icon -->
+        <svg viewBox="0 0 24 24" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>
+        </svg>
+      </span>
+      <span class="font-display tracking-wider text-lg sm:text-xl">MEU RACHÃO <span class="text-brand-orange">PRO</span></span>
+    </a>
+    <div class="hidden md:flex items-center gap-7 text-sm text-white/70">
+      <a href="#recursos" class="hover:text-white transition-colors">Recursos</a>
+      <a href="#como-funciona" class="hover:text-white transition-colors">Como funciona</a>
+      <a href="#pro" class="hover:text-white transition-colors">Pro</a>
+      <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
+    </div>
+    <a href="#download" class="btn-primary text-white font-semibold text-sm px-4 py-2 rounded-xl cursor-pointer transition-all duration-200">
+      Baixar
+    </a>
+  </nav>
+</header>
+
+<!-- Hero -->
+<section id="top" class="relative pt-32 pb-20 sm:pt-40 sm:pb-28 mesh-bg grid-bg overflow-hidden">
+  <div class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 grid lg:grid-cols-[1.15fr,1fr] gap-12 lg:gap-16 items-center">
+
+    <!-- Left -->
+    <div>
+      <span class="inline-flex items-center gap-2 glass px-3 py-1.5 rounded-full text-xs font-semibold text-white/80 mb-6">
+        <span class="w-2 h-2 rounded-full bg-brand-green animate-pulse-glow"></span>
+        App Brasileiro · 100% PIX · Pronto pra Android
+      </span>
+
+      <h1 class="font-display tracking-wide text-5xl sm:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] mb-5">
+        ORGANIZE SUAS<br>
+        <span class="headline-grad">PELADAS</span><br>
+        COMO PROFISSIONAL.
+      </h1>
+
+      <p class="text-base sm:text-lg text-white/70 max-w-xl mb-8 leading-relaxed">
+        Times balanceados em <strong class="text-white">5 segundos</strong>, mensalidade e diárias <strong class="text-white">no PIX automático</strong>, jogadores avulsos pagando pra entrar — e tudo isso direto do seu rachão da quarta-feira.
+      </p>
+
+      <div id="download" class="flex flex-wrap gap-3 mb-6">
+        <a href="https://play.google.com/store/apps/details?id=com.meurachao.pro" class="btn-primary text-white font-semibold px-6 py-3.5 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M3.6 1.5C3.2 1.7 3 2.1 3 2.6v18.8c0 .5.2.9.6 1.1l11-11.5L3.6 1.5zm12.1 11l3.4-3.6c.5-.5.5-1.3 0-1.8L16 4.6l-2.9 3 2.6 2.7-2.6 2.7 2.6 2.5zm-.7.7l-9.6 9.6c-.4.4-1.1.4-1.5 0L4 22l11-10.7 1 1zM5 1.7c.5-.4 1.1-.3 1.5.1L15 10l-1 1L5 1.7z"/></svg>
+          <span class="text-left leading-tight">
+            <span class="block text-[10px] font-medium uppercase tracking-wider opacity-80">Disponível no</span>
+            <span class="block text-base font-bold">Google Play</span>
+          </span>
+        </a>
+        <a href="#ios-install" class="btn-ghost text-white font-semibold px-6 py-3.5 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          <span class="text-left leading-tight">
+            <span class="block text-[10px] font-medium uppercase tracking-wider opacity-80">Use pelo</span>
+            <span class="block text-base font-bold">iPhone (PWA)</span>
+          </span>
+        </a>
+      </div>
+
+      <p class="text-xs text-white/50">Grátis pra começar · Versão Pro a partir de R$ 9,90/mês</p>
+    </div>
+
+    <!-- Right: phone mockup -->
+    <div class="relative flex justify-center lg:justify-end">
+      <!-- glow -->
+      <div class="absolute -inset-10 bg-brand-orange/20 blur-3xl rounded-full animate-pulse-glow" aria-hidden="true"></div>
+
+      <div class="relative animate-float-slow">
+        <div class="phone w-[280px] sm:w-[320px]">
+          <div class="phone-screen aspect-[9/19.5]">
+            <img src="../assets/screenshot-narrow.png" alt="Tela do app Meu Rachão Pro mostrando dashboard com lista de rachões"
+                 class="w-full h-full object-cover" loading="eager" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-br from-brand-orange/30 to-brand-purple/30 grid place-items-center\'><span class=\'font-display text-4xl text-white/40\'>RACHÃO</span></div>'">
+          </div>
+        </div>
+
+        <!-- floating chips -->
+        <div class="absolute -left-6 top-16 glass rounded-2xl px-3 py-2 flex items-center gap-2 animate-float-mid hidden sm:flex">
+          <div class="w-8 h-8 rounded-lg bg-brand-green/20 grid place-items-center">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 text-brand-green" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div class="text-left">
+            <p class="text-[10px] uppercase tracking-wide text-white/50">PIX confirmado</p>
+            <p class="text-xs font-bold">R$ 25,00 · João</p>
+          </div>
+        </div>
+
+        <div class="absolute -right-4 bottom-20 glass rounded-2xl px-3 py-2 flex items-center gap-2 animate-float-slow hidden sm:flex">
+          <div class="w-8 h-8 rounded-lg bg-brand-orange/20 grid place-items-center">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 text-brand-orange" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <div class="text-left">
+            <p class="text-[10px] uppercase tracking-wide text-white/50">Times sorteados</p>
+            <p class="text-xs font-bold">Equilíbrio: 98%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Trust bar -->
+<section class="relative border-y border-white/5 py-10">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
+    <div>
+      <p class="font-display text-4xl sm:text-5xl stat-num leading-none">5s</p>
+      <p class="text-xs sm:text-sm text-white/60 mt-2">Pra balancear os times</p>
+    </div>
+    <div>
+      <p class="font-display text-4xl sm:text-5xl stat-num leading-none">100%</p>
+      <p class="text-xs sm:text-sm text-white/60 mt-2">Pagamento via PIX</p>
+    </div>
+    <div>
+      <p class="font-display text-4xl sm:text-5xl stat-num leading-none">∞</p>
+      <p class="text-xs sm:text-sm text-white/60 mt-2">Rachões e jogadores</p>
+    </div>
+    <div>
+      <p class="font-display text-4xl sm:text-5xl stat-num leading-none">0</p>
+      <p class="text-xs sm:text-sm text-white/60 mt-2">Anúncios na tela</p>
+    </div>
+  </div>
+</section>
+
+<!-- Recursos -->
+<section id="recursos" class="relative py-24 sm:py-32 mesh-bg overflow-hidden">
+  <div class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8">
+
+    <div class="text-center mb-14 sm:mb-20 max-w-2xl mx-auto">
+      <span class="inline-block text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-3">Recursos</span>
+      <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4">
+        Tudo que falta no <span class="text-brand-orange">grupo do Whats</span>.
+      </h2>
+      <p class="text-white/60">Sem planilha, sem briga de PIX, sem o cara que sumiu sem pagar.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+
+      <!-- Feature 1 -->
+      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-orange/15 grid place-items-center mb-5 group-hover:bg-brand-orange/25 transition-colors">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-orange" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+        </div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Times balanceados</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Algoritmo distribui os jogadores por habilidade e posição. Em segundos. Adeus, "racha de capitão".</p>
+      </article>
+
+      <!-- Feature 2 -->
+      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-green/15 grid place-items-center mb-5 group-hover:bg-brand-green/25 transition-colors">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-green" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+        </div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">PIX automático</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Mensalidade e diária cobradas direto no app. Confirmação automática via webhook do Mercado Pago.</p>
+      </article>
+
+      <!-- Feature 3 -->
+      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-purple/20 grid place-items-center mb-5 group-hover:bg-brand-purple/35 transition-colors">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-purple-light" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Avulsos por GPS</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Faltou jogador? Libere a vaga, defina a diária e qualquer um do bairro acha seu rachão e paga pra entrar.</p>
+      </article>
+
+      <!-- Feature 4 -->
+      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-orange/15 grid place-items-center mb-5 group-hover:bg-brand-orange/25 transition-colors">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-orange-light" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 14l4-4 4 4 5-6"/></svg>
+        </div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Estatísticas e ranking</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Gols, assistências, desarmes, vitórias. Ranking diário, semanal e geral pra alimentar a treta saudável.</p>
+      </article>
+
+      <!-- Feature 5 -->
+      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-green/15 grid place-items-center mb-5 group-hover:bg-brand-green/25 transition-colors">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-green" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>
+        </div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Notificações</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Push real (FCM) avisa: pagamento confirmado, rachão lotando, novo convite de co-admin. Sem precisar abrir o grupo.</p>
+      </article>
+
+      <!-- Feature 6 -->
+      <article class="glass rounded-2xl p-6 hover:border-white/15 transition-colors duration-200 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-purple/20 grid place-items-center mb-5 group-hover:bg-brand-purple/35 transition-colors">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand-purple-light" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Co-admin granular</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Convide outro admin com permissões finas: gerenciar jogadores, sessões, finanças — só o que você liberar.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- Como funciona -->
+<section id="como-funciona" class="relative py-24 sm:py-32 border-t border-white/5">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+
+    <div class="text-center mb-14 sm:mb-20 max-w-2xl mx-auto">
+      <span class="inline-block text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-3">Como funciona</span>
+      <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4">
+        Da <span class="text-brand-orange">primeira linha</span> ao <span class="text-brand-orange">apito final</span>.
+      </h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5 sm:gap-6 relative">
+
+      <!-- connector line desktop -->
+      <div class="hidden md:block absolute top-12 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-brand-orange/40 to-transparent" aria-hidden="true"></div>
+
+      <div class="glass-strong rounded-2xl p-6 sm:p-7 relative">
+        <div class="w-10 h-10 rounded-xl bg-brand-orange text-brand-dark font-display text-xl grid place-items-center mb-5 shadow-lg shadow-brand-orange/40">1</div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Crie o rachão</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Em 30 segundos: nome, dia da semana, horário e local. App gera um código de convite único.</p>
+      </div>
+
+      <div class="glass-strong rounded-2xl p-6 sm:p-7 relative">
+        <div class="w-10 h-10 rounded-xl bg-brand-orange text-brand-dark font-display text-xl grid place-items-center mb-5 shadow-lg shadow-brand-orange/40">2</div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Convide a galera</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Manda o código no Whats ou libera por GPS pra novos jogadores acharem você. Cada um se cadastra sozinho.</p>
+      </div>
+
+      <div class="glass-strong rounded-2xl p-6 sm:p-7 relative">
+        <div class="w-10 h-10 rounded-xl bg-brand-orange text-brand-dark font-display text-xl grid place-items-center mb-5 shadow-lg shadow-brand-orange/40">3</div>
+        <h3 class="font-display text-2xl tracking-wide mb-2">Jogue e registre</h3>
+        <p class="text-sm text-white/60 leading-relaxed">Time sorteado, gols anotados, ranking atualizado. Você só se preocupa em jogar bola.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Pro -->
+<section id="pro" class="relative py-24 sm:py-32 overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-brand-orange/10 via-transparent to-brand-purple/10" aria-hidden="true"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-orange/15 rounded-full blur-3xl" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-5xl mx-auto px-5 sm:px-8">
+
+    <div class="glass-strong rounded-3xl p-8 sm:p-12 lg:p-16 relative overflow-hidden">
+
+      <div class="absolute top-6 right-6 px-3 py-1 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold tracking-wider uppercase">Pro</div>
+
+      <div class="grid lg:grid-cols-[1.3fr,1fr] gap-10 items-center">
+        <div>
+          <span class="inline-block text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-3">Versão Pro</span>
+          <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl leading-tight mb-5">
+            Desbloqueie o <span class="text-brand-orange">modo profissional</span>.
+          </h2>
+          <p class="text-white/70 mb-6 leading-relaxed">Pra quem leva o rachão a sério. Tudo do plano grátis + recursos avançados.</p>
+
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-start gap-3 text-sm">
+              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <span><strong class="text-white">Jogadores avulsos com PIX</strong> — libere vagas, cobre diária, receba na hora</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm">
+              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <span><strong class="text-white">Estatísticas avançadas</strong> — fantasy ranking, MVP, performance histórica</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm">
+              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <span><strong class="text-white">Co-administradores</strong> com permissões granulares por rachão</span>
+            </li>
+            <li class="flex items-start gap-3 text-sm">
+              <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <span><strong class="text-white">Estorno automático</strong> via API do Mercado Pago em caso de cancelamento</span>
+            </li>
+          </ul>
+
+          <a href="#download" class="btn-primary text-white font-semibold px-6 py-3.5 rounded-xl inline-flex items-center gap-2 cursor-pointer transition-all duration-200">
+            Quero o Pro
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+
+        <div class="space-y-3">
+          <div class="glass rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p class="text-xs text-white/50 uppercase tracking-wide">Mensal</p>
+              <p class="font-display text-3xl">R$ 9<span class="text-base align-top">,90</span><span class="text-sm text-white/50 font-sans font-normal">/mês</span></p>
+            </div>
+          </div>
+          <div class="glass rounded-xl p-4 flex items-center justify-between border-2 border-brand-orange/40 relative">
+            <div class="absolute -top-2 left-4 px-2 py-0.5 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold uppercase tracking-wider">Melhor</div>
+            <div>
+              <p class="text-xs text-white/50 uppercase tracking-wide">Anual <span class="text-brand-green">· 7 dias grátis</span></p>
+              <p class="font-display text-3xl">R$ 59<span class="text-base align-top">,90</span><span class="text-sm text-white/50 font-sans font-normal">/ano</span></p>
+            </div>
+          </div>
+          <div class="glass rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p class="text-xs text-white/50 uppercase tracking-wide">Vitalício</p>
+              <p class="font-display text-3xl">R$ 149<span class="text-base align-top">,90</span><span class="text-sm text-white/50 font-sans font-normal"> · 1x</span></p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- iOS install -->
+<section id="ios-install" class="relative py-20 sm:py-24 border-y border-white/5">
+  <div class="max-w-4xl mx-auto px-5 sm:px-8">
+    <div class="grid md:grid-cols-[auto,1fr] gap-8 items-start">
+      <div class="w-16 h-16 rounded-2xl bg-white/5 grid place-items-center shrink-0 mx-auto md:mx-0">
+        <svg viewBox="0 0 24 24" class="w-8 h-8 text-white" fill="currentColor" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+      </div>
+      <div class="text-center md:text-left">
+        <h2 class="font-display text-3xl sm:text-4xl tracking-wide mb-3">Tem iPhone? Instala como PWA.</h2>
+        <p class="text-white/65 mb-5 leading-relaxed">Enquanto a versão da App Store não chega, dá pra usar todas as funções pelo Safari — vira um app no seu home screen.</p>
+        <ol class="space-y-2.5 text-sm text-white/75">
+          <li class="flex gap-3"><span class="font-display text-brand-orange text-lg leading-none">1.</span> Abra <strong>app.meurachao.pro</strong> no <strong>Safari</strong> (não funciona no Chrome do iOS)</li>
+          <li class="flex gap-3"><span class="font-display text-brand-orange text-lg leading-none">2.</span> Toque no botão <strong>Compartilhar</strong> (caixa com seta pra cima)</li>
+          <li class="flex gap-3"><span class="font-display text-brand-orange text-lg leading-none">3.</span> Selecione <strong>Adicionar à Tela de Início</strong></li>
+          <li class="flex gap-3"><span class="font-display text-brand-orange text-lg leading-none">4.</span> Pronto — abre em fullscreen, com ícone próprio</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="relative py-24 sm:py-32">
+  <div class="max-w-3xl mx-auto px-5 sm:px-8">
+    <div class="text-center mb-12">
+      <span class="inline-block text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-3">Perguntas frequentes</span>
+      <h2 class="font-display text-4xl sm:text-5xl tracking-wide">Tira a <span class="text-brand-orange">dúvida.</span></h2>
+    </div>
+
+    <div class="space-y-3">
+      <details class="glass rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between gap-4 font-semibold">
+          <span>Preciso pagar pra usar?</span>
+          <svg class="chev w-5 h-5 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-sm text-white/65 leading-relaxed">Não. O plano grátis cobre criação de rachão, sorteio de times, registro de partidas e estatísticas básicas. A versão Pro libera avulsos com PIX, co-admin, estatísticas avançadas e estorno automático.</p>
+      </details>
+
+      <details class="glass rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between gap-4 font-semibold">
+          <span>Como funciona o pagamento de avulsos?</span>
+          <svg class="chev w-5 h-5 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-sm text-white/65 leading-relaxed">O admin define quantas vagas extras tem e o valor da diária. O avulso paga via PIX gerado dentro do app (Mercado Pago). Confirmação é automática e ele entra na lista de confirmados na hora.</p>
+      </details>
+
+      <details class="glass rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between gap-4 font-semibold">
+          <span>Como o app balanceia os times?</span>
+          <svg class="chev w-5 h-5 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-sm text-white/65 leading-relaxed">Cada jogador tem um nível (1 a 5) e uma posição preferida. O algoritmo distribui pra que cada time tenha somatórios de habilidade próximos e mantenha goleiros e linhas equilibrados.</p>
+      </details>
+
+      <details class="glass rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between gap-4 font-semibold">
+          <span>Funciona no iPhone?</span>
+          <svg class="chev w-5 h-5 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-sm text-white/65 leading-relaxed">Sim, via PWA pelo Safari. É só abrir o site e usar "Adicionar à Tela de Início" pra deixar como app. A versão nativa da App Store está em planejamento.</p>
+      </details>
+
+      <details class="glass rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between gap-4 font-semibold">
+          <span>Os dados dos jogadores são seguros?</span>
+          <svg class="chev w-5 h-5 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-sm text-white/65 leading-relaxed">Sim. Tudo trafega via HTTPS, autenticação no Supabase e pagamentos no Mercado Pago — mesmas infraestruturas usadas por bancos e e-commerces grandes. Dados não são vendidos pra terceiros.</p>
+      </details>
+
+      <details class="glass rounded-xl px-5 py-4 group">
+        <summary class="flex items-center justify-between gap-4 font-semibold">
+          <span>Tenho 30 jogadores no grupo. Cabe?</span>
+          <svg class="chev w-5 h-5 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-sm text-white/65 leading-relaxed">Cabe muito mais. Não tem limite duro de jogadores nem de rachões. O mesmo admin pode gerenciar múltiplos grupos (quarta + sábado, por exemplo).</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="relative py-24 sm:py-32 overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-brand-orange/15 via-transparent to-brand-purple/15" aria-hidden="true"></div>
+  <div class="absolute inset-0 grid-bg" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-3xl mx-auto px-5 sm:px-8 text-center">
+    <h2 class="font-display text-5xl sm:text-6xl lg:text-7xl leading-[0.95] mb-6">
+      Próxima quarta,<br>
+      <span class="headline-grad">o rachão é seu</span>.
+    </h2>
+    <p class="text-white/65 text-lg mb-10 max-w-xl mx-auto">Vai levar 2 minutos pra cadastrar seu grupo. A galera vai agradecer já no primeiro PIX.</p>
+
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="https://play.google.com/store/apps/details?id=com.meurachao.pro" class="btn-primary text-white font-semibold px-7 py-4 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200">
+        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M3.6 1.5C3.2 1.7 3 2.1 3 2.6v18.8c0 .5.2.9.6 1.1l11-11.5L3.6 1.5z"/></svg>
+        Baixar pra Android
+      </a>
+      <a href="#ios-install" class="btn-ghost text-white font-semibold px-7 py-4 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200">
+        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08z"/></svg>
+        Instalar no iPhone
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-white/5 py-12">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 grid md:grid-cols-[1.5fr,1fr,1fr] gap-10">
+    <div>
+      <a href="#top" class="flex items-center gap-2.5 mb-4">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-orange to-brand-orange-light grid place-items-center">
+          <svg viewBox="0 0 24 24" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>
+        </span>
+        <span class="font-display tracking-wider text-lg">MEU RACHÃO <span class="text-brand-orange">PRO</span></span>
+      </a>
+      <p class="text-sm text-white/50 max-w-sm leading-relaxed">Feito por quem joga, pra quem joga. Brasil, 2026.</p>
+    </div>
+    <div>
+      <p class="text-xs uppercase tracking-wider text-white/40 font-bold mb-3">Produto</p>
+      <ul class="space-y-2 text-sm text-white/65">
+        <li><a href="#recursos" class="hover:text-white transition-colors">Recursos</a></li>
+        <li><a href="#pro" class="hover:text-white transition-colors">Versão Pro</a></li>
+        <li><a href="#faq" class="hover:text-white transition-colors">FAQ</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-xs uppercase tracking-wider text-white/40 font-bold mb-3">Legal</p>
+      <ul class="space-y-2 text-sm text-white/65">
+        <li><a href="../privacy.html" class="hover:text-white transition-colors">Privacidade</a></li>
+        <li><a href="../terms.html" class="hover:text-white transition-colors">Termos de uso</a></li>
+        <li><a href="mailto:contato@meurachao.pro" class="hover:text-white transition-colors">Contato</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 mt-10 pt-6 border-t border-white/5 text-xs text-white/40 flex flex-wrap items-center justify-between gap-3">
+    <span>© 2026 Meu Rachão Pro. Todos os direitos reservados.</span>
+    <span>Hecho con bola na cabeça <span aria-hidden="true">·</span> Brasil</span>
+  </div>
+</footer>
+
+</body>
+</html>
