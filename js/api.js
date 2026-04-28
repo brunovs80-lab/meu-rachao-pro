@@ -837,12 +837,20 @@ async function apiListOpenGuestSessions() {
 
 async function apiCancelSession(sessionId) {
   const user = apiGetCurrentUser();
-  const { data, error } = await initSupabase().rpc('cancel_session', {
-    p_session_id: sessionId,
-    p_caller_id: user?.id || null,
+  const callerId = user?.id || null;
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/cancel-session-with-refunds`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ session_id: sessionId, caller_id: callerId }),
   });
-  if (error) throw error;
-  return data || { ok: false };
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok && !data?.cancelled) {
+    return { ok: false, error: data?.error || 'CANCEL_FAILED' };
+  }
+  return data;
 }
 
 async function apiGetSessionGuestConfig(sessionId) {

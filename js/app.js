@@ -667,9 +667,10 @@ async function loadGuestsArea(session, rachao, user) {
   if (card) card.style.display = 'block';
 
   const guests = await apiListSessionGuests(session.id).catch(() => []);
-  const paid     = guests.filter(g => g.status === 'paid');
-  const pending  = guests.filter(g => g.status === 'pending');
-  const refunded = guests.filter(g => g.status === 'refunded');
+  const paid          = guests.filter(g => g.status === 'paid');
+  const pending       = guests.filter(g => g.status === 'pending');
+  const refunded      = guests.filter(g => g.status === 'refunded');
+  const refundFailed  = guests.filter(g => g.status === 'refund_failed');
 
   document.getElementById('guests-paid-count').textContent = paid.length;
   document.getElementById('guests-slots').textContent = session.guest_slots || 0;
@@ -688,9 +689,15 @@ async function loadGuestsArea(session, rachao, user) {
       badge = '<span class="text-muted" style="font-size:11px"><i class="fas fa-hourglass-half"></i> Aguardando</span>';
     }
     if (kind === 'refunded') {
+      avatarColor = 'var(--text-muted)';
+      badge = '<span style="color:var(--text-muted);font-size:11px;font-weight:700"><i class="fas fa-rotate-left"></i> Estornado</span>';
+      detailExtra = ' • <span style="color:var(--text-muted)">estorno automático ok</span>';
+    }
+    if (kind === 'refund_failed') {
       avatarColor = 'var(--red)';
-      badge = '<span style="color:var(--red);font-size:11px;font-weight:700"><i class="fas fa-rotate-left"></i> Estorno</span>';
-      detailExtra = ' • <span style="color:var(--red)">estornar via MP</span>';
+      const errMsg = g.refund_error ? ` (${escapeHtml(String(g.refund_error).substring(0, 60))})` : '';
+      badge = '<span style="color:var(--red);font-size:11px;font-weight:700"><i class="fas fa-triangle-exclamation"></i> Falhou</span>';
+      detailExtra = ` • <span style="color:var(--red)">estornar via MP${errMsg}</span>`;
     }
     return `<div class="player-item">
       <div class="player-avatar" style="background:${avatarColor}">${ini}</div>
@@ -701,9 +708,10 @@ async function loadGuestsArea(session, rachao, user) {
   };
 
   const sections = [];
-  if (paid.length)     sections.push(paid.map(g => renderRow(g, 'paid')).join(''));
-  if (pending.length)  sections.push(pending.map(g => renderRow(g, 'pending')).join(''));
-  if (refunded.length) sections.push(refunded.map(g => renderRow(g, 'refunded')).join(''));
+  if (paid.length)         sections.push(paid.map(g => renderRow(g, 'paid')).join(''));
+  if (pending.length)      sections.push(pending.map(g => renderRow(g, 'pending')).join(''));
+  if (refundFailed.length) sections.push(refundFailed.map(g => renderRow(g, 'refund_failed')).join(''));
+  if (refunded.length)     sections.push(refunded.map(g => renderRow(g, 'refunded')).join(''));
 
   document.getElementById('guests-list').innerHTML = sections.length
     ? sections.join('')
@@ -1344,7 +1352,6 @@ async function endSession() {
 
 async function cancelarJogo() {
   if (!currentSessionId) return;
-  // Verifica se há avulsos pagos para alertar sobre estorno
   let warning = 'Tem certeza que quer cancelar este jogo?';
   try {
     const guests = await apiListSessionGuests(currentSessionId);
@@ -1352,8 +1359,8 @@ async function cancelarJogo() {
     if (paid.length > 0) {
       const total = paid.reduce((s, g) => s + Number(g.fee_paid || 0), 0);
       warning = `⚠️ Este jogo tem ${paid.length} avulso(s) pago(s) — total R$ ${total.toFixed(2).replace('.', ',')}.\n\n` +
-        `Você precisará ESTORNAR MANUALMENTE no painel do Mercado Pago. ` +
-        `O sistema vai marcar todos como "estorno pendente".\n\nProsseguir?`;
+        `O sistema vai tentar ESTORNAR AUTOMATICAMENTE via Mercado Pago. ` +
+        `Se algum falhar, ficará marcado como "estorno com falha" pra você reprocessar manualmente.\n\nProsseguir?`;
     }
   } catch (_) { /* segue mesmo se falhar */ }
 
@@ -1361,7 +1368,7 @@ async function cancelarJogo() {
 
   try {
     const result = await apiCancelSession(currentSessionId);
-    if (!result.ok) {
+    if (!result.ok && !result.cancelled) {
       const msgs = {
         SESSAO_INVALIDA: 'Sessão inválida',
         SEM_PERMISSAO:   'Sem permissão para cancelar',
@@ -1371,11 +1378,19 @@ async function cancelarJogo() {
       showToast(msgs[result.error] || result.error || 'Erro ao cancelar');
       return;
     }
-    if (result.refund_count > 0) {
-      const total = Number(result.refund_total || 0).toFixed(2).replace('.', ',');
-      showToast(`Jogo cancelado. ${result.refund_count} estorno(s) pendente(s): R$ ${total}`);
-    } else {
+
+    const total = Number(result.refund_count || 0);
+    const ok    = Number(result.refund_success || 0);
+    const fail  = Number(result.refund_failed || 0);
+
+    if (total === 0) {
       showToast('Jogo cancelado');
+    } else if (fail === 0) {
+      showToast(`Jogo cancelado. ${ok} avulso(s) estornado(s) automaticamente.`);
+    } else if (result.error === 'PAYMENT_CONFIG_MISSING') {
+      showToast(`Jogo cancelado, mas o token MP sumiu — estorne manualmente no painel.`);
+    } else {
+      showToast(`Jogo cancelado. ${ok}/${total} estornados, ${fail} com falha — verifique a lista.`);
     }
     await loadRachaoDetail();
   } catch (err) {
