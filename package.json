@@ -16,7 +16,8 @@
     "cap:android": "npm run build && npx cap sync android && npx cap open android",
     "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
     "cap:build:android": "npm run build && npx cap sync android && node scripts/run-gradle.js assembleRelease",
-    "cap:build:aab": "npm run build && npx cap sync android && node scripts/run-gradle.js bundleRelease"
+    "cap:build:aab": "npm run build && npx cap sync android && node scripts/run-gradle.js bundleRelease",
+    "optimize:images": "node scripts/optimize-images.js"
   },
   "repository": {
     "type": "git",

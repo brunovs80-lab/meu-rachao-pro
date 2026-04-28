@@ -133,9 +133,22 @@
   details[open] .chev { transform: rotate(180deg); }
   .chev { transition: transform .2s ease; }
 
+  /* Reveal on scroll */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.2,.8,.2,1), transform .7s cubic-bezier(.2,.8,.2,1); }
+  .reveal.is-visible { opacity: 1; transform: none; }
+
+  /* Nav active link (scroll-spy) */
+  header nav a.nav-link-active { color: #fff; position: relative; }
+  header nav a.nav-link-active::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px;
+    background: linear-gradient(90deg, #FF7A00, #FF9A3C);
+    border-radius: 2px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto; }
+    .reveal { opacity: 1 !important; transform: none !important; }
   }
 
   /* Focus states */
@@ -150,8 +163,11 @@
 <!-- Navbar -->
 <header class="fixed top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-50">
   <nav class="glass-strong rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between max-w-6xl mx-auto">
-    <a href="#top" class="flex items-center gap-2.5 group" aria-label="Meu Rachão Pro - Início">
-      <img src="../assets/logo.png" alt="Meu Rachão Pro" class="h-10 sm:h-12 w-auto drop-shadow-[0_4px_16px_rgba(255,122,0,0.3)] group-hover:scale-105 transition-transform duration-200">
+    <a href="#top" class="flex items-center group" aria-label="Meu Rachão Pro - Início">
+      <picture>
+        <source srcset="../assets/logo.webp" type="image/webp">
+        <img src="../assets/logo.png" alt="Meu Rachão Pro" class="h-14 sm:h-16 w-auto drop-shadow-[0_4px_18px_rgba(255,122,0,0.4)] group-hover:scale-105 transition-transform duration-200">
+      </picture>
     </a>
     <div class="hidden md:flex items-center gap-7 text-sm text-white/70">
       <a href="#recursos" class="hover:text-white transition-colors">Recursos</a>
@@ -214,8 +230,11 @@
       <div class="relative animate-float-slow">
         <div class="phone w-[280px] sm:w-[320px]">
           <div class="phone-screen aspect-[9/19.5]">
-            <img src="../assets/screenshot-narrow.png" alt="Tela do app Meu Rachão Pro mostrando dashboard com lista de rachões"
-                 class="w-full h-full object-cover" loading="eager" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-br from-brand-orange/30 to-brand-purple/30 grid place-items-center\'><span class=\'font-display text-4xl text-white/40\'>RACHÃO</span></div>'">
+            <picture>
+              <source srcset="../assets/screenshot-narrow.webp" type="image/webp">
+              <img src="../assets/screenshot-narrow.png" alt="Tela do app Meu Rachão Pro mostrando dashboard com lista de rachões"
+                   class="w-full h-full object-cover" loading="eager" onerror="this.parentElement.parentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-br from-brand-orange/30 to-brand-purple/30 grid place-items-center\'><span class=\'font-display text-4xl text-white/40\'>RACHÃO</span></div>'">
+            </picture>
           </div>
         </div>
 
@@ -363,11 +382,14 @@
 
       <div class="relative glass-strong rounded-2xl sm:rounded-3xl p-2 sm:p-3 overflow-hidden">
         <div class="rounded-xl sm:rounded-2xl overflow-hidden bg-brand-dark">
-          <img src="../assets/screenshot-wide.png"
-               alt="Interface do Meu Rachão Pro mostrando dashboard, lista de jogadores, sorteio de times e estatísticas"
-               class="w-full h-auto object-cover"
-               loading="lazy"
-               onerror="this.parentElement.innerHTML='<div class=\'aspect-[16/9] bg-gradient-to-br from-brand-orange/20 to-brand-purple/20 grid place-items-center\'><span class=\'font-display text-5xl sm:text-7xl text-white/40 tracking-wider\'>RACHÃO PRO</span></div>'">
+          <picture>
+            <source srcset="../assets/screenshot-wide.webp" type="image/webp">
+            <img src="../assets/screenshot-wide.png"
+                 alt="Interface do Meu Rachão Pro mostrando dashboard, lista de jogadores, sorteio de times e estatísticas"
+                 class="w-full h-auto object-cover"
+                 loading="lazy"
+                 onerror="this.parentElement.parentElement.innerHTML='<div class=\'aspect-[16/9] bg-gradient-to-br from-brand-orange/20 to-brand-purple/20 grid place-items-center\'><span class=\'font-display text-5xl sm:text-7xl text-white/40 tracking-wider\'>RACHÃO PRO</span></div>'">
+          </picture>
         </div>
       </div>
 
@@ -436,6 +458,117 @@
         <div class="w-10 h-10 rounded-xl bg-brand-orange text-brand-dark font-display text-xl grid place-items-center mb-5 shadow-lg shadow-brand-orange/40">3</div>
         <h3 class="font-display text-2xl tracking-wide mb-2">Jogue e registre</h3>
         <p class="text-sm text-white/60 leading-relaxed">Time sorteado, gols anotados, ranking atualizado. Você só se preocupa em jogar bola.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Comparativo Free vs Pro -->
+<section id="comparativo" class="relative py-20 sm:py-28 border-t border-white/5">
+  <div class="max-w-5xl mx-auto px-5 sm:px-8">
+
+    <div class="text-center mb-12 max-w-2xl mx-auto">
+      <span class="inline-block text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-3">Compare os planos</span>
+      <h2 class="font-display text-4xl sm:text-5xl tracking-wide mb-3">
+        Free pra começar.<br><span class="text-brand-orange">Pro pra crescer.</span>
+      </h2>
+      <p class="text-white/60 text-sm">Tudo que você precisa pra organizar — e tudo que você precisa pra escalar.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4 sm:gap-5">
+
+      <!-- Free -->
+      <div class="glass rounded-2xl p-6 sm:p-8 reveal">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-[0.15em] font-bold text-white/50">Free</p>
+            <p class="font-display text-3xl mt-1">R$ 0</p>
+          </div>
+          <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-white/70">Pra sempre</span>
+        </div>
+
+        <ul class="space-y-3 text-sm">
+          <li class="flex items-start gap-3">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-green shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Times balanceados automaticamente</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-green shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Mensalidade no PIX (manual ou automático)</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-green shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Estatísticas básicas (gols, vitórias)</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-green shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Push notifications de pagamentos</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-green shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Rachões e jogadores ilimitados</span>
+          </li>
+          <li class="flex items-start gap-3 opacity-40">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-white/40 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <span class="line-through">Jogadores avulsos com PIX</span>
+          </li>
+          <li class="flex items-start gap-3 opacity-40">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-white/40 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <span class="line-through">Co-administradores</span>
+          </li>
+          <li class="flex items-start gap-3 opacity-40">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-white/40 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <span class="line-through">Stats avançadas e fantasy</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Pro -->
+      <div class="glass-strong rounded-2xl p-6 sm:p-8 border border-brand-orange/40 relative reveal" style="transition-delay:120ms">
+        <div class="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-orange to-transparent" aria-hidden="true"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-[0.15em] font-bold text-brand-orange">Pro</p>
+            <p class="font-display text-3xl mt-1">R$ 9<span class="text-base align-top">,90</span><span class="text-xs text-white/50 font-sans font-normal ml-1">/mês</span></p>
+          </div>
+          <span class="px-3 py-1 rounded-full bg-brand-orange text-brand-dark text-[10px] font-bold tracking-wider uppercase">Recomendado</span>
+        </div>
+
+        <ul class="space-y-3 text-sm">
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Tudo do Free</strong>, sem limites</span>
+          </li>
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Avulsos com PIX</strong> + estorno automático</span>
+          </li>
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Descoberta por GPS</strong> de jogadores no bairro</span>
+          </li>
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Co-administradores</strong> com permissões granulares</span>
+          </li>
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Stats avançadas</strong>: fantasy ranking, MVP, histórico</span>
+          </li>
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Posições necessárias</strong> customizadas</span>
+          </li>
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Suporte prioritário</strong></span>
+          </li>
+          <li class="flex items-start gap-3 text-white/90">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand-orange shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><strong class="text-white">Recursos futuros</strong> incluídos</span>
+          </li>
+        </ul>
       </div>
 
     </div>
@@ -712,7 +845,10 @@
   <div class="max-w-6xl mx-auto px-5 sm:px-8 grid md:grid-cols-[1.5fr,1fr,1fr] gap-10">
     <div>
       <a href="#top" class="inline-flex mb-4" aria-label="Meu Rachão Pro - Início">
-        <img src="../assets/logo.png" alt="Meu Rachão Pro" class="h-14 w-auto">
+        <picture>
+          <source srcset="../assets/logo.webp" type="image/webp">
+          <img src="../assets/logo.png" alt="Meu Rachão Pro" class="h-24 w-auto drop-shadow-[0_6px_24px_rgba(255,122,0,0.35)]">
+        </picture>
       </a>
       <p class="text-sm text-white/50 max-w-sm leading-relaxed">Feito por quem joga, pra quem joga. Brasil, 2026.</p>
     </div>
@@ -738,6 +874,63 @@
     <span>Hecho con bola na cabeça <span aria-hidden="true">·</span> Brasil</span>
   </div>
 </footer>
+
+<script>
+  (function () {
+    if (!('IntersectionObserver' in window)) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-visible'));
+      return;
+    }
+
+    // Auto-aplica reveal em cards/elements de destaque (idempotente)
+    var revealTargets = document.querySelectorAll(
+      '#recursos article, #showcase .group, #comparativo .glass, #comparativo .glass-strong, #pro article, #pro .glass, #pro .glass-strong'
+    );
+    revealTargets.forEach(function (el, i) {
+      el.classList.add('reveal');
+      el.style.transitionDelay = ((i % 3) * 80) + 'ms';
+    });
+
+    // Reveal observer
+    var revealIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          revealIO.unobserve(e.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+
+    document.querySelectorAll('.reveal').forEach(function (el) { revealIO.observe(el); });
+
+    // Scroll-spy: destaca link do nav conforme a seção entra em viewport
+    var navLinks = document.querySelectorAll('header nav a[href^="#"]');
+    var linkByHash = {};
+    navLinks.forEach(function (a) { linkByHash[a.getAttribute('href')] = a; });
+
+    var sections = ['recursos', 'showcase', 'como-funciona', 'comparativo', 'pro', 'faq']
+      .map(function (id) { return document.getElementById(id); })
+      .filter(Boolean);
+
+    var spyIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        // mapeia seções não-listadas no nav pra seu vizinho de nav
+        var id = e.target.id;
+        var target = linkByHash['#' + id];
+        if (!target) {
+          if (id === 'showcase') target = linkByHash['#recursos'];
+          else if (id === 'comparativo') target = linkByHash['#pro'];
+        }
+        if (!target) return;
+        navLinks.forEach(function (l) { l.classList.remove('nav-link-active'); });
+        target.classList.add('nav-link-active');
+      });
+    }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+
+    sections.forEach(function (s) { spyIO.observe(s); });
+  })();
+</script>
 
 </body>
 </html>
