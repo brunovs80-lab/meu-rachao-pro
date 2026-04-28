@@ -15,8 +15,8 @@
     "cap:sync": "npm run build && npx cap sync",
     "cap:android": "npm run build && npx cap sync android && npx cap open android",
     "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
-    "cap:build:android": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
-    "cap:build:aab": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease"
+    "cap:build:android": "npm run build && npx cap sync android && node scripts/run-gradle.js assembleRelease",
+    "cap:build:aab": "npm run build && npx cap sync android && node scripts/run-gradle.js bundleRelease"
   },
   "repository": {
     "type": "git",
