@@ -45,9 +45,9 @@ Em **Monetize → Products**:
 
 | Tipo | Product ID | Preço sugerido |
 |---|---|---|
-| **Subscription** | `rachao_pro_monthly` | R$ 9,90 / 1 mês |
-| **Subscription** | `rachao_pro_yearly` | R$ 59,90 / 1 ano (com 7d trial) |
-| **Managed product** (one-time) | `rachao_pro_lifetime` | R$ 149,90 |
+| **Subscription** | `rachao_pro_monthly` | R$ 14,90 / 1 mês |
+| **Subscription** | `rachao_pro_yearly` | R$ 99,90 / 1 ano (com 7d trial) |
+| **Managed product** (one-time) | `rachao_pro_lifetime` | R$ 199,90 |
 
 **Importante:** os Product IDs precisam bater **exatamente** com o que o RevenueCat espera (próximo passo).
 
@@ -70,9 +70,9 @@ Em **My Apps → seu app → Monetization → In-App Purchases**:
 
 | Tipo | Product ID | Preço |
 |---|---|---|
-| **Auto-Renewable Subscription** | `rachao_pro_monthly` | Tier R$ 9,90 |
-| **Auto-Renewable Subscription** | `rachao_pro_yearly` | Tier R$ 59,90 + Introductory 7d free |
-| **Non-Consumable** | `rachao_pro_lifetime` | Tier R$ 149,90 |
+| **Auto-Renewable Subscription** | `rachao_pro_monthly` | Tier R$ 14,90 |
+| **Auto-Renewable Subscription** | `rachao_pro_yearly` | Tier R$ 99,90 + Introductory 7d free |
+| **Non-Consumable** | `rachao_pro_lifetime` | Tier R$ 199,90 |
 
 Crie um **Subscription Group** "Pro" e coloque os dois mensal/anual dentro.
 
@@ -167,7 +167,7 @@ RevenueCat → **Project → Integrations → + Webhook**:
 
 | Sintoma | Causa provável |
 |---|---|
-| Paywall mostra preços fake (R$ 9,90 etc) | App não é nativo OU `Billing.init` falhou OU offering não tem os packages |
+| Paywall mostra preços fake (R$ 14,90 etc) | App não é nativo OU `Billing.init` falhou OU offering não tem os packages |
 | `purchase()` lança "No products available" | Produtos não publicados na loja, ou app rodando em build não-internal |
 | Compra OK mas user continua não-Pro | Webhook não chegou — confere logs da edge function |
 | 401 no webhook | Header `Authorization: Bearer X` divergente do `REVENUECAT_WEBHOOK_SECRET` |

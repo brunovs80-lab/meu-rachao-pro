@@ -74,7 +74,7 @@ async function getOfferings() {
   }
 }
 
-// Retorna preços formatados pra UI: { monthly: 'R$ 9,90', yearly: 'R$ 59,90', lifetime: 'R$ 149,90' }
+// Retorna preços formatados pra UI: { monthly: 'R$ 14,90', yearly: 'R$ 99,90', lifetime: 'R$ 199,90' }
 async function getFormattedPrices() {
   const offerings = await getOfferings();
   if (!offerings || !offerings.availablePackages) return null;

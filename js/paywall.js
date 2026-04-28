@@ -6,9 +6,9 @@
 // Preços de exibição. Vão ser sobrescritos pelos preços reais vindos do RevenueCat
 // na fase de IAP nativo.
 const PAYWALL_PRICES = {
-  monthly:  { display: 'R$ 9,90',   period: '/mês' },
-  yearly:   { display: 'R$ 59,90',  period: '/ano' },
-  lifetime: { display: 'R$ 149,90', period: 'uma vez' },
+  monthly:  { display: 'R$ 14,90',  period: '/mês' },
+  yearly:   { display: 'R$ 99,90',  period: '/ano' },
+  lifetime: { display: 'R$ 199,90', period: 'uma vez' },
 };
 
 // ===== LOAD =====
