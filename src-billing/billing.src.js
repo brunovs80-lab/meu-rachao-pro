@@ -7,7 +7,7 @@ import { Capacitor } from '@capacitor/core';
 
 // Chaves públicas da API RevenueCat (são públicas, podem ficar no client).
 // SUBSTITUA pelos valores do seu projeto: app.revenuecat.com → Project Settings → API Keys.
-const REVENUECAT_API_KEY_ANDROID = 'REPLACE_WITH_GOOGLE_KEY';
+const REVENUECAT_API_KEY_ANDROID = 'goog_NqfYRwosEeKQiABCRnYlBzbTwfa';
 const REVENUECAT_API_KEY_IOS     = 'REPLACE_WITH_APPLE_KEY';
 
 // Identificador do entitlement no RevenueCat (criado no dashboard).
