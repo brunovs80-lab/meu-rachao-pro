@@ -43,6 +43,7 @@
     "@capacitor/core": "^8.3.0",
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/ios": "^8.3.0",
+    "@capacitor/push-notifications": "^8.0.3",
     "@revenuecat/purchases-capacitor": "^13.0.1",
     "@supabase/supabase-js": "^2.103.0",
     "bcryptjs": "^3.0.3",

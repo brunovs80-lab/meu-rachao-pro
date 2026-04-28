@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     // Verificar que user_id é o dono do rachão
     const { data: rachao } = await supabase
       .from('rachaos')
-      .select('created_by')
+      .select('created_by, name')
       .eq('id', rachao_id)
       .maybeSingle()
 
@@ -46,6 +46,16 @@ Deno.serve(async (req) => {
       if (typeof permissions !== 'object' || permissions === null) {
         return json({ error: 'permissions deve ser um objeto' }, 400)
       }
+
+      // Detecta se é convite novo (insert) ou só atualização de permissões
+      const { data: existing } = await supabase
+        .from('rachao_admins')
+        .select('player_id')
+        .eq('rachao_id', rachao_id)
+        .eq('player_id', player_id)
+        .maybeSingle()
+      const isNewInvite = !existing
+
       const { error } = await supabase.rpc('upsert_rachao_admin', {
         p_rachao_id: rachao_id,
         p_player_id: player_id,
@@ -56,6 +66,31 @@ Deno.serve(async (req) => {
         console.error('upsert error:', error)
         return json({ error: error.message || 'Erro ao salvar co-admin' }, 500)
       }
+
+      // Push pro convidado (fire-and-forget)
+      try {
+        const title = isNewInvite ? 'Você é co-admin!' : 'Permissões atualizadas'
+        const body = isNewInvite
+          ? `Foi convidado(a) como co-admin de ${rachao.name || 'um rachão'}.`
+          : `Suas permissões em ${rachao.name || 'um rachão'} foram atualizadas.`
+        await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            player_ids: [player_id],
+            title,
+            body,
+            type: 'coadmin_updated',
+            data: { rachao_id, is_new: String(isNewInvite) },
+          }),
+        }).catch((e) => console.error('send-push fetch failed:', e))
+      } catch (e) {
+        console.error('coadmin push skipped:', e)
+      }
+
       return json({ success: true })
     }
 

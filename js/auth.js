@@ -66,6 +66,7 @@ async function handlePasswordLogin() {
     apiSetCurrentUser(user);
     ProManager.syncFromServer(user.id).catch(() => {});
     if (window.Billing) Billing.init(user.id).catch(err => console.warn('[Billing] init falhou:', err));
+    if (window.Push) Push.init(user.id).catch(err => console.warn('[Push] init falhou:', err));
     navigateTo('dashboard');
     showToast('Bem-vindo de volta, ' + user.name + '!');
   } catch (err) {
@@ -95,6 +96,7 @@ document.getElementById('btn-register').addEventListener('click', async () => {
     apiSetCurrentUser(newUser);
     ProManager.syncFromServer(newUser.id).catch(() => {});
     if (window.Billing) Billing.init(newUser.id).catch(err => console.warn('[Billing] init falhou:', err));
+    if (window.Push) Push.init(newUser.id).catch(err => console.warn('[Push] init falhou:', err));
     navigateTo('dashboard');
     showToast('Conta criada!');
     await apiAddNotification({ type:'purple', icon:'fa-user-plus', title:'Bem-vindo!', text:'Sua conta foi criada.' });
@@ -133,6 +135,7 @@ async function loadProfile() {
 function logout() {
   apiLogout();
   if (window.Billing) Billing.logout().catch(() => {});
+  if (window.Push) Push.logout().catch(() => {});
   navigateTo('login');
   showToast('Até a próxima!');
 }

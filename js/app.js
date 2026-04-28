@@ -41,6 +41,7 @@ async function checkAuth() {
     ProManager.syncFromServer(user.id).catch(() => {});
     ProManager.updateProBadgeUI();
     if (window.Billing) Billing.init(user.id).catch(err => console.warn('[Billing] init falhou:', err));
+    if (window.Push) Push.init(user.id).catch(err => console.warn('[Push] init falhou:', err));
     navigateTo('dashboard');
   } else {
     ProManager.updateProBadgeUI();

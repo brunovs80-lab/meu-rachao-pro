@@ -835,6 +835,29 @@ async function apiListOpenGuestSessions() {
   return data || [];
 }
 
+// ===== PUSH (device tokens) =====
+async function apiRegisterDeviceToken(playerId, fcmToken, platform) {
+  const { data, error } = await initSupabase().rpc('register_device_token', {
+    p_player_id: playerId,
+    p_fcm_token: fcmToken,
+    p_platform: platform,
+    p_app_version: (typeof window !== 'undefined' && window.APP_VERSION) || null,
+  });
+  if (error) throw error;
+  return data;
+}
+window.apiRegisterDeviceToken = apiRegisterDeviceToken;
+
+async function apiUnregisterDeviceToken(fcmToken) {
+  if (!fcmToken) return { ok: true };
+  const { data, error } = await initSupabase().rpc('unregister_device_token', {
+    p_fcm_token: fcmToken,
+  });
+  if (error) throw error;
+  return data;
+}
+window.apiUnregisterDeviceToken = apiUnregisterDeviceToken;
+
 async function apiCancelSession(sessionId) {
   const user = apiGetCurrentUser();
   const callerId = user?.id || null;

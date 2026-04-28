@@ -89,9 +89,71 @@ Deno.serve(async (req) => {
     }
 
     console.log('Payment confirmed:', data)
+
+    // 5) Push notification pro admin do rachão (fire-and-forget)
+    try {
+      if (data?.success && data?.transaction_id) {
+        await firePaidPush(supabase, supabaseUrl, supabaseKey, String(paymentId))
+      }
+    } catch (e) {
+      console.error('push notification skipped:', e)
+    }
+
     return json({ success: true, data })
   } catch (err) {
     console.error('Webhook error:', err)
     return json({ error: 'Erro interno' }, 500)
   }
 })
+
+async function firePaidPush(
+  supabase: any,
+  supabaseUrl: string,
+  supabaseKey: string,
+  externalId: string,
+) {
+  // Re-lê tx p/ pegar info atualizada (status=paid)
+  const { data: tx } = await supabase
+    .from('pix_transactions')
+    .select('rachao_id, player_id, purpose, amount')
+    .eq('external_id', externalId)
+    .maybeSingle()
+  if (!tx) return
+
+  const { data: rachao } = await supabase
+    .from('rachaos')
+    .select('created_by, name')
+    .eq('id', tx.rachao_id)
+    .maybeSingle()
+  if (!rachao?.created_by) return
+
+  const { data: payer } = await supabase
+    .from('players')
+    .select('name')
+    .eq('id', tx.player_id)
+    .maybeSingle()
+
+  const valor = `R$ ${Number(tx.amount).toFixed(2).replace('.', ',')}`
+  const nome  = payer?.name || 'Jogador'
+  const isGuest = tx.purpose === 'guest_fee'
+
+  const title = isGuest ? 'Avulso confirmado' : 'Pagamento PIX confirmado'
+  const body = isGuest
+    ? `${nome} pagou ${valor} e entrou na lista de ${rachao.name || 'seu rachão'}`
+    : `${nome} pagou ${valor} (mensalidade)`
+
+  await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseKey}`,
+    },
+    body: JSON.stringify({
+      player_ids: [rachao.created_by],
+      title,
+      body,
+      type: isGuest ? 'guest_paid' : 'mensalidade_paid',
+      data: { rachao_id: tx.rachao_id, player_id: tx.player_id },
+    }),
+  }).catch((e) => console.error('send-push fetch failed:', e))
+}

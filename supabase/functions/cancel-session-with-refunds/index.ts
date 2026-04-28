@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // 1) Descobre o rachao_id da sessão pra buscar o token MP do dono
     const { data: sessRow, error: sessErr } = await supabase
       .from('sessions')
-      .select('rachao_id')
+      .select('rachao_id, date')
       .eq('id', session_id)
       .maybeSingle()
 
@@ -221,6 +221,35 @@ Deno.serve(async (req) => {
         title: 'Estornos automáticos',
         text: `Sessão cancelada e ${success} avulso(s) estornado(s) com sucesso.`,
       })
+    }
+
+    // 7) Push pro admin se houve falha (fire-and-forget)
+    try {
+      if (failed > 0) {
+        const { data: rachao } = await supabase
+          .from('rachaos')
+          .select('created_by, name')
+          .eq('id', sessRow.rachao_id)
+          .maybeSingle()
+        if (rachao?.created_by) {
+          await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseKey}`,
+            },
+            body: JSON.stringify({
+              player_ids: [rachao.created_by],
+              title: 'Estornos com falha',
+              body: `Sessão de ${rachao.name || 'rachão'} cancelada — ${failed} estorno(s) falharam. Verifique no app.`,
+              type: 'refund_failed',
+              data: { rachao_id: sessRow.rachao_id, session_id },
+            }),
+          }).catch((e) => console.error('send-push fetch failed:', e))
+        }
+      }
+    } catch (e) {
+      console.error('push notification skipped:', e)
     }
 
     return json({

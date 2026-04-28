@@ -49,28 +49,32 @@ for (const item of ITEMS) {
   console.log(`  ✔ ${item}`);
 }
 
-// Bundla o módulo billing (depende de @revenuecat/purchases-capacitor + @capacitor/core)
-const billingSrc = path.join(ROOT, 'src-billing', 'billing.src.js');
-const billingOut = path.join(OUT, 'js', 'billing.bundle.js');
-if (fs.existsSync(billingSrc)) {
-  console.log('🔨 Bundling billing module (RevenueCat)...');
+function bundleModule(label, srcRel, outRel) {
+  const src = path.join(ROOT, srcRel);
+  const out = path.join(OUT, outRel);
+  if (!fs.existsSync(src)) return;
+  console.log(`🔨 Bundling ${label}...`);
   try {
     const esbuild = require('esbuild');
     esbuild.buildSync({
-      entryPoints: [billingSrc],
+      entryPoints: [src],
       bundle: true,
-      outfile: billingOut,
+      outfile: out,
       format: 'iife',
       platform: 'browser',
       target: ['es2017'],
       minify: true,
       logLevel: 'warning',
     });
-    console.log('  ✔ js/billing.bundle.js');
+    console.log(`  ✔ ${outRel}`);
   } catch (err) {
-    console.error('  ✖ falha ao bundlar billing:', err.message);
+    console.error(`  ✖ falha ao bundlar ${label}:`, err.message);
     process.exit(1);
   }
 }
+
+// Bundla módulos com dependências de plugins Capacitor
+bundleModule('billing module (RevenueCat)', 'src-billing/billing.src.js', 'js/billing.bundle.js');
+bundleModule('push module (FCM)', 'src-push/push.src.js', 'js/push.bundle.js');
 
 console.log('✅ Build complete → www/');
