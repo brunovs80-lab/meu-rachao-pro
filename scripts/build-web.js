@@ -75,6 +75,17 @@ function bundleModule(label, srcRel, outRel) {
 
 // Bundla módulos com dependências de plugins Capacitor
 bundleModule('billing module (RevenueCat)', 'src-billing/billing.src.js', 'js/billing.bundle.js');
-bundleModule('push module (FCM)', 'src-push/push.src.js', 'js/push.bundle.js');
+
+// Push só é seguro de bundlar se o Firebase estiver configurado.
+// Sem google-services.json, o plugin nativo crasha em PushNotifications.register()
+// com "Default FirebaseApp is not initialized" (FATAL EXCEPTION em thread Capacitor,
+// não recuperável via try/catch no JS). Sem o bundle, window.Push fica undefined
+// e os guards `if (window.Push)` em auth.js/app.js silenciam tudo.
+const googleServicesPath = path.join(ROOT, 'android', 'app', 'google-services.json');
+if (fs.existsSync(googleServicesPath)) {
+  bundleModule('push module (FCM)', 'src-push/push.src.js', 'js/push.bundle.js');
+} else {
+  console.log('  ⚠ push module skipped — android/app/google-services.json não encontrado (Firebase não configurado)');
+}
 
 console.log('✅ Build complete → www/');
