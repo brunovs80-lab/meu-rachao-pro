@@ -56,7 +56,7 @@
 </script>
 
 <style>
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scroll-padding-top: 96px; }
   body { background: #0A0A0A; color: #fff; font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 
   /* Mesh background */
@@ -338,6 +338,69 @@
       </article>
 
     </div>
+  </div>
+</section>
+
+<!-- Showcase / screenshots -->
+<section id="showcase" class="relative py-24 sm:py-32 border-t border-white/5 overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-brand-orange/5 to-transparent" aria-hidden="true"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-brand-orange/10 rounded-full blur-3xl" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8">
+
+    <div class="text-center mb-12 sm:mb-16 max-w-2xl mx-auto">
+      <span class="inline-block text-xs font-bold tracking-[0.2em] text-brand-orange uppercase mb-3">Veja em ação</span>
+      <h2 class="font-display text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4">
+        Cabe na <span class="text-brand-orange">tela</span>.<br>Cabe no <span class="text-brand-orange">bolso</span>.
+      </h2>
+      <p class="text-white/65">Interface pensada pra ser usada no campo, com luva ou bola na mão.</p>
+    </div>
+
+    <!-- Wide screenshot showcase -->
+    <div class="relative group">
+      <!-- glow -->
+      <div class="absolute -inset-6 bg-gradient-to-r from-brand-orange/20 via-brand-purple/20 to-brand-orange/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-90 transition-opacity duration-500" aria-hidden="true"></div>
+
+      <div class="relative glass-strong rounded-2xl sm:rounded-3xl p-2 sm:p-3 overflow-hidden">
+        <div class="rounded-xl sm:rounded-2xl overflow-hidden bg-brand-dark">
+          <img src="../assets/screenshot-wide.png"
+               alt="Interface do Meu Rachão Pro mostrando dashboard, lista de jogadores, sorteio de times e estatísticas"
+               class="w-full h-auto object-cover"
+               loading="lazy"
+               onerror="this.parentElement.innerHTML='<div class=\'aspect-[16/9] bg-gradient-to-br from-brand-orange/20 to-brand-purple/20 grid place-items-center\'><span class=\'font-display text-5xl sm:text-7xl text-white/40 tracking-wider\'>RACHÃO PRO</span></div>'">
+        </div>
+      </div>
+
+      <!-- floating annotation chips -->
+      <div class="absolute -top-3 left-4 sm:left-8 glass-strong rounded-xl px-3 py-2 flex items-center gap-2 hidden md:flex shadow-xl">
+        <div class="w-2 h-2 rounded-full bg-brand-green animate-pulse-glow"></div>
+        <span class="text-xs font-semibold">Tempo real</span>
+      </div>
+      <div class="absolute -bottom-3 right-4 sm:right-8 glass-strong rounded-xl px-3 py-2 hidden md:flex items-center gap-2 shadow-xl">
+        <svg class="w-3.5 h-3.5 text-brand-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span class="text-xs font-semibold">PWA Offline-ready</span>
+      </div>
+    </div>
+
+    <!-- Mini callouts -->
+    <div class="grid sm:grid-cols-3 gap-4 mt-12">
+      <div class="text-center sm:text-left">
+        <div class="font-display text-3xl text-brand-orange leading-none mb-1">01.</div>
+        <p class="font-semibold text-sm mb-1">Dashboard direto ao ponto</p>
+        <p class="text-xs text-white/55 leading-relaxed">Próximo rachão, status de pagamento e vagas em uma tela só.</p>
+      </div>
+      <div class="text-center sm:text-left">
+        <div class="font-display text-3xl text-brand-orange leading-none mb-1">02.</div>
+        <p class="font-semibold text-sm mb-1">Sorteio em 1 toque</p>
+        <p class="text-xs text-white/55 leading-relaxed">Algoritmo balanceia times por nível e posição em segundos.</p>
+      </div>
+      <div class="text-center sm:text-left">
+        <div class="font-display text-3xl text-brand-orange leading-none mb-1">03.</div>
+        <p class="font-semibold text-sm mb-1">Stats que viram treta</p>
+        <p class="text-xs text-white/55 leading-relaxed">Ranking semanal, MVP, gols, assistências, desarmes.</p>
+      </div>
+    </div>
+
   </div>
 </section>
 
