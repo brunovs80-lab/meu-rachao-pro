@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0A0A0A">
+<title>Política de Privacidade — Meu Rachão Pro</title>
+<meta name="description" content="Política de Privacidade do app Meu Rachão Pro: dados coletados, finalidades, armazenamento e direitos LGPD.">
+<meta name="robots" content="index,follow">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: #0A0A0A;
+    color: #E5E5E5;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: #FF9A3C; text-decoration: none; }
+  a:hover { color: #FF7A00; text-decoration: underline; }
+  header.topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(10,10,10,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 14px 20px;
+  }
+  header.topbar .inner {
+    max-width: 800px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  header.topbar .brand { color: #fff; font-weight: 800; letter-spacing: -.01em; }
+  header.topbar .brand span { color: #FF7A00; }
+  header.topbar a.back { color: #B0B0B0; font-size: 14px; }
+  main { max-width: 800px; margin: 0 auto; padding: 48px 20px 80px; }
+  h1 {
+    font-size: clamp(28px, 5vw, 40px); font-weight: 800; color: #fff;
+    margin: 0 0 8px; letter-spacing: -.02em;
+  }
+  .updated { color: #808080; font-size: 14px; margin: 0 0 32px; }
+  h2 {
+    font-size: 20px; font-weight: 700; color: #fff;
+    margin: 36px 0 12px; padding-top: 8px;
+  }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+  strong { color: #fff; font-weight: 600; }
+  .callout {
+    background: #141414; border: 1px solid rgba(255,122,0,0.2);
+    border-left: 3px solid #FF7A00;
+    border-radius: 10px; padding: 14px 18px; margin: 20px 0;
+    font-size: 15px;
+  }
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 12px; text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    vertical-align: top;
+  }
+  th { color: #fff; font-weight: 600; background: #141414; }
+  td:first-child { color: #fff; font-weight: 500; white-space: nowrap; }
+  footer {
+    text-align: center; padding: 24px 20px;
+    color: #707070; font-size: 13px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="inner">
+    <div class="brand">Meu Rachão <span>Pro</span></div>
+    <a class="back" href="landing/index.html">← Voltar</a>
+  </div>
+</header>
+
+<main>
+  <h1>Política de Privacidade</h1>
+  <p class="updated">Última atualização: 29 de abril de 2026</p>
+
+  <p>Esta Política descreve como o aplicativo <strong>Meu Rachão Pro</strong> ("Aplicativo", "nós") coleta, usa, armazena e protege as informações dos usuários ("você"). Ao usar o Aplicativo, você concorda com as práticas descritas aqui.</p>
+
+  <div class="callout">
+    Em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD — Lei 13.709/2018)</strong> e com os requisitos do Google Play Data Safety.
+  </div>
+
+  <h2>1. Dados que coletamos</h2>
+  <p>Coletamos apenas o necessário pra o Aplicativo funcionar:</p>
+
+  <table>
+    <thead>
+      <tr><th>Categoria</th><th>Dados</th><th>Quando</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Cadastro</td>
+        <td>Nome/apelido, número de celular, posição preferida, senha (armazenada com hash bcrypt)</td>
+        <td>No primeiro acesso</td>
+      </tr>
+      <tr>
+        <td>Uso do app</td>
+        <td>Presença em jogos, estatísticas (gols, assistências, MVP), histórico de rachões, função (admin/jogador/avulso)</td>
+        <td>Durante o uso</td>
+      </tr>
+      <tr>
+        <td>Localização aproximada</td>
+        <td>Coordenadas GPS apenas quando você toca em "Encontrar rachões perto de mim"</td>
+        <td>Apenas quando solicitado</td>
+      </tr>
+      <tr>
+        <td>Notificações</td>
+        <td>Token de push do Firebase Cloud Messaging (FCM)</td>
+        <td>Ao habilitar notificações</td>
+      </tr>
+      <tr>
+        <td>Pagamentos</td>
+        <td>Status de transações PIX (avulsos) e identificador da assinatura Pro. <strong>Não armazenamos dados bancários, cartão ou chaves PIX.</strong></td>
+        <td>Ao pagar diária ou assinar Pro</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. Finalidade do uso</h2>
+  <ul>
+    <li>Identificar e autenticar você no Aplicativo</li>
+    <li>Organizar partidas, listas de presença e sorteio de times</li>
+    <li>Calcular estatísticas, ranking e a liga fantasy</li>
+    <li>Dividir custos entre participantes e processar pagamentos PIX de avulsos</li>
+    <li>Enviar notificações sobre confirmações, alertas de lista de espera e início de partidas</li>
+    <li>Mostrar rachões abertos perto de você (apenas quando solicitado)</li>
+  </ul>
+
+  <h2>3. Onde os dados ficam armazenados</h2>
+  <p>Os dados ficam em servidores do <strong>Supabase</strong> (infraestrutura PostgreSQL com criptografia em repouso e em trânsito). Senhas são armazenadas com hash bcrypt — nem mesmo nós temos acesso à sua senha original.</p>
+
+  <h2>4. Serviços de terceiros</h2>
+  <p>Pra funcionalidades específicas, usamos os seguintes serviços. Cada um trata dados conforme sua própria política de privacidade:</p>
+  <ul>
+    <li><strong>Supabase</strong> — armazenamento de banco de dados e autenticação. <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a></li>
+    <li><strong>Mercado Pago</strong> — geração de cobranças PIX para diárias de avulsos. Recebem apenas o valor e identificador da transação. <a href="https://www.mercadopago.com.br/privacidade" target="_blank" rel="noopener">mercadopago.com.br/privacidade</a></li>
+    <li><strong>RevenueCat</strong> — gerencia a assinatura Pro (sem ver dados de cartão). <a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">revenuecat.com/privacy</a></li>
+    <li><strong>Google Play Billing</strong> — processa o pagamento da assinatura Pro. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></li>
+    <li><strong>Firebase Cloud Messaging</strong> — entrega push notifications. <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">firebase.google.com/support/privacy</a></li>
+    <li><strong>OpenStreetMap (Nominatim)</strong> — converte coordenadas em endereço quando você busca rachões próximos. <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org</a></li>
+  </ul>
+
+  <h2>5. Compartilhamento</h2>
+  <p>Seus dados <strong>não são vendidos, alugados nem compartilhados</strong> com terceiros para fins comerciais ou publicitários. Dentro do Aplicativo, seu nome, posição e estatísticas são visíveis apenas para os demais participantes do mesmo rachão.</p>
+
+  <h2>6. Seus direitos (LGPD)</h2>
+  <p>Você tem direito a:</p>
+  <ul>
+    <li>Acessar seus dados pessoais</li>
+    <li>Corrigir dados incompletos ou desatualizados</li>
+    <li>Solicitar a exclusão da conta e dos dados associados</li>
+    <li>Revogar o consentimento a qualquer momento</li>
+    <li>Solicitar a portabilidade dos dados</li>
+    <li>Saber com quem seus dados são compartilhados</li>
+  </ul>
+  <p>Pra exercer qualquer um desses direitos, envie um email pra <a href="mailto:meurachaopro@gmail.com">meurachaopro@gmail.com</a>. Respondemos em até 15 dias.</p>
+
+  <h2>7. Segurança</h2>
+  <ul>
+    <li>Criptografia de senhas com bcrypt</li>
+    <li>Comunicação 100% via HTTPS/TLS</li>
+    <li>Validação de dados no servidor</li>
+    <li>Sistema anti-fraude para registro de estatísticas</li>
+    <li>Webhooks de pagamento autenticados por assinatura HMAC</li>
+  </ul>
+
+  <h2>8. Retenção de dados</h2>
+  <p>Mantemos seus dados enquanto sua conta estiver ativa. Quando você solicita exclusão, removemos os dados pessoais identificáveis em até 30 dias — estatísticas agregadas (sem identificação) podem permanecer para integridade dos rachões dos quais você participou.</p>
+
+  <h2>9. Cookies e armazenamento local</h2>
+  <p>O Aplicativo usa <strong>localStorage</strong> no seu dispositivo apenas pra manter a sessão ativa e suas preferências. <strong>Não usamos cookies de rastreamento, publicidade ou analytics de terceiros.</strong></p>
+
+  <h2>10. Crianças e adolescentes</h2>
+  <p>O Aplicativo é destinado a maiores de 13 anos. Não coletamos intencionalmente dados de crianças menores de 13 anos. Se você é responsável legal e identificou que uma criança forneceu dados, entre em contato pra exclusão imediata.</p>
+
+  <h2>11. Alterações nesta Política</h2>
+  <p>Esta Política pode ser atualizada periodicamente. Alterações relevantes serão comunicadas dentro do Aplicativo e por email cadastrado, quando aplicável. O uso continuado após a atualização implica aceitação.</p>
+
+  <h2>12. Contato e Encarregado de Dados (DPO)</h2>
+  <p>Pra dúvidas, solicitações LGPD ou denúncias de incidente:</p>
+  <ul>
+    <li>Email: <a href="mailto:meurachaopro@gmail.com">meurachaopro@gmail.com</a></li>
+    <li>Responsável: Bruno Vinicius Silva (desenvolvedor do Meu Rachão Pro)</li>
+  </ul>
+</main>
+
+<footer>
+  © 2026 Meu Rachão Pro · <a href="terms.html">Termos de Uso</a> · <a href="landing/index.html">Voltar pro site</a>
+</footer>
+
+</body>
+</html>
