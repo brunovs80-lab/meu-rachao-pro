@@ -111,11 +111,65 @@ DELETE FROM notifications   WHERE player_id = 'USER_ID';
 DELETE FROM rachao_admins   WHERE player_id = 'USER_ID';
 DELETE FROM pro_subscriptions WHERE user_id = 'USER_ID';
 
--- Hard-delete (IRREVERSIVEL, use so pra contas de teste/spam)
--- Falha se for criador de rachoes. Apaga rachoes primeiro:
+-- Hard-delete COMPLETO de um jogador (IRREVERSIVEL — sem rastro no banco).
+-- Use quando voce admin quer limpar tudo (vs soft-delete que mantem
+-- "Jogador removido" pra preservar ranking dos outros).
+--
+-- Substitua 'PLAYER_ID' pelo id do jogador (use uma das queries de
+-- consulta acima pra achar o id).
+--
+-- Ordem importa:
+--   1. Apaga rachoes que ele criou (cascade cuida de participants,
+--      sessions, billings, pix_transactions, etc)
+--   2. Apaga registros em tabelas sem ON DELETE CASCADE
+--   3. Zera referencias historicas (NULL) em payment_config, monthly_billing,
+--      rachao_admins.granted_by, pro_coupons.created_by — preserva o registro
+--      mas remove a referencia ao jogador
+--   4. Apaga o player (cascade pega o resto: device_tokens, blocked_players,
+--      pro_subscriptions, rachao_participants, session_confirmations, etc)
+
 BEGIN;
-  DELETE FROM rachaos WHERE created_by = 'USER_ID';
-  DELETE FROM players WHERE id = 'USER_ID';
+  DELETE FROM rachaos              WHERE created_by = 'PLAYER_ID';
+  DELETE FROM fantasy_scores       WHERE user_id    = 'PLAYER_ID';
+  DELETE FROM fantasy_teams        WHERE user_id    = 'PLAYER_ID';
+  DELETE FROM pending_stats        WHERE player_id  = 'PLAYER_ID';
+  DELETE FROM validated_stats      WHERE player_id  = 'PLAYER_ID';
+  DELETE FROM notifications        WHERE player_id  = 'PLAYER_ID';
+  DELETE FROM release_requests     WHERE player_id  = 'PLAYER_ID';
+  UPDATE monthly_billing       SET venue_paid_by = NULL WHERE venue_paid_by = 'PLAYER_ID';
+  UPDATE rachao_admins         SET granted_by    = NULL WHERE granted_by    = 'PLAYER_ID';
+  UPDATE rachao_payment_config SET updated_by    = NULL WHERE updated_by    = 'PLAYER_ID';
+  UPDATE pro_coupons           SET created_by    = NULL WHERE created_by    = 'PLAYER_ID';
+  DELETE FROM players              WHERE id         = 'PLAYER_ID';
+COMMIT;
+
+-- Hard-delete por NOME (com preview obrigatorio).
+-- ATENCAO: nome nao e unico — sempre rode o SELECT antes pra confirmar
+-- que so 1 linha vai ser pega.
+SELECT id, name, phone, deleted_at FROM players WHERE name ILIKE 'Nome Aqui';
+
+-- Apos confirmar o id retornado acima, substituir 'PLAYER_ID' no bloco
+-- de hard-delete acima e rodar.
+
+-- Limpar TODAS as contas ja soft-deleted (rows com name='Jogador removido')
+-- de uma so vez — usado pra deixar o banco limpo apos um periodo de retencao.
+BEGIN;
+  -- Lista pra confirmar quantas vao ser pegas:
+  SELECT count(*) FROM players WHERE deleted_at IS NOT NULL;
+
+  -- Apaga relacionamentos que nao tem cascade pra cada um:
+  DELETE FROM rachaos              WHERE created_by IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  DELETE FROM fantasy_scores       WHERE user_id    IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  DELETE FROM fantasy_teams        WHERE user_id    IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  DELETE FROM pending_stats        WHERE player_id  IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  DELETE FROM validated_stats      WHERE player_id  IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  DELETE FROM notifications        WHERE player_id  IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  DELETE FROM release_requests     WHERE player_id  IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  UPDATE monthly_billing       SET venue_paid_by = NULL WHERE venue_paid_by IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  UPDATE rachao_admins         SET granted_by    = NULL WHERE granted_by    IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  UPDATE rachao_payment_config SET updated_by    = NULL WHERE updated_by    IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  UPDATE pro_coupons           SET created_by    = NULL WHERE created_by    IN (SELECT id FROM players WHERE deleted_at IS NOT NULL);
+  DELETE FROM players              WHERE deleted_at IS NOT NULL;
 COMMIT;
 
 
