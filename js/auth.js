@@ -44,6 +44,12 @@ function initPasswordInputs() {
   document.querySelectorAll('.code-inputs').forEach(group => {
     const digits = group.querySelectorAll('.code-digit');
     digits.forEach((inp, i) => {
+      inp.addEventListener('beforeinput', e => {
+        if (e.data && /\D/.test(e.data)) e.preventDefault();
+      });
+      inp.addEventListener('keypress', e => {
+        if (e.key.length === 1 && /\D/.test(e.key)) e.preventDefault();
+      });
       inp.addEventListener('input', e => {
         const cleaned = e.target.value.replace(/\D/g, '');
         if (cleaned !== e.target.value) e.target.value = cleaned;
