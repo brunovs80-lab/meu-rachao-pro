@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rachao-v19';
+const CACHE_NAME = 'rachao-v20';
 const ASSETS = [
   '/',
   '/index.html',
@@ -42,7 +42,23 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first para assets estáticos
+  // Network-first para código (HTML/CSS/JS/JSON) — garante que updates
+  // chegam imediatamente ao usuário; cache só pra suporte offline.
+  const isCode = /\.(html|css|js|json)$/.test(url.pathname) || url.pathname === '/' || url.pathname.endsWith('/');
+  if (isCode) {
+    e.respondWith(
+      fetch(e.request).then(response => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache-first pra assets (imagens, fontes) — não mudam com frequência
   e.respondWith(
     caches.match(e.request).then(cached => {
       const fetched = fetch(e.request).then(response => {
