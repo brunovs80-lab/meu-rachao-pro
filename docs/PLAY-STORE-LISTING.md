@@ -96,8 +96,8 @@ Feito por quem joga rachão de verdade, com o vocabulário que a galera usa. PIX
 
 ASSINATURA: A assinatura Pro é cobrada via Google Play e renova automaticamente. O cancelamento é feito direto pela conta Google Play. O período de 7 dias de teste do plano anual é gratuito — você só é cobrado se não cancelar antes do fim do teste.
 
-PRIVACIDADE: https://meurachao.com.br/privacy.html
-TERMOS: https://meurachao.com.br/terms.html
+PRIVACIDADE: https://meurachaopro.com.br/privacy.html
+TERMOS: https://meurachaopro.com.br/terms.html
 
 Tem feedback ou achou um bug? Manda pra meurachaopro@gmail.com — leio todos.
 ```
@@ -126,13 +126,13 @@ meurachaopro@gmail.com
 ## Website
 
 ```
-https://meurachao.com.br
+https://meurachaopro.com.br
 ```
 
 ## Política de Privacidade
 
 ```
-https://meurachao.com.br/privacy.html
+https://meurachaopro.com.br/privacy.html
 ```
 
 ---
@@ -255,8 +255,8 @@ Observações: conta de teste com dados de exemplo. Sem necessidade de SMS de ve
 
 - [ ] AAB gerado em `android/app/build/outputs/bundle/release/app-release.aab`
 - [ ] `versionCode` incrementado em `android/app/build.gradle`
-- [ ] Privacy Policy hospedada em URL pública (`https://meurachao.com.br/privacy.html`)
-- [ ] Terms hospedados (`https://meurachao.com.br/terms.html`)
+- [ ] Privacy Policy hospedada em URL pública (`https://meurachaopro.com.br/privacy.html`)
+- [ ] Terms hospedados (`https://meurachaopro.com.br/terms.html`)
 - [ ] 8 screenshots gerados em 1080×1920
 - [ ] Feature graphic 1024×500 finalizada
 - [ ] Ícone 512×512 confirmado
