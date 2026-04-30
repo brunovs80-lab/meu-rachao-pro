@@ -1031,6 +1031,10 @@
         <button class="setting-row" onclick="navigateTo('terms')" style="width:100%;background:none;border:none;cursor:pointer;text-align:left"><span>Termos de Uso</span><i class="fas fa-chevron-right" style="color:var(--text-muted)"></i></button>
         <button class="setting-row" onclick="navigateTo('privacy')" style="width:100%;background:none;border:none;cursor:pointer;text-align:left"><span>Política de Privacidade</span><i class="fas fa-chevron-right" style="color:var(--text-muted)"></i></button>
       </div>
+      <div class="settings-section">
+        <h3 style="color:var(--red)">Zona de perigo</h3>
+        <button class="setting-row" onclick="openDeleteAccountFlow()" style="width:100%;background:none;border:none;cursor:pointer;text-align:left;color:var(--red)"><span><i class="fas fa-trash"></i> Excluir minha conta</span><i class="fas fa-chevron-right"></i></button>
+      </div>
     </div>
   </div>
 
@@ -1488,6 +1492,54 @@
         <p class="text-muted">O tempo para pagamento esgotou</p>
         <button class="btn-primary btn-large" style="margin-top:16px;width:100%" onclick="pixRetry()">GERAR NOVO QR CODE</button>
         <button class="btn-secondary" style="margin-top:8px;width:100%" onclick="fecharModalPix()">CANCELAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MODAL EXCLUIR CONTA ========== -->
+  <div id="modal-delete-account" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeDeleteAccountFlow()">&times;</button>
+
+      <!-- Step 1: Aviso -->
+      <div id="delete-step-1" class="delete-step">
+        <h3 style="color:var(--red)"><i class="fas fa-triangle-exclamation"></i> Excluir conta</h3>
+        <p>Você está prestes a excluir sua conta no Meu Rachão Pro. Antes de continuar, leia com atenção:</p>
+        <ul style="margin:12px 0;padding-left:20px;line-height:1.6">
+          <li>Seu nome será trocado por <strong>"Jogador removido"</strong> no histórico dos rachões e estatísticas.</li>
+          <li>Você perde imediatamente o acesso ao app e qualquer permissão de admin.</li>
+          <li>Seus dados pessoais (telefone, senha, push tokens) são apagados.</li>
+          <li>Estatísticas, gols e histórico de partidas são preservados de forma <strong>anonimizada</strong> pra não quebrar o ranking dos outros jogadores.</li>
+          <li><strong style="color:var(--orange)">Atenção:</strong> se você assina o Pro pelo Google Play, a assinatura <strong>não é cancelada automaticamente</strong>. Cancele em <a href="https://play.google.com/store/account/subscriptions" target="_blank" rel="noopener" style="color:var(--orange)">play.google.com/store/account/subscriptions</a> antes de excluir, ou continuará sendo cobrado.</li>
+          <li>Esta ação é <strong>irreversível</strong>.</li>
+        </ul>
+        <button class="btn-primary" style="width:100%;background:var(--red);margin-top:12px" onclick="deleteAccountStep2()">CONTINUAR</button>
+        <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="closeDeleteAccountFlow()">CANCELAR</button>
+      </div>
+
+      <!-- Step 2: Senha -->
+      <div id="delete-step-2" class="delete-step" style="display:none">
+        <h3 style="color:var(--red)"><i class="fas fa-lock"></i> Confirme com sua senha</h3>
+        <p>Pra garantir que é você mesmo, digite sua senha de 6 dígitos.</p>
+        <div class="code-inputs" id="delete-password-inputs" style="margin:20px 0">
+          <input type="password" inputmode="numeric" maxlength="1" class="code-digit">
+          <input type="password" inputmode="numeric" maxlength="1" class="code-digit">
+          <input type="password" inputmode="numeric" maxlength="1" class="code-digit">
+          <input type="password" inputmode="numeric" maxlength="1" class="code-digit">
+          <input type="password" inputmode="numeric" maxlength="1" class="code-digit">
+          <input type="password" inputmode="numeric" maxlength="1" class="code-digit">
+        </div>
+        <button class="btn-primary" style="width:100%;background:var(--red)" onclick="deleteAccountStep3()">CONTINUAR</button>
+        <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="closeDeleteAccountFlow()">CANCELAR</button>
+      </div>
+
+      <!-- Step 3: Digitar EXCLUIR -->
+      <div id="delete-step-3" class="delete-step" style="display:none">
+        <h3 style="color:var(--red)"><i class="fas fa-keyboard"></i> Última confirmação</h3>
+        <p>Digite a palavra <strong>EXCLUIR</strong> exatamente como aparece pra confirmar a exclusão da sua conta.</p>
+        <input id="delete-confirm-text" class="input-field" type="text" placeholder="EXCLUIR" autocomplete="off" autocapitalize="characters" style="text-align:center;letter-spacing:4px;font-weight:700;margin:20px 0">
+        <button id="delete-confirm-btn" class="btn-primary" style="width:100%;background:var(--red)" onclick="deleteAccountConfirm()">EXCLUIR MINHA CONTA</button>
+        <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="closeDeleteAccountFlow()">CANCELAR</button>
       </div>
     </div>
   </div>

@@ -85,6 +85,13 @@ async function apiRegisterUser(phone, password, name, position) {
   return data.user;
 }
 
+async function apiDeleteAccount(userId, password) {
+  const { data, error } = await initSupabase().rpc('delete_user_account', { p_user_id: userId, p_password: password });
+  if (error) throw new Error('Erro ao excluir conta');
+  if (!data.success) throw new Error(data.error || 'Erro ao excluir conta');
+  return data;
+}
+
 // ===== RACHAOS =====
 async function apiGetRachaos() {
   const { data, error } = await initSupabase().from('rachaos').select('*').eq('status', 'active').order('name');

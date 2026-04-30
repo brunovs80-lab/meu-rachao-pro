@@ -140,3 +140,72 @@ function logout() {
   navigateTo('login');
   showToast('Até a próxima!');
 }
+
+// ===== DELETE ACCOUNT =====
+let _deletePasswordBuffer = null;
+
+function _showDeleteStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById('delete-step-' + i);
+    if (el) el.style.display = i === n ? 'block' : 'none';
+  }
+}
+
+function openDeleteAccountFlow() {
+  _deletePasswordBuffer = null;
+  document.querySelectorAll('#delete-password-inputs .code-digit').forEach(d => d.value = '');
+  const confirmInput = document.getElementById('delete-confirm-text');
+  if (confirmInput) confirmInput.value = '';
+  _showDeleteStep(1);
+  document.getElementById('modal-delete-account').style.display = 'flex';
+}
+
+function closeDeleteAccountFlow() {
+  _deletePasswordBuffer = null;
+  document.querySelectorAll('#delete-password-inputs .code-digit').forEach(d => d.value = '');
+  const confirmInput = document.getElementById('delete-confirm-text');
+  if (confirmInput) confirmInput.value = '';
+  document.getElementById('modal-delete-account').style.display = 'none';
+}
+
+function deleteAccountStep2() {
+  _showDeleteStep(2);
+  setTimeout(() => document.querySelector('#delete-password-inputs .code-digit')?.focus(), 100);
+}
+
+function deleteAccountStep3() {
+  const password = getPasswordFromInputs(document.getElementById('delete-password-inputs'));
+  if (password.length < 6) { showToast('Digite a senha de 6 dígitos'); return; }
+  _deletePasswordBuffer = password;
+  _showDeleteStep(3);
+  setTimeout(() => document.getElementById('delete-confirm-text')?.focus(), 100);
+}
+
+async function deleteAccountConfirm() {
+  const confirmText = (document.getElementById('delete-confirm-text').value || '').trim().toUpperCase();
+  if (confirmText !== 'EXCLUIR') { showToast('Digite EXCLUIR pra confirmar'); return; }
+  const user = apiGetCurrentUser();
+  if (!user) { showToast('Sessão expirada'); closeDeleteAccountFlow(); return; }
+  if (!_deletePasswordBuffer) { showToast('Senha não informada'); _showDeleteStep(2); return; }
+
+  const btn = document.getElementById('delete-confirm-btn');
+  try {
+    setLoading(btn, true);
+    await apiDeleteAccount(user.id, _deletePasswordBuffer);
+    _deletePasswordBuffer = null;
+    closeDeleteAccountFlow();
+    apiLogout();
+    if (window.Billing) Billing.logout().catch(() => {});
+    if (window.Push) Push.logout().catch(() => {});
+    if (typeof resetNearbyState === 'function') resetNearbyState();
+    navigateTo('login');
+    showToast('Conta excluída.');
+  } catch (err) {
+    console.error('Erro ao excluir conta:', err);
+    const msg = err.message || 'Erro ao excluir conta';
+    showToast(msg);
+    if (msg.toLowerCase().includes('senha')) _showDeleteStep(2);
+  } finally {
+    setLoading(btn, false);
+  }
+}
