@@ -44,8 +44,21 @@ function initPasswordInputs() {
   document.querySelectorAll('.code-inputs').forEach(group => {
     const digits = group.querySelectorAll('.code-digit');
     digits.forEach((inp, i) => {
-      inp.addEventListener('input', e => { if (e.target.value && i < digits.length - 1) digits[i+1].focus(); });
+      inp.addEventListener('input', e => {
+        const cleaned = e.target.value.replace(/\D/g, '');
+        if (cleaned !== e.target.value) e.target.value = cleaned;
+        if (e.target.value && i < digits.length - 1) digits[i+1].focus();
+      });
       inp.addEventListener('keydown', e => { if (e.key === 'Backspace' && !e.target.value && i > 0) digits[i-1].focus(); });
+      inp.addEventListener('paste', e => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+        for (let j = 0; j < text.length && i + j < digits.length; j++) {
+          digits[i + j].value = text[j];
+        }
+        const last = Math.min(i + text.length, digits.length - 1);
+        digits[last].focus();
+      });
     });
   });
   document.getElementById('btn-password').addEventListener('click', handlePasswordLogin);
