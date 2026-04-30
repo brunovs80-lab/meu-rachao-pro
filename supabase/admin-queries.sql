@@ -78,6 +78,22 @@ SELECT delete_user_account(
   'SENHA_DO_USUARIO'
 );
 
+-- Soft-delete por NOME (rapido, sem precisar saber telefone)
+-- Atencao: nome nao e unico. Sempre rode o SELECT antes pra confirmar.
+-- ILIKE ignora maiuscula/minuscula. Use = pra match exato.
+SELECT id, name, phone, position, created_at
+FROM players
+WHERE name ILIKE 'Nome Aqui';
+
+UPDATE players SET
+  name = 'Jogador removido',
+  phone = NULL,
+  password = NULL,
+  blocked = TRUE,
+  is_admin = FALSE,
+  deleted_at = NOW()
+WHERE name ILIKE 'Nome Aqui' AND deleted_at IS NULL;
+
 -- Soft-delete admin (sem precisar da senha — voce executa direto no SQL Editor)
 UPDATE players SET
   name = 'Jogador removido',
