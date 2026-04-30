@@ -145,11 +145,23 @@ async function loadProfile() {
   }
 }
 
+function clearAuthForms() {
+  const phone = document.getElementById('phone-input');
+  if (phone) phone.value = '';
+  const name = document.getElementById('register-name');
+  if (name) name.value = '';
+  const pos = document.getElementById('register-position');
+  if (pos) pos.value = '';
+  document.querySelectorAll('#page-password .code-digit, #page-register .code-digit')
+    .forEach(d => d.value = '');
+}
+
 function logout() {
   apiLogout();
   if (window.Billing) Billing.logout().catch(() => {});
   if (window.Push) Push.logout().catch(() => {});
   if (typeof resetNearbyState === 'function') resetNearbyState();
+  clearAuthForms();
   navigateTo('login');
   showToast('Até a próxima!');
 }
@@ -211,6 +223,7 @@ async function deleteAccountConfirm() {
     if (window.Billing) Billing.logout().catch(() => {});
     if (window.Push) Push.logout().catch(() => {});
     if (typeof resetNearbyState === 'function') resetNearbyState();
+    clearAuthForms();
     navigateTo('login');
     showToast('Conta excluída.');
   } catch (err) {
