@@ -77,6 +77,7 @@ function getPasswordFromInputs(container) {
 async function handlePasswordLogin() {
   const password = getPasswordFromInputs(document.getElementById('page-password'));
   if (password.length < 6) { showToast('Digite a senha de 6 dígitos'); return; }
+  if (!/^\d{6}$/.test(password)) { showToast('Senha deve ter apenas números'); return; }
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
   const btn = document.getElementById('btn-password');
   try {
@@ -106,6 +107,7 @@ document.getElementById('btn-register').addEventListener('click', async () => {
   if (!name) { showToast('Digite seu nome'); return; }
   const password = getPasswordFromInputs(document.getElementById('page-register'));
   if (password.length < 6) { showToast('Crie uma senha de 6 dígitos'); return; }
+  if (!/^\d{6}$/.test(password)) { showToast('Senha deve ter apenas números'); return; }
   const phone = document.getElementById('phone-input').value.replace(/\D/g, '');
   const btn = document.getElementById('btn-register');
 
@@ -207,6 +209,7 @@ function deleteAccountStep2() {
 function deleteAccountStep3() {
   const password = getPasswordFromInputs(document.getElementById('delete-password-inputs'));
   if (password.length < 6) { showToast('Digite a senha de 6 dígitos'); return; }
+  if (!/^\d{6}$/.test(password)) { showToast('Senha deve ter apenas números'); return; }
   _deletePasswordBuffer = password;
   _showDeleteStep(3);
   setTimeout(() => document.getElementById('delete-confirm-text')?.focus(), 100);
