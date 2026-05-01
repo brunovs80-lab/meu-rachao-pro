@@ -1,13 +1,10 @@
 # Cloudflare Pages redirects — meu-rachao-pro
 # https://developers.cloudflare.com/pages/configuration/redirects/
 
-# Redireciona /landing (sem barra) → /landing/ pra evitar 404 e link consistente
-/landing  /landing/  301
-
-# Quando publicar e tiver app no domínio raiz, descomentar pra que / vá pra landing:
-# /  /landing/  302
+# /app sem barra → /app/ (escopo do PWA é /app/, manifest exige a barra)
+/app  /app/  301
 
 # Atalhos amigáveis (descomentar conforme uso):
-# /baixar      /landing/#download           302
-# /termos      /terms.html                  301
-# /privacidade /privacy.html                301
+# /baixar      /#download      302
+# /termos      /terms.html     301
+# /privacidade /privacy.html   301

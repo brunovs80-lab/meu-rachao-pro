@@ -9,31 +9,37 @@
   Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=()
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 
-# Imagens, ícones e logo: cache forte (versão fica no nome se mudar)
+# Imagens, ícones e logo (raiz, usados pela landing): cache forte
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# CSS e JS: cache forte (mude o nome do arquivo se editar pra invalidar)
-/css/*
+# App: assets e bundles ficam em /app/
+/app/assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-/js/*
+/app/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Bundles do app
-/www/js/*.bundle.js
+/app/js/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Manifest: cache curto (raramente muda mas precisa propagar rápido)
-/manifest.json
+/app/js/*.bundle.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Manifest do app: cache curto (raramente muda mas precisa propagar rápido)
+/app/manifest.json
   Cache-Control: public, max-age=3600
 
-# Service Worker: NUNCA cachear (precisa atualizar pra usuário pegar nova versão)
-/sw.js
+# Service Worker do app: NUNCA cachear (precisa atualizar pra usuário pegar nova versão)
+/app/sw.js
   Cache-Control: no-cache, no-store, must-revalidate
 
-# Landing page: cache moderado
-/landing/*
+# HTML do app: cache curto, must-revalidate (fallback ao SW network-first)
+/app/index.html
+  Cache-Control: public, max-age=300, must-revalidate
+
+# Landing (raiz): cache moderado
+/index.html
   Cache-Control: public, max-age=3600, must-revalidate
 
 # Páginas legais
@@ -41,4 +47,7 @@
   Cache-Control: public, max-age=86400
 
 /terms.html
+  Cache-Control: public, max-age=86400
+
+/delete-account.html
   Cache-Control: public, max-age=86400
