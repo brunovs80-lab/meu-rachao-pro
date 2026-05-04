@@ -12,3 +12,5 @@ dist/
 *.keystore
 *.jks
 android/keystore.properties
+.secrets/
+*-service-account*.json
