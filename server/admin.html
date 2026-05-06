@@ -238,7 +238,7 @@
       <!-- SITE -->
       <section id="panel-site" class="panel">
         <div class="card">
-          <h3>Landing page (meurachaopro.com.br)</h3>
+          <h3>Site (landing + PWA web)</h3>
           <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px">
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
               <input type="checkbox" id="site-landing-enabled" style="width:18px; height:18px; cursor:pointer">
@@ -253,11 +253,12 @@
           <div style="display:flex; gap:10px; align-items:center">
             <button class="btn btn-primary" onclick="saveSiteConfig()">Salvar</button>
             <button class="btn btn-secondary btn-small" onclick="loadSiteConfig()">↻ Recarregar</button>
-            <a href="https://meurachaopro.com.br" target="_blank" rel="noopener" style="margin-left:auto; font-size:13px">Abrir site ↗</a>
+            <a href="https://meurachaopro.com.br" target="_blank" rel="noopener" style="margin-left:auto; font-size:13px">Abrir landing ↗</a>
+            <a href="https://meurachaopro.com.br/app/" target="_blank" rel="noopener" style="font-size:13px">Abrir app ↗</a>
           </div>
           <div style="margin-top:16px; padding:12px; background:var(--bg); border-radius:6px; font-size:12px; color:var(--muted); line-height:1.6">
-            ⚠️ Quando off, visitantes da landing veem uma página de manutenção em vez do site.<br>
-            O PWA em <code>/app/</code> e a Play Store não são afetados.
+            ⚠️ Quando off, visitantes da <strong>landing</strong> e do <strong>PWA web</strong> (<code>/app/</code>) veem uma tela de manutenção.<br>
+            O <strong>app nativo Android</strong> (Play Store) <strong>não é afetado</strong> — usa código compilado, precisaria de gate separado no boot.
           </div>
         </div>
       </section>
