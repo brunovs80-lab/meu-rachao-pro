@@ -526,6 +526,41 @@ app.get('/admin/api/audit', requireAdmin, async (req, res) => {
   }
 });
 
+// ----- SITE CONFIG (landing toggle) -----
+
+app.get('/admin/api/site-config', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from('site_config')
+      .select('landing_enabled, maintenance_message, updated_at')
+      .eq('id', true)
+      .maybeSingle();
+    if (error) throw error;
+    return res.json(data || { landing_enabled: true, maintenance_message: '' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/admin/api/site-config', requireAdmin, async (req, res) => {
+  try {
+    const { landing_enabled, maintenance_message } = req.body || {};
+    if (typeof landing_enabled !== 'boolean') return res.status(400).json({ error: 'landing_enabled deve ser boolean' });
+    const msg = typeof maintenance_message === 'string' ? maintenance_message.slice(0, 500) : '';
+    const { data, error } = await getSupabaseAdmin()
+      .from('site_config')
+      .update({ landing_enabled, maintenance_message: msg, updated_at: new Date().toISOString() })
+      .eq('id', true)
+      .select('landing_enabled, maintenance_message, updated_at')
+      .single();
+    if (error) throw error;
+    await audit(req, landing_enabled ? 'landing_enable' : 'landing_disable', 'site_config', 'landing', { maintenance_message: msg });
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ----- ADMIN HTML -----
 
 app.get(['/admin', '/admin/'], (req, res) => {
