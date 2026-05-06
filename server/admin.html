@@ -250,6 +250,23 @@
             <label class="label" style="display:block; color:var(--muted); font-size:12px; margin-bottom:6px">Mensagem de manutenção (mostrada quando off)</label>
             <textarea id="site-maintenance-msg" class="input" rows="3" maxlength="500" placeholder="Voltamos em breve."></textarea>
           </div>
+
+          <div style="margin:18px 0; padding-top:18px; border-top:1px solid var(--border)">
+            <h4 style="font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px">Botões da landing</h4>
+            <div style="display:flex; flex-direction:column; gap:10px">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                <input type="checkbox" id="site-play-enabled" style="width:18px; height:18px; cursor:pointer">
+                <span>Botão "Baixar no Google Play" — link pra Play Store</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                <input type="checkbox" id="site-pwa-enabled" style="width:18px; height:18px; cursor:pointer">
+                <span>Botão "iPhone (PWA)" + seção de instrução iOS</span>
+              </label>
+            </div>
+            <p style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5">
+              Desmarque pra esconder o CTA da landing. Útil pra direcionar tráfego só pra um canal (ex: só PWA enquanto Play Store não saiu).
+            </p>
+          </div>
           <div style="display:flex; gap:10px; align-items:center">
             <button class="btn btn-primary" onclick="saveSiteConfig()">Salvar</button>
             <button class="btn btn-secondary btn-small" onclick="loadSiteConfig()">↻ Recarregar</button>
@@ -635,11 +652,15 @@ async function loadSiteConfig() {
   const status = document.getElementById('site-landing-status');
   const msgEl = document.getElementById('site-maintenance-msg');
   const updEl = document.getElementById('site-updated');
+  const playEl = document.getElementById('site-play-enabled');
+  const pwaEl = document.getElementById('site-pwa-enabled');
   status.textContent = 'Carregando…';
   try {
     const cfg = await api('GET', '/admin/api/site-config');
     checkbox.checked = !!cfg.landing_enabled;
     msgEl.value = cfg.maintenance_message || '';
+    playEl.checked = cfg.play_link_enabled !== false;
+    pwaEl.checked = cfg.pwa_link_enabled !== false;
     updateSiteStatusLabel();
     updEl.textContent = cfg.updated_at ? 'Atualizado em ' + fmtDate(cfg.updated_at) : '';
     checkbox.onchange = updateSiteStatusLabel;
@@ -659,13 +680,17 @@ function updateSiteStatusLabel() {
 async function saveSiteConfig() {
   const enabled = document.getElementById('site-landing-enabled').checked;
   const msg = document.getElementById('site-maintenance-msg').value.trim();
+  const playOn = document.getElementById('site-play-enabled').checked;
+  const pwaOn = document.getElementById('site-pwa-enabled').checked;
   try {
     const cfg = await api('POST', '/admin/api/site-config', {
       landing_enabled: enabled,
       maintenance_message: msg,
+      play_link_enabled: playOn,
+      pwa_link_enabled: pwaOn,
     });
     document.getElementById('site-updated').textContent = 'Atualizado em ' + fmtDate(cfg.updated_at);
-    toast(enabled ? 'Landing ativada' : 'Landing desativada');
+    toast('Configuração salva');
   } catch (err) {
     toast(err.message, 'error');
   }

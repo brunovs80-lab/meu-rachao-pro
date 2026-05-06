@@ -528,15 +528,17 @@ app.get('/admin/api/audit', requireAdmin, async (req, res) => {
 
 // ----- SITE CONFIG (landing toggle) -----
 
+const SITE_CONFIG_FIELDS = 'landing_enabled, maintenance_message, play_link_enabled, pwa_link_enabled, updated_at';
+
 app.get('/admin/api/site-config', requireAdmin, async (req, res) => {
   try {
     const { data, error } = await getSupabaseAdmin()
       .from('site_config')
-      .select('landing_enabled, maintenance_message, updated_at')
+      .select(SITE_CONFIG_FIELDS)
       .eq('id', true)
       .maybeSingle();
     if (error) throw error;
-    return res.json(data || { landing_enabled: true, maintenance_message: '' });
+    return res.json(data || { landing_enabled: true, maintenance_message: '', play_link_enabled: true, pwa_link_enabled: true });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -544,17 +546,21 @@ app.get('/admin/api/site-config', requireAdmin, async (req, res) => {
 
 app.post('/admin/api/site-config', requireAdmin, async (req, res) => {
   try {
-    const { landing_enabled, maintenance_message } = req.body || {};
+    const { landing_enabled, maintenance_message, play_link_enabled, pwa_link_enabled } = req.body || {};
     if (typeof landing_enabled !== 'boolean') return res.status(400).json({ error: 'landing_enabled deve ser boolean' });
+    if (typeof play_link_enabled !== 'boolean') return res.status(400).json({ error: 'play_link_enabled deve ser boolean' });
+    if (typeof pwa_link_enabled !== 'boolean') return res.status(400).json({ error: 'pwa_link_enabled deve ser boolean' });
     const msg = typeof maintenance_message === 'string' ? maintenance_message.slice(0, 500) : '';
     const { data, error } = await getSupabaseAdmin()
       .from('site_config')
-      .update({ landing_enabled, maintenance_message: msg, updated_at: new Date().toISOString() })
+      .update({ landing_enabled, maintenance_message: msg, play_link_enabled, pwa_link_enabled, updated_at: new Date().toISOString() })
       .eq('id', true)
-      .select('landing_enabled, maintenance_message, updated_at')
+      .select(SITE_CONFIG_FIELDS)
       .single();
     if (error) throw error;
-    await audit(req, landing_enabled ? 'landing_enable' : 'landing_disable', 'site_config', 'landing', { maintenance_message: msg });
+    await audit(req, 'site_config_update', 'site_config', 'main', {
+      landing_enabled, play_link_enabled, pwa_link_enabled, maintenance_message: msg,
+    });
     return res.json(data);
   } catch (err) {
     return res.status(500).json({ error: err.message });
