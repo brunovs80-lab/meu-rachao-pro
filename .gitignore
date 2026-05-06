@@ -14,3 +14,4 @@ dist/
 android/keystore.properties
 .secrets/
 *-service-account*.json
+assets/play/real-shots/
