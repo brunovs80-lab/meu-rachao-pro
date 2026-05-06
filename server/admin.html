@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin · Meu Rachão Pro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d1a; --card: #1a1a2e; --border: #2a2a44;
+      --text: #f0f0f5; --muted: #8a8aa5; --orange: #ff7a00; --purple: #7c3aed;
+      --green: #22c55e; --red: #ef4444; --blue: #3b82f6;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--blue); text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+
+    /* Login */
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .login-box { background: var(--card); padding: 32px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
+    .login-box h1 { font-size: 22px; margin-bottom: 6px; }
+    .login-box p { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+    /* Layout */
+    header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 20px;
+             display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 18px; }
+    header h1 .badge { font-size: 11px; background: var(--red); padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+    .btn-logout { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 13px; }
+    .btn-logout:hover { color: var(--text); }
+
+    nav.tabs { display: flex; gap: 4px; background: var(--card); border-bottom: 1px solid var(--border); padding: 0 20px; overflow-x: auto; }
+    nav.tabs button { background: transparent; color: var(--muted); border: none; padding: 14px 16px; font-size: 14px; border-bottom: 2px solid transparent; }
+    nav.tabs button.active { color: var(--text); border-bottom-color: var(--orange); }
+
+    main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Components */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .card h3 { font-size: 14px; margin-bottom: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .input, select { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; }
+    .input:focus, select:focus { outline: none; border-color: var(--orange); }
+    .btn { padding: 10px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; }
+    .btn-primary { background: var(--orange); color: white; }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-danger  { background: var(--red); color: white; }
+    .btn-danger:hover { filter: brightness(1.1); }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: #3a3a55; }
+    .btn-small { padding: 6px 10px; font-size: 12px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+    td.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 180px; }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .metric { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .metric .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric .value { font-size: 28px; font-weight: 800; margin-top: 4px; }
+    .metric .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .pill-active { background: rgba(34,197,94,0.2); color: var(--green); }
+    .pill-deleted { background: rgba(239,68,68,0.2); color: var(--red); }
+    .pill-blocked { background: rgba(239,68,68,0.2); color: var(--red); }
+    .pill-admin { background: rgba(255,122,0,0.2); color: var(--orange); }
+    .pill-source { background: rgba(124,58,237,0.2); color: var(--purple); }
+
+    .toolbar { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+    .toolbar > .input { flex: 1; min-width: 200px; }
+
+    /* Modal */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+    .modal-bg.show { display: flex; }
+    .modal { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 22px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 18px; margin-bottom: 14px; }
+    .modal .footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+    .label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--card); border: 1px solid var(--border); padding: 12px 18px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 200; transform: translateX(120%); transition: transform 0.25s; }
+    .toast.show { transform: translateX(0); }
+    .toast.error { border-color: var(--red); }
+    .toast.success { border-color: var(--green); }
+
+    .empty { text-align: center; color: var(--muted); padding: 30px; font-size: 13px; }
+    .text-muted { color: var(--muted); }
+    .text-mono { font-family: monospace; font-size: 12px; }
+    .danger-zone { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05); }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="login-screen" class="login-wrap" style="display:none">
+    <div class="login-box">
+      <h1>🔐 Admin · Meu Rachão Pro</h1>
+      <p>⚠️ Este painel acessa <b>dados de produção</b>. Cuidado.</p>
+      <input type="password" id="login-password" class="input" placeholder="Senha admin" autocomplete="current-password">
+      <button class="btn btn-primary" style="width:100%; margin-top:12px" onclick="doLogin()">Entrar</button>
+      <p style="margin-top:14px; font-size:12px; color:var(--muted)">
+        Configure <code>ADMIN_PASSWORD</code> no <code>.env</code>.<br>
+        Bind: <code>127.0.0.1</code> (só localhost).
+      </p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none">
+    <header>
+      <h1>Meu Rachão Pro <span class="badge">ADMIN · PROD</span></h1>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </header>
+
+    <nav class="tabs">
+      <button data-tab="metrics" class="active" onclick="showTab('metrics')">📊 Métricas</button>
+      <button data-tab="users" onclick="showTab('users')">👥 Usuários</button>
+      <button data-tab="coupons" onclick="showTab('coupons')">🎟️ Cupons</button>
+      <button data-tab="subs" onclick="showTab('subs')">⭐ Pro Subs</button>
+      <button data-tab="audit" onclick="showTab('audit')">📜 Audit</button>
+    </nav>
+
+    <main>
+      <!-- METRICS -->
+      <section id="panel-metrics" class="panel active">
+        <div class="card">
+          <h3>Métricas gerais</h3>
+          <div id="metrics-content" class="metrics-grid">
+            <div class="empty">Carregando…</div>
+          </div>
+          <div style="margin-top:14px"><button class="btn btn-secondary btn-small" onclick="loadMetrics()">↻ Recarregar</button></div>
+        </div>
+      </section>
+
+      <!-- USERS -->
+      <section id="panel-users" class="panel">
+        <div class="card">
+          <h3>Usuários</h3>
+          <div class="toolbar">
+            <input id="users-search" class="input" placeholder="Buscar por nome ou telefone…" oninput="debouncedUsers()">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted)">
+              <input type="checkbox" id="users-include-deleted" onchange="loadUsers()"> Incluir excluídos
+            </label>
+          </div>
+          <table>
+            <thead><tr><th>Nome</th><th>Telefone</th><th>Posição</th><th>Status</th><th>Criado</th><th>Ações</th></tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="6" class="empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- COUPONS -->
+      <section id="panel-coupons" class="panel">
+        <div class="card">
+          <h3>Criar cupom</h3>
+          <div class="row">
+            <div>
+              <label class="label">Código</label>
+              <input id="coupon-code" class="input" placeholder="EX: WELCOME30" oninput="this.value=this.value.toUpperCase()">
+            </div>
+            <div>
+              <label class="label">Tipo</label>
+              <select id="coupon-type" onchange="onCouponTypeChange()">
+                <option value="trial">Trial (X dias grátis)</option>
+                <option value="lifetime">Lifetime (Pro vitalício)</option>
+              </select>
+            </div>
+            <div id="coupon-duration-wrap">
+              <label class="label">Dias de trial</label>
+              <input id="coupon-duration" class="input" type="number" min="1" value="30">
+            </div>
+            <div>
+              <label class="label">Máx. usos (0 = ilimitado)</label>
+              <input id="coupon-max-uses" class="input" type="number" min="0" value="0">
+            </div>
+            <div>
+              <label class="label">Expira em (opcional)</label>
+              <input id="coupon-expires" class="input" type="date">
+            </div>
+          </div>
+          <label class="label">Descrição</label>
+          <input id="coupon-description" class="input" placeholder="Ex: Promoção lançamento">
+          <button class="btn btn-primary" style="margin-top:14px" onclick="createCoupon()">Criar cupom</button>
+        </div>
+
+        <div class="card">
+          <h3>Cupons existentes</h3>
+          <table>
+            <thead><tr><th>Código</th><th>Tipo</th><th>Duração</th><th>Usos</th><th>Expira</th><th>Criado</th><th>Ações</th></tr></thead>
+            <tbody id="coupons-tbody"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PRO SUBS -->
+      <section id="panel-subs" class="panel">
+        <div class="card">
+          <h3>Conceder Pro manualmente</h3>
+          <div class="row">
+            <div>
+              <label class="label">User ID</label>
+              <input id="grant-user-id" class="input" placeholder="ID do player (use a aba Usuários pra encontrar)">
+            </div>
+            <div>
+              <label class="label">Plano</label>
+              <select id="grant-plan">
+                <option value="trial">Trial</option>
+                <option value="monthly">Mensal</option>
+                <option value="yearly">Anual</option>
+                <option value="lifetime">Lifetime</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Expira em (não-lifetime)</label>
+              <input id="grant-expires" class="input" type="date">
+            </div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="grantPro()">Conceder Pro</button>
+        </div>
+
+        <div class="card">
+          <h3>Assinaturas ativas (todas)</h3>
+          <table>
+            <thead><tr><th>Jogador</th><th>Plano</th><th>Origem</th><th>Expira</th><th>Atualizado</th><th>Ações</th></tr></thead>
+            <tbody id="subs-tbody"><tr><td colspan="6" class="empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- AUDIT -->
+      <section id="panel-audit" class="panel">
+        <div class="card">
+          <h3>Audit log (últimas 100 ações)</h3>
+          <table>
+            <thead><tr><th>Quando</th><th>Ação</th><th>Alvo</th><th>Detalhes</th><th>IP</th></tr></thead>
+            <tbody id="audit-tbody"><tr><td colspan="5" class="empty">Carregando…</td></tr></tbody>
+          </table>
+          <div style="margin-top:14px"><button class="btn btn-secondary btn-small" onclick="loadAudit()">↻ Recarregar</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal de detalhe usuário / confirmação destrutiva -->
+  <div id="modal-bg" class="modal-bg" onclick="if(event.target===this) closeModal()">
+    <div id="modal" class="modal"></div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+// ========== STATE ==========
+let _activeTab = 'metrics';
+let _usersDebounce = null;
+
+// ========== HELPERS ==========
+async function api(method, url, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch(url, opts);
+  if (resp.status === 401 && !url.endsWith('/login') && !url.endsWith('/me')) {
+    showLogin(); throw new Error('Sessão expirada');
+  }
+  let data = null;
+  try { data = await resp.json(); } catch (_) {}
+  if (!resp.ok) throw new Error((data && data.error) || `HTTP ${resp.status}`);
+  return data;
+}
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast ' + type, 3000);
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtMoney(n) {
+  return 'R$ ' + Number(n || 0).toFixed(2).replace('.', ',');
+}
+
+function openModal(html) {
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('show');
+}
+
+// ========== AUTH ==========
+async function checkAuth() {
+  try {
+    const r = await api('GET', '/admin/api/me');
+    if (r.authenticated) showDashboard(); else showLogin();
+  } catch { showLogin(); }
+}
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+}
+function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadMetrics();
+}
+
+async function doLogin() {
+  const password = document.getElementById('login-password').value;
+  if (!password) return;
+  try {
+    await api('POST', '/admin/api/login', { password });
+    document.getElementById('login-password').value = '';
+    showDashboard();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+  if (e.key === 'Escape') closeModal();
+});
+
+async function doLogout() {
+  await api('POST', '/admin/api/logout').catch(() => {});
+  showLogin();
+}
+
+// ========== TABS ==========
+function showTab(tab) {
+  _activeTab = tab;
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  if (tab === 'metrics') loadMetrics();
+  if (tab === 'users') loadUsers();
+  if (tab === 'coupons') loadCoupons();
+  if (tab === 'subs') loadSubs();
+  if (tab === 'audit') loadAudit();
+}
+
+// ========== METRICS ==========
+async function loadMetrics() {
+  const el = document.getElementById('metrics-content');
+  el.innerHTML = '<div class="empty">Carregando…</div>';
+  try {
+    const m = await api('GET', '/admin/api/metrics');
+    el.innerHTML = `
+      <div class="metric"><div class="label">Usuários ativos</div><div class="value">${m.users.active}</div><div class="sub">${m.users.deleted} excluídos</div></div>
+      <div class="metric"><div class="label">Pro ativos</div><div class="value">${m.pro.active}</div><div class="sub">${Object.entries(m.pro.byPlan).map(([k,v]) => k+':'+v).join(' · ') || '—'}</div></div>
+      <div class="metric"><div class="label">Receita mês</div><div class="value">${fmtMoney(m.revenue.currentMonth)}</div><div class="sub">PIX confirmado</div></div>
+      <div class="metric"><div class="label">Push tokens</div><div class="value">${m.pushTokens}</div><div class="sub">dispositivos registrados</div></div>
+      <div class="metric"><div class="label">Rachões ativos</div><div class="value">${m.rachaos.active}</div></div>
+      <div class="metric"><div class="label">Sessões abertas</div><div class="value">${m.sessions.open}</div></div>
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="empty">Erro: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ========== USERS ==========
+function debouncedUsers() {
+  clearTimeout(_usersDebounce);
+  _usersDebounce = setTimeout(loadUsers, 300);
+}
+
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="empty">Carregando…</td></tr>';
+  const q = document.getElementById('users-search').value.trim();
+  const includeDeleted = document.getElementById('users-include-deleted').checked ? '1' : '0';
+  try {
+    const r = await api('GET', `/admin/api/users?q=${encodeURIComponent(q)}&includeDeleted=${includeDeleted}`);
+    if (!r.users.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhum usuário</td></tr>'; return; }
+    tbody.innerHTML = r.users.map(u => {
+      const status = [];
+      if (u.deleted_at) status.push('<span class="pill pill-deleted">Excluído</span>');
+      else status.push('<span class="pill pill-active">Ativo</span>');
+      if (u.is_admin) status.push('<span class="pill pill-admin">Admin</span>');
+      if (u.blocked) status.push('<span class="pill pill-blocked">Bloqueado</span>');
+      return `<tr>
+        <td><strong>${escapeHtml(u.name || '—')}</strong><br><span class="text-mono text-muted">${u.id}</span></td>
+        <td class="text-mono">${u.phone || '—'}</td>
+        <td>${escapeHtml(u.position || '')}</td>
+        <td>${status.join(' ')}</td>
+        <td class="text-muted">${fmtDate(u.created_at)}</td>
+        <td class="actions">
+          <button class="btn btn-secondary btn-small" onclick="userDetail('${u.id}')">Ver</button>
+          ${u.blocked ? `<button class="btn btn-secondary btn-small" onclick="unblockUser('${u.id}')">Desbloquear</button>` : ''}
+          ${!u.deleted_at ? `<button class="btn btn-danger btn-small" onclick="confirmDeleteUser('${u.id}', ${JSON.stringify(u.name || '').replace(/"/g,'&quot;')})">Excluir</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">Erro: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function userDetail(id) {
+  try {
+    const r = await api('GET', `/admin/api/users/${encodeURIComponent(id)}`);
+    const u = r.user;
+    const pro = r.pro;
+    openModal(`
+      <h2>${escapeHtml(u.name || '—')}</h2>
+      <p class="text-muted text-mono" style="margin-bottom:14px">${u.id}</p>
+
+      <div class="row">
+        <div><span class="label">Telefone</span><div class="text-mono">${u.phone || '—'}</div></div>
+        <div><span class="label">Posição</span><div>${escapeHtml(u.position || '—')}</div></div>
+      </div>
+      <div class="row">
+        <div><span class="label">Stats</span><div>${u.matches || 0} jogos · ${u.goals || 0}G ${u.assists || 0}A</div></div>
+        <div><span class="label">Criado em</span><div class="text-muted">${fmtDate(u.created_at)}</div></div>
+      </div>
+      ${u.deleted_at ? `<div class="row"><div><span class="label">Excluído em</span><div class="text-muted">${fmtDate(u.deleted_at)}</div></div></div>` : ''}
+
+      <h3 style="margin-top:18px; margin-bottom:8px; color:var(--muted); font-size:13px">PRO</h3>
+      ${pro ? `
+        <div class="row">
+          <div><span class="label">Plano</span><div>${pro.plan_type}${pro.is_lifetime?' (vitalício)':''}</div></div>
+          <div><span class="label">Origem</span><div><span class="pill pill-source">${pro.source}</span></div></div>
+          <div><span class="label">Expira</span><div>${pro.is_lifetime ? '∞' : fmtDate(pro.expires_at)}</div></div>
+        </div>
+      ` : '<p class="text-muted" style="font-size:13px">Sem assinatura</p>'}
+
+      <h3 style="margin-top:18px; margin-bottom:8px; color:var(--muted); font-size:13px">DISPOSITIVOS (${r.devices.length})</h3>
+      ${r.devices.length ? r.devices.map(d => `<div class="text-mono text-muted" style="font-size:12px">${d.platform} · ${d.app_version || '—'} · ${fmtDate(d.created_at)}</div>`).join('') : '<p class="text-muted" style="font-size:13px">Nenhum push token</p>'}
+
+      <h3 style="margin-top:18px; margin-bottom:8px; color:var(--muted); font-size:13px">RACHÕES (${r.rachaos.length})</h3>
+      ${r.rachaos.length ? `<div class="text-mono text-muted" style="font-size:12px">${r.rachaos.map(x => x.rachao_id).join(', ')}</div>` : '<p class="text-muted" style="font-size:13px">Nenhum</p>'}
+
+      <div class="footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Fechar</button>
+      </div>
+    `);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function confirmDeleteUser(id, name) {
+  openModal(`
+    <h2>Excluir usuário</h2>
+    <p style="margin-bottom:12px">Soft-delete (anonimiza, preserva integridade dos rachões).</p>
+    <p class="text-muted" style="font-size:13px; margin-bottom:14px">Pra confirmar, digite o nome do usuário:</p>
+    <p style="background:var(--bg); padding:8px; border-radius:6px; font-family:monospace">${escapeHtml(name)}</p>
+    <input id="confirm-name" class="input" style="margin-top:10px" placeholder="Digite o nome">
+    <div class="footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="deleteUser('${id}', ${JSON.stringify(name).replace(/"/g,'&quot;')})">Excluir</button>
+    </div>
+  `);
+}
+
+async function deleteUser(id, name) {
+  const typed = document.getElementById('confirm-name').value.trim();
+  if (typed !== name) return toast('Nome não confere', 'error');
+  try {
+    await api('DELETE', `/admin/api/users/${encodeURIComponent(id)}`);
+    closeModal();
+    toast('Usuário excluído');
+    loadUsers();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function unblockUser(id) {
+  try {
+    await api('POST', `/admin/api/users/${encodeURIComponent(id)}/unblock`);
+    toast('Desbloqueado');
+    loadUsers();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ========== COUPONS ==========
+function onCouponTypeChange() {
+  const type = document.getElementById('coupon-type').value;
+  document.getElementById('coupon-duration-wrap').style.display = type === 'trial' ? 'block' : 'none';
+}
+
+async function createCoupon() {
+  const code = document.getElementById('coupon-code').value.trim();
+  const type = document.getElementById('coupon-type').value;
+  const durationDays = type === 'trial' ? Number(document.getElementById('coupon-duration').value) : null;
+  const maxUsesRaw = Number(document.getElementById('coupon-max-uses').value || 0);
+  const maxUses = maxUsesRaw > 0 ? maxUsesRaw : null;
+  const expiresAt = document.getElementById('coupon-expires').value || null;
+  const description = document.getElementById('coupon-description').value.trim() || null;
+
+  if (!code) return toast('Código obrigatório', 'error');
+  try {
+    await api('POST', '/admin/api/coupons', { code, type, durationDays, maxUses, expiresAt, description });
+    toast('Cupom criado');
+    document.getElementById('coupon-code').value = '';
+    document.getElementById('coupon-description').value = '';
+    loadCoupons();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function loadCoupons() {
+  const tbody = document.getElementById('coupons-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="empty">Carregando…</td></tr>';
+  try {
+    const r = await api('GET', '/admin/api/coupons');
+    if (!r.coupons.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Sem cupons</td></tr>'; return; }
+    tbody.innerHTML = r.coupons.map(c => `
+      <tr>
+        <td class="text-mono"><strong>${escapeHtml(c.code)}</strong></td>
+        <td>${c.type}</td>
+        <td>${c.duration_days ? c.duration_days + ' dias' : '—'}</td>
+        <td>${c.used_count}${c.max_uses ? ' / ' + c.max_uses : ''}</td>
+        <td class="text-muted">${c.expires_at ? fmtDate(c.expires_at) : '—'}</td>
+        <td class="text-muted">${fmtDate(c.created_at)}</td>
+        <td class="actions"><button class="btn btn-danger btn-small" onclick="deleteCoupon('${c.id}', '${escapeHtml(c.code)}')">Excluir</button></td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">Erro: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function deleteCoupon(id, code) {
+  if (!confirm(`Excluir cupom ${code}?`)) return;
+  try {
+    await api('DELETE', `/admin/api/coupons/${encodeURIComponent(id)}`);
+    toast('Cupom excluído');
+    loadCoupons();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ========== SUBSCRIPTIONS ==========
+async function grantPro() {
+  const userId = document.getElementById('grant-user-id').value.trim();
+  const planType = document.getElementById('grant-plan').value;
+  const expiresAt = document.getElementById('grant-expires').value || null;
+  if (!userId) return toast('User ID obrigatório', 'error');
+  if (planType !== 'lifetime' && !expiresAt) {
+    if (!confirm('Sem data de expiração — vai conceder Pro permanente. Continuar?')) return;
+  }
+  try {
+    await api('POST', '/admin/api/subscriptions/grant', { userId, planType, expiresAt });
+    toast('Pro concedido');
+    document.getElementById('grant-user-id').value = '';
+    document.getElementById('grant-expires').value = '';
+    loadSubs();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function loadSubs() {
+  const tbody = document.getElementById('subs-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="empty">Carregando…</td></tr>';
+  try {
+    const r = await api('GET', '/admin/api/subscriptions');
+    if (!r.subscriptions.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhuma assinatura</td></tr>'; return; }
+    tbody.innerHTML = r.subscriptions.map(s => `
+      <tr>
+        <td><strong>${escapeHtml(s.player_name || '—')}</strong><br><span class="text-mono text-muted">${s.user_id}</span></td>
+        <td>${s.plan_type}${s.is_lifetime?' ∞':''}</td>
+        <td><span class="pill pill-source">${s.source}</span></td>
+        <td>${s.is_lifetime ? '∞' : fmtDate(s.expires_at)}</td>
+        <td class="text-muted">${fmtDate(s.updated_at)}</td>
+        <td class="actions"><button class="btn btn-danger btn-small" onclick="revokePro('${s.user_id}', '${escapeHtml(s.player_name||s.user_id)}')">Revogar</button></td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">Erro: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function revokePro(userId, name) {
+  if (!confirm(`Revogar Pro de ${name}?`)) return;
+  try {
+    await api('DELETE', `/admin/api/subscriptions/${encodeURIComponent(userId)}`);
+    toast('Pro revogado');
+    loadSubs();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ========== AUDIT ==========
+async function loadAudit() {
+  const tbody = document.getElementById('audit-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" class="empty">Carregando…</td></tr>';
+  try {
+    const r = await api('GET', '/admin/api/audit?limit=100');
+    if (!r.logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Sem logs</td></tr>'; return; }
+    tbody.innerHTML = r.logs.map(l => `
+      <tr>
+        <td class="text-muted">${fmtDate(l.ts)}</td>
+        <td><strong>${escapeHtml(l.action)}</strong></td>
+        <td>${l.target_type ? escapeHtml(l.target_type) + ' · ' : ''}<span class="text-mono">${escapeHtml(l.target_id || '')}</span></td>
+        <td class="text-mono" style="font-size:11px; max-width:300px; overflow:hidden; text-overflow:ellipsis">${escapeHtml(JSON.stringify(l.details))}</td>
+        <td class="text-mono text-muted">${escapeHtml(l.ip_addr || '')}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">Erro: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+// ========== INIT ==========
+checkAuth();
+</script>
+</body>
+</html>
