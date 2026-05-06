@@ -438,7 +438,7 @@ describe('Seed Demo Data', () => {
 
     const session = getSessionById('s1');
     expect(session.rachaoId).toBe('r1');
-    expect(session.confirmed).toHaveLength(12);
+    expect(session.confirmed).toHaveLength(18);
     expect(session.status).toBe('open');
 
     const billing = getMonthlyBilling()[0];
