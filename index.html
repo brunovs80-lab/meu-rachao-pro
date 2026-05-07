@@ -1267,7 +1267,7 @@
 
       <button class="paywall-restore" onclick="paywallRestore()"><i class="fas fa-rotate"></i> Restaurar compras</button>
 
-      <p class="paywall-legal">
+      <p class="paywall-legal" id="paywall-legal-text">
         Pagamento processado pela loja de aplicativos. Renovação automática para planos mensal/anual — pode ser cancelada nas configurações da conta da loja.<br>
         <a href="#" onclick="event.preventDefault();navigateTo('terms')">Termos</a> · <a href="#" onclick="event.preventDefault();navigateTo('privacy')">Privacidade</a>
       </p>
@@ -1278,6 +1278,7 @@
         <h3>Você já é Pro!</h3>
         <p class="text-muted" id="paywall-pro-info">Aproveite todas as funções premium.</p>
         <button class="btn-primary btn-large" style="width:100%;margin-top:16px" onclick="navigateTo('dashboard')">VOLTAR AO APP</button>
+        <button id="paywall-cancel-mp" class="paywall-restore" style="display:none;margin-top:12px" onclick="paywallCancelMpSubscription()"><i class="fas fa-ban"></i> Cancelar assinatura</button>
       </div>
     </div>
   </div>

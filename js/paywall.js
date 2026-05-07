@@ -13,6 +13,9 @@ const PAYWALL_PRICES = {
 
 // ===== LOAD =====
 async function loadPaywall() {
+  // Trata retorno do checkout web do Mercado Pago (?paywall=success|fail|pending)
+  await handlePaywallReturn();
+
   // Mostra mensagem dinâmica se entrou via requirePro()
   const trigger = window.__paywallTrigger;
   const msgEl = document.getElementById('paywall-trigger-msg');
@@ -47,6 +50,18 @@ async function loadPaywall() {
   if (box) box.style.display = 'none';
   if (input) input.value = '';
 
+  // Ajusta UI conforme plataforma: PWA usa Mercado Pago (cartão/PIX),
+  // APK usa loja (Google Play). Restaurar compras só faz sentido no APK.
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const restoreBtn = document.querySelector('.paywall-restore');
+  if (restoreBtn) restoreBtn.style.display = isNative ? '' : 'none';
+  const legal = document.getElementById('paywall-legal-text');
+  if (legal) {
+    legal.innerHTML = isNative
+      ? 'Pagamento processado pela loja de aplicativos. Renovação automática para planos mensal/anual — pode ser cancelada nas configurações da conta da loja.<br><a href="#" onclick="event.preventDefault();navigateTo(\'terms\')">Termos</a> · <a href="#" onclick="event.preventDefault();navigateTo(\'privacy\')">Privacidade</a>'
+      : 'Pagamento processado pelo Mercado Pago. Mensal/anual é cobrado automaticamente no cartão e pode ser cancelado a qualquer momento.<br><a href="#" onclick="event.preventDefault();navigateTo(\'terms\')">Termos</a> · <a href="#" onclick="event.preventDefault();navigateTo(\'privacy\')">Privacidade</a>';
+  }
+
   // Sincroniza estado Pro e mostra "já é Pro" se for o caso
   await ProManager.syncFromServer();
   refreshPaywallProState();
@@ -72,41 +87,116 @@ function refreshPaywallProState() {
         info.textContent = 'Aproveite todas as funções premium.';
       }
     }
+    // Botão de cancelar só aparece pra assinatura recorrente via web (mp_web não-vitalício)
+    const cancelBtn = document.getElementById('paywall-cancel-mp');
+    if (cancelBtn) {
+      const canCancel = status.source === 'mp_web' && !status.is_lifetime;
+      cancelBtn.style.display = canCancel ? '' : 'none';
+    }
   } else {
     if (alreadyEl) alreadyEl.style.display = 'none';
     plansSection.forEach(el => el.style.display = '');
   }
 }
 
+// ===== RETORNO DO CHECKOUT WEB (Mercado Pago) =====
+async function handlePaywallReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('paywall');
+  if (!status) return;
+
+  // Limpa o param da URL pra não disparar de novo num refresh
+  params.delete('paywall');
+  const newQs = params.toString();
+  const newUrl = window.location.pathname + (newQs ? '?' + newQs : '') + window.location.hash;
+  history.replaceState(null, '', newUrl);
+
+  if (status === 'success') {
+    showToast('Confirmando pagamento...');
+    // Pequeno polling: webhook MP pode demorar uns segundos
+    const user = (typeof apiGetCurrentUser === 'function') ? apiGetCurrentUser() : null;
+    if (!user) return;
+    for (let i = 0; i < 4; i++) {
+      await ProManager.syncFromServer(user.id);
+      if (ProManager.isPro()) {
+        showToast('🎉 Bem-vindo ao Pro!');
+        return;
+      }
+      await new Promise(r => setTimeout(r, 2500));
+    }
+    showToast('Pagamento aprovado, mas ainda processando. Tente recarregar em alguns segundos.');
+  } else if (status === 'fail') {
+    showToast('Pagamento não foi concluído. Tente novamente.');
+  } else if (status === 'pending') {
+    showToast('Pagamento pendente. Confirmação chegará em instantes.');
+  }
+}
+
 // ===== AÇÕES DE PLANO =====
 async function paywallSelectPlan(plan) {
   const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-  if (!isNative) {
-    showToast('A compra só é liberada na versão da loja (Android/iOS).');
-    return;
-  }
-  if (!window.Billing) {
-    showToast('Pagamento ainda não habilitado nesta versão.');
-    return;
-  }
   const cardEl = document.querySelector(`.paywall-plan[data-plan="${plan}"]`);
   if (cardEl) cardEl.style.opacity = '0.6';
+
   try {
-    const result = await Billing.purchase(plan);
-    if (result?.cancelled) {
-      showToast('Compra cancelada');
-      return;
-    }
-    if (result?.ok) {
-      showToast('🎉 Bem-vindo ao Pro!');
-      await ProManager.syncFromServer();
-      refreshPaywallProState();
+    if (isNative) {
+      // ===== Caminho APK: RevenueCat IAP =====
+      if (!window.Billing) {
+        showToast('Pagamento ainda não habilitado nesta versão.');
+        return;
+      }
+      const result = await Billing.purchase(plan);
+      if (result?.cancelled) { showToast('Compra cancelada'); return; }
+      if (result?.ok) {
+        showToast('🎉 Bem-vindo ao Pro!');
+        await ProManager.syncFromServer();
+        refreshPaywallProState();
+      }
+    } else {
+      // ===== Caminho PWA/web: Mercado Pago =====
+      const user = (typeof apiGetCurrentUser === 'function') ? apiGetCurrentUser() : null;
+      if (!user) { showToast('Faça login para assinar'); return; }
+      const email = (user.email || user.phone || user.id) + '@meurachao.app';
+      const payerEmail = user.email || email;
+
+      const result = await apiCreateMpCheckout(plan, user.id, payerEmail);
+      if (!result?.init_point) {
+        showToast('Não foi possível abrir o checkout');
+        return;
+      }
+      // Redireciona pro checkout do MP. O retorno cai em ?paywall=success|fail|pending.
+      window.location.assign(result.init_point);
     }
   } catch (err) {
     console.error('[Paywall] purchase falhou:', err);
     showToast('Não foi possível concluir a compra: ' + (err.message || 'erro'));
   } finally {
     if (cardEl) cardEl.style.opacity = '';
+  }
+}
+
+// ===== CANCELAR ASSINATURA (somente mp_web recorrente) =====
+async function paywallCancelMpSubscription() {
+  const status = ProManager.getStatus();
+  if (status.source !== 'mp_web' || status.is_lifetime) return;
+  const proUntil = status.expires_at
+    ? new Date(status.expires_at).toLocaleDateString('pt-BR')
+    : 'a data atual';
+  if (!confirm(`Cancelar a assinatura? Você continua Pro até ${proUntil} e a renovação não será cobrada.`)) return;
+
+  const user = (typeof apiGetCurrentUser === 'function') ? apiGetCurrentUser() : null;
+  if (!user) return;
+  const btn = document.getElementById('paywall-cancel-mp');
+  setLoading(btn, true);
+  try {
+    const r = await apiCancelMpSubscription(user.id);
+    showToast(`Assinatura cancelada. Pro segue ativo até ${new Date(r.pro_until).toLocaleDateString('pt-BR')}.`);
+    await ProManager.syncFromServer(user.id);
+    refreshPaywallProState();
+  } catch (err) {
+    showToast('Erro ao cancelar: ' + (err.message || ''));
+  } finally {
+    setLoading(btn, false);
   }
 }
 

@@ -480,6 +480,35 @@ async function apiCreateGuestPixCharge(sessionId, playerId, rachaoId, payerEmail
   return data;
 }
 
+// ===== ASSINATURA PRO via Mercado Pago (web/PWA) =====
+async function apiCreateMpCheckout(plan, userId, payerEmail) {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/create-mp-checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ plan, user_id: userId, payer_email: payerEmail }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || 'Erro ao criar checkout');
+  return data;
+}
+
+async function apiCancelMpSubscription(userId) {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/cancel-mp-subscription`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || 'Erro ao cancelar assinatura');
+  return data;
+}
+
 async function apiGetPixTransaction(billingId, playerId) {
   const { data } = await initSupabase().from('pix_transactions')
     .select('*')
