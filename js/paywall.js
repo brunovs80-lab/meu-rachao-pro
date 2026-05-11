@@ -38,9 +38,9 @@ function confirmarMpEmail() {
 // Preços de exibição. Vão ser sobrescritos pelos preços reais vindos do RevenueCat
 // na fase de IAP nativo.
 const PAYWALL_PRICES = {
-  monthly:  { display: 'R$ 14,90',  period: '/mês' },
-  yearly:   { display: 'R$ 99,90',  period: '/ano' },
-  lifetime: { display: 'R$ 199,90', period: 'uma vez' },
+  monthly:  { display: 'R$ 14,90',  period: 'por 30 dias' },
+  yearly:   { display: 'R$ 99,90',  period: 'por 1 ano'   },
+  lifetime: { display: 'R$ 199,90', period: 'pra sempre'  },
 };
 
 // ===== LOAD =====
@@ -119,11 +119,12 @@ function refreshPaywallProState() {
         info.textContent = 'Aproveite todas as funções premium.';
       }
     }
-    // Botão de cancelar só aparece pra assinatura recorrente via web (mp_web não-vitalício)
+    // Botão de cancelar foi descontinuado: todos os planos web agora são compra avulsa
+    // (one-shot Checkout Pro). Sem recorrência = sem cancelamento; o Pro só expira.
     const cancelBtn = document.getElementById('paywall-cancel-mp');
     if (cancelBtn) {
-      const canCancel = status.source === 'mp_web' && !status.is_lifetime;
-      cancelBtn.style.display = canCancel ? '' : 'none';
+      cancelBtn.style.display = 'none';
+      const canCancel = false;
     }
   } else {
     if (alreadyEl) alreadyEl.style.display = 'none';

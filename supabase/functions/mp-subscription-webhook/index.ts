@@ -1,19 +1,17 @@
-// Edge Function: Webhook do Mercado Pago para assinatura Pro (PWA/web).
+// Edge Function: Webhook do Mercado Pago para ativação de Pro (PWA/web).
 //
-// O Mercado Pago envia POST com payload no formato:
-//   { type: 'preapproval'|'subscription_authorized_payment'|'payment', data: { id }, ... }
-// (alguns endpoints antigos usam `topic` em vez de `type` e/ou enviam id via query string)
-//
-// Para cada notificação, buscamos o objeto na API MP e atualizamos pro_subscriptions.
+// Todos os planos são one-shot (Preference). Diferença é só na duração:
+//   - monthly  -> 30 dias
+//   - yearly   -> 365 dias
+//   - lifetime -> vitalício (is_lifetime=true)
 //
 // Variáveis de ambiente:
 //   - MP_APP_ACCESS_TOKEN
 //   - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
 //
-// Setup no painel Mercado Pago:
-//   Sua integração -> Notificações webhooks -> URL de produção:
-//   https://<project>.supabase.co/functions/v1/mp-subscription-webhook
-//   Eventos: "Pagamentos", "Assinaturas (preapproval)", "Pagamentos de assinatura"
+// Setup no painel MP:
+//   Webhooks -> URL: https://<project>.supabase.co/functions/v1/mp-subscription-webhook
+//   Eventos: "Pagamentos" (payment)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -34,8 +32,13 @@ const MP_BASE = 'https://api.mercadopago.com'
 
 type Plan = 'monthly' | 'yearly' | 'lifetime'
 
+const PLAN_DAYS: Record<Plan, number | null> = {
+  monthly: 30,
+  yearly: 365,
+  lifetime: null, // vitalício
+}
+
 function planFromExternalRef(ref: string | null | undefined): { userId: string | null; plan: Plan | null } {
-  // formato: pro:<userId>:<plan>
   if (!ref || !ref.startsWith('pro:')) return { userId: null, plan: null }
   const parts = ref.split(':')
   if (parts.length < 3) return { userId: null, plan: null }
@@ -70,7 +73,6 @@ Deno.serve(async (req) => {
   let payload: any = {}
   try { payload = await req.json() } catch { /* MP às vezes manda corpo vazio */ }
 
-  // MP envia type/topic dependendo do tipo de notificação
   const url = new URL(req.url)
   const type: string = payload?.type || payload?.topic || url.searchParams.get('type') || url.searchParams.get('topic') || ''
   const dataId: string = String(payload?.data?.id || url.searchParams.get('id') || payload?.id || '')
@@ -78,134 +80,87 @@ Deno.serve(async (req) => {
   console.log('[mp-subscription-webhook] type=', type, 'id=', dataId)
 
   if (!type || !dataId) {
-    // Sempre responder 200 pra MP não ficar reentrando
     return json({ received: true, skipped: 'sem type/id' })
   }
 
   try {
-    if (type === 'preapproval') {
-      // Cria/atualiza a assinatura recorrente
-      const pre = await mpFetch(`/preapproval/${dataId}`, mpToken)
-      const { userId, plan } = planFromExternalRef(pre.external_reference)
-      if (!userId || !plan || plan === 'lifetime') {
-        console.warn('[mp-subscription-webhook] external_ref inválido:', pre.external_reference)
-        return json({ received: true, skipped: 'external_ref inválido' })
-      }
+    if (type !== 'payment') {
+      // merchant_order, preapproval e outros são ignorados — todos os planos
+      // agora são one-shot via payment.
+      return json({ received: true, action: 'ignored', type })
+    }
 
-      // status MP: pending | authorized | paused | cancelled
-      const status: string = pre.status
-      const nextPayment: string | null = pre.next_payment_date || null
-      // Margem de 2 dias após próximo pagamento esperado, pra cobrir atraso de webhook de renovação
-      const expiresAt = nextPayment
-        ? new Date(new Date(nextPayment).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
-        : null
+    const pay = await mpFetch(`/v1/payments/${dataId}`, mpToken)
+    const status: string = pay.status
+    const externalRef: string = pay.external_reference || ''
+    const { userId, plan } = planFromExternalRef(externalRef)
 
-      if (status === 'authorized') {
-        const upsert = {
-          user_id: userId,
-          source: 'mp_web',
-          product_id: `mp_${plan}`,
-          plan_type: plan,
-          is_lifetime: false,
-          expires_at: expiresAt,
-          platform: 'web',
-          mp_preapproval_id: String(pre.id),
-          external_id: String(pre.id),
-          metadata: { last_event: 'preapproval.' + status, raw: pre },
-        }
-        const { error } = await supabase
-          .from('pro_subscriptions')
-          .upsert(upsert, { onConflict: 'user_id' })
-        if (error) throw error
-        return json({ received: true, action: 'activated', plan })
-      }
+    if (!userId || !plan) {
+      return json({ received: true, skipped: 'não é payment de Pro' })
+    }
 
-      if (status === 'cancelled' || status === 'paused') {
-        // Mantém Pro até a data atual de expires_at; só registra evento.
-        const { error } = await supabase
-          .from('pro_subscriptions')
-          .update({ metadata: { last_event: 'preapproval.' + status, raw: pre } })
-          .eq('user_id', userId)
-          .eq('mp_preapproval_id', String(pre.id))
-        if (error) throw error
-        return json({ received: true, action: 'noted', status })
-      }
-
-      // pending / outros: só log
+    if (status !== 'approved') {
       return json({ received: true, action: 'ignored', status })
     }
 
-    if (type === 'subscription_authorized_payment') {
-      // Pagamento recorrente paga -> estende expires_at conforme próximo vencimento
-      const pay = await mpFetch(`/authorized_payments/${dataId}`, mpToken)
-      const preapprovalId = String(pay.preapproval_id || '')
-      const status: string = pay.status
+    // Carrega assinatura atual (se houver) pra estender o prazo em vez de resetar
+    const { data: existing } = await supabase
+      .from('pro_subscriptions')
+      .select('expires_at, is_lifetime')
+      .eq('user_id', userId)
+      .maybeSingle()
 
-      if (!preapprovalId) {
-        return json({ received: true, skipped: 'sem preapproval_id' })
+    if (existing?.is_lifetime) {
+      // Já é vitalício; novo pagamento de monthly/yearly é redundante
+      // (lifetime sobrescrevemos abaixo se a compra atual for lifetime).
+      if (plan !== 'lifetime') {
+        return json({ received: true, skipped: 'já é vitalício' })
       }
-
-      if (status !== 'approved') {
-        return json({ received: true, action: 'ignored', status })
-      }
-
-      // Busca o preapproval pra pegar próximo vencimento
-      const pre = await mpFetch(`/preapproval/${preapprovalId}`, mpToken)
-      const nextPayment: string | null = pre.next_payment_date || null
-      const expiresAt = nextPayment
-        ? new Date(new Date(nextPayment).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
-        : null
-
-      const { error } = await supabase
-        .from('pro_subscriptions')
-        .update({
-          expires_at: expiresAt,
-          metadata: { last_event: 'authorized_payment.approved', payment_id: pay.id },
-        })
-        .eq('mp_preapproval_id', preapprovalId)
-      if (error) throw error
-      return json({ received: true, action: 'renewed', expires_at: expiresAt })
     }
 
-    if (type === 'payment') {
-      // Pagamento avulso (vitalício via Checkout Pro)
-      const pay = await mpFetch(`/v1/payments/${dataId}`, mpToken)
-      const status: string = pay.status
-      const externalRef: string = pay.external_reference || ''
-      const { userId, plan } = planFromExternalRef(externalRef)
-
-      if (!userId || plan !== 'lifetime') {
-        // Pagamento que não é da assinatura Pro -> ignora silenciosamente
-        return json({ received: true, skipped: 'não é payment de Pro lifetime' })
-      }
-
-      if (status !== 'approved') {
-        return json({ received: true, action: 'ignored', status })
-      }
-
-      const upsert = {
-        user_id: userId,
-        source: 'mp_web',
-        product_id: 'mp_lifetime',
-        plan_type: 'lifetime',
-        is_lifetime: true,
-        expires_at: null,
-        platform: 'web',
-        mp_payment_id: String(pay.id),
-        external_id: String(pay.id),
-        metadata: { last_event: 'payment.approved', raw: pay },
-      }
-      const { error } = await supabase
-        .from('pro_subscriptions')
-        .upsert(upsert, { onConflict: 'user_id' })
-      if (error) throw error
-      return json({ received: true, action: 'lifetime_activated' })
+    const upsert: any = {
+      user_id: userId,
+      source: 'mp_web',
+      platform: 'web',
+      mp_payment_id: String(pay.id),
+      external_id: String(pay.id),
+      metadata: { last_event: 'payment.approved', plan, amount: pay.transaction_amount },
     }
 
-    return json({ received: true, action: 'ignored', type })
+    if (plan === 'lifetime') {
+      upsert.product_id = 'mp_lifetime'
+      upsert.plan_type = 'lifetime'
+      upsert.is_lifetime = true
+      upsert.expires_at = null
+    } else {
+      const days = PLAN_DAYS[plan]!
+      // Estende a partir do maior entre NOW() e expires_at atual
+      const now = Date.now()
+      const currentExpiryMs = existing?.expires_at ? new Date(existing.expires_at).getTime() : 0
+      const baseMs = currentExpiryMs > now ? currentExpiryMs : now
+      const newExpiry = new Date(baseMs + days * 24 * 60 * 60 * 1000)
+
+      upsert.product_id = `mp_${plan}`
+      upsert.plan_type = plan
+      upsert.is_lifetime = false
+      upsert.expires_at = newExpiry.toISOString()
+    }
+
+    const { error } = await supabase
+      .from('pro_subscriptions')
+      .upsert(upsert, { onConflict: 'user_id' })
+    if (error) throw error
+
+    return json({
+      received: true,
+      action: 'activated',
+      plan,
+      expires_at: upsert.expires_at,
+      is_lifetime: upsert.is_lifetime,
+    })
   } catch (err) {
     console.error('[mp-subscription-webhook] erro:', err)
-    // Retorna 200 mesmo em erro pra MP não martelar; logamos pra investigar.
+    // Sempre 200 pra MP não martelar; logamos pra investigar.
     return json({ received: true, error: String((err as Error)?.message || err) })
   }
 })

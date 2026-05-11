@@ -1,16 +1,17 @@
 // Edge Function: Criar checkout Mercado Pago para assinatura Pro (PWA/web)
 //
-// Mensal/Anual -> Preapproval (assinatura recorrente em cartão)
-// Vitalício    -> Preference (Checkout Pro one-shot, aceita cartão e PIX)
+// Todos os planos (mensal, anual, vitalício) usam Checkout Pro one-shot.
+// Mensal/Anual NÃO são assinaturas recorrentes — são compras avulsas que
+// liberam Pro por 30/365 dias. Renovação é manual (usuário paga de novo).
+// Vantagem: aceita PIX + cartão, não exige permissão de "Assinaturas" na conta MP.
 //
 // POST { plan: 'monthly'|'yearly'|'lifetime', user_id, payer_email }
-// Resposta: { ok: true, init_point: string, kind: 'preapproval'|'preference', external_id }
+// Resposta: { ok: true, init_point: string, external_id }
 //
 // Variáveis de ambiente:
-//   - MP_APP_ACCESS_TOKEN  (access token MP da conta do app — secret)
-//   - SUPABASE_URL         (já existe)
-//   - SUPABASE_SERVICE_ROLE_KEY (já existe)
-//   - APP_BASE_URL         (opcional, default: https://meurachaopro.com.br/app)
+//   - MP_APP_ACCESS_TOKEN
+//   - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
+//   - APP_BASE_URL (opcional, default: https://meurachaopro.com.br/app)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -28,9 +29,9 @@ function json(body: unknown, status = 200) {
 }
 
 const PLAN_CONFIG = {
-  monthly:  { amount: 14.90,  frequency: 1,  frequency_type: 'months', label: 'Pro Mensal'    },
-  yearly:   { amount: 99.90,  frequency: 12, frequency_type: 'months', label: 'Pro Anual'     },
-  lifetime: { amount: 199.90, label: 'Pro Vitalício' },
+  monthly:  { amount: 14.90,  label: 'Pro - 30 dias'    },
+  yearly:   { amount: 99.90,  label: 'Pro - 1 ano'      },
+  lifetime: { amount: 199.90, label: 'Pro - Vitalício'  },
 } as const
 
 type Plan = keyof typeof PLAN_CONFIG
@@ -57,7 +58,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // Garante que o player existe (evita criar assinatura órfã)
     const { data: player } = await supabase
       .from('players').select('id, name').eq('id', userId).maybeSingle()
     if (!player) return json({ error: 'Usuário não encontrado' }, 404)
@@ -68,83 +68,41 @@ Deno.serve(async (req) => {
     const pendingUrl = `${baseUrl}/?paywall=pending`
     const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-subscription-webhook`
 
-    // external_reference: usado pelo webhook pra correlacionar usuário/plano
+    const cfg = PLAN_CONFIG[plan]
     const externalRef = `pro:${userId}:${plan}`
 
-    if (plan === 'lifetime') {
-      // ===== PAGAMENTO ÚNICO via Checkout Pro =====
-      const cfg = PLAN_CONFIG.lifetime
-      const prefPayload = {
-        items: [{
-          title: cfg.label,
-          quantity: 1,
-          unit_price: cfg.amount,
-          currency_id: 'BRL',
-        }],
-        payer: { email: payerEmail },
-        back_urls: { success: successUrl, failure: failureUrl, pending: pendingUrl },
-        auto_return: 'approved',
-        external_reference: externalRef,
-        notification_url: webhookUrl,
-        metadata: { user_id: userId, plan },
-        statement_descriptor: 'Meu Rachao Pro',
-      }
-
-      const resp = await fetch('https://api.mercadopago.com/checkout/preferences', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${mpToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(prefPayload),
-      })
-      const data = await resp.json()
-      if (!resp.ok) {
-        console.error('[create-mp-checkout] preference error:', data)
-        return json({ error: 'Falha ao criar checkout', details: data.message }, 500)
-      }
-      return json({
-        ok: true,
-        kind: 'preference',
-        init_point: data.init_point,
-        external_id: String(data.id),
-      })
-    }
-
-    // ===== ASSINATURA RECORRENTE via Preapproval =====
-    const cfg = PLAN_CONFIG[plan]
-    const preapprovalPayload = {
-      reason: cfg.label,
-      external_reference: externalRef,
-      payer_email: payerEmail,
-      back_url: successUrl,
-      status: 'pending', // usuário escolhe cartão e MP ativa após aprovar
-      auto_recurring: {
-        frequency: cfg.frequency,
-        frequency_type: cfg.frequency_type,
-        transaction_amount: cfg.amount,
+    const prefPayload = {
+      items: [{
+        title: cfg.label,
+        quantity: 1,
+        unit_price: cfg.amount,
         currency_id: 'BRL',
-      },
+      }],
+      payer: { email: payerEmail },
+      back_urls: { success: successUrl, failure: failureUrl, pending: pendingUrl },
+      auto_return: 'approved',
+      external_reference: externalRef,
       notification_url: webhookUrl,
+      metadata: { user_id: userId, plan },
+      statement_descriptor: 'Meu Rachao Pro',
     }
 
-    const resp = await fetch('https://api.mercadopago.com/preapproval', {
+    const resp = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${mpToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(preapprovalPayload),
+      body: JSON.stringify(prefPayload),
     })
     const data = await resp.json()
     if (!resp.ok) {
-      console.error('[create-mp-checkout] preapproval error:', data)
-      return json({ error: 'Falha ao criar assinatura', details: data.message }, 500)
+      console.error('[create-mp-checkout] preference error:', data)
+      return json({ error: 'Falha ao criar checkout', details: data.message }, 500)
     }
-
     return json({
       ok: true,
-      kind: 'preapproval',
+      kind: 'preference',
       init_point: data.init_point,
       external_id: String(data.id),
     })
