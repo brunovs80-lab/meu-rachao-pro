@@ -99,6 +99,25 @@ Deno.serve(async (req) => {
       return json({ received: true, skipped: 'não é payment de Pro' })
     }
 
+    // Estorno / cancelamento / chargeback: revoga o Pro se a linha atual for desse pagamento
+    if (status === 'refunded' || status === 'cancelled' || status === 'charged_back') {
+      const { data: current } = await supabase
+        .from('pro_subscriptions')
+        .select('mp_payment_id')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (current?.mp_payment_id === String(pay.id)) {
+        const { error } = await supabase
+          .from('pro_subscriptions')
+          .delete()
+          .eq('user_id', userId)
+          .eq('mp_payment_id', String(pay.id))
+        if (error) throw error
+        return json({ received: true, action: 'revoked', reason: status, plan })
+      }
+      return json({ received: true, action: 'noted_refund', reason: status, note: 'payment id não bate com sub atual' })
+    }
+
     if (status !== 'approved') {
       return json({ received: true, action: 'ignored', status })
     }
