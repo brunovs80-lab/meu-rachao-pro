@@ -450,6 +450,7 @@ async function loadUsers() {
         <td class="text-muted">${fmtDate(u.created_at)}</td>
         <td class="actions">
           <button class="btn btn-secondary btn-small" onclick="userDetail('${u.id}')">Ver</button>
+          ${!u.deleted_at ? `<button class="btn btn-secondary btn-small" onclick="confirmResetPassword('${u.id}', ${JSON.stringify(u.name || '').replace(/"/g,'&quot;')})">Resetar senha</button>` : ''}
           ${u.blocked ? `<button class="btn btn-secondary btn-small" onclick="unblockUser('${u.id}')">Desbloquear</button>` : ''}
           ${!u.deleted_at ? `<button class="btn btn-danger btn-small" onclick="confirmDeleteUser('${u.id}', ${JSON.stringify(u.name || '').replace(/"/g,'&quot;')})">Excluir</button>` : ''}
         </td>
@@ -525,6 +526,32 @@ async function deleteUser(id, name) {
     closeModal();
     toast('Usuário excluído');
     loadUsers();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function confirmResetPassword(id, name) {
+  openModal(`
+    <h2>Resetar senha</h2>
+    <p style="margin-bottom:10px">Defina uma nova senha de 6 dígitos pra <strong>${escapeHtml(name)}</strong>.</p>
+    <p class="text-muted" style="font-size:12px; margin-bottom:14px">Anote a senha e passe pro usuário — depois ele pode trocar pelo app.</p>
+    <input id="reset-new-password" class="input text-mono" type="text" inputmode="numeric" maxlength="6" placeholder="123456" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,6)">
+    <div class="footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="resetUserPassword('${id}')">Resetar</button>
+    </div>
+  `);
+  setTimeout(() => document.getElementById('reset-new-password')?.focus(), 50);
+}
+
+async function resetUserPassword(id) {
+  const newPassword = (document.getElementById('reset-new-password').value || '').trim();
+  if (!/^\d{6}$/.test(newPassword)) return toast('Senha deve ter 6 dígitos numéricos', 'error');
+  try {
+    await api('POST', `/admin/api/users/${encodeURIComponent(id)}/reset-password`, { newPassword });
+    closeModal();
+    toast('Senha resetada — passe a nova senha pro usuário');
   } catch (err) {
     toast(err.message, 'error');
   }

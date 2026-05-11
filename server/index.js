@@ -378,6 +378,29 @@ app.post('/admin/api/users/:id/unblock', requireAdmin, async (req, res) => {
   }
 });
 
+app.post('/admin/api/users/:id/reset-password', requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { newPassword } = req.body || {};
+    if (!newPassword || !/^\d{6}$/.test(newPassword)) {
+      return res.status(400).json({ error: 'Senha deve ter exatamente 6 dígitos' });
+    }
+    const sb = getSupabaseAdmin();
+    const { data: user } = await sb.from('players').select('id, name, deleted_at').eq('id', id).maybeSingle();
+    if (!user) return res.status(404).json({ error: 'Usuario nao encontrado' });
+    if (user.deleted_at) return res.status(400).json({ error: 'Usuario excluido' });
+
+    const hash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    const { error } = await sb.from('players').update({ password: hash }).eq('id', id);
+    if (error) throw error;
+    await audit(req, 'reset_password', 'user', id, { name: user.name });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[admin/users reset-password]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ----- COUPONS -----
 
 app.get('/admin/api/coupons', requireAdmin, async (req, res) => {

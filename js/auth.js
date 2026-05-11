@@ -174,6 +174,19 @@ function logout() {
   showToast('Até a próxima!');
 }
 
+// ===== ESQUECI MINHA SENHA =====
+function openForgotPassword() {
+  const phone = document.getElementById('phone-input')?.value || '';
+  const subject = encodeURIComponent('Reset de senha — Meu Rachão Pro');
+  const body = encodeURIComponent(
+    'Olá, esqueci minha senha do app Meu Rachão Pro.\n\n' +
+    'Meu telefone cadastrado: ' + phone + '\n' +
+    'Meu nome: \n\n' +
+    'Por favor, gerem uma nova senha pra mim. Obrigado!'
+  );
+  window.location.href = `mailto:meurachaopro@gmail.com?subject=${subject}&body=${body}`;
+}
+
 // ===== DELETE ACCOUNT =====
 let _deletePasswordBuffer = null;
 

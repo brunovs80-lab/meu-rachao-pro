@@ -713,6 +713,18 @@ select.input-field {
 }
 
 /* ========== VERIFICATION ========== */
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 10px 16px;
+  margin-top: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-link:hover { color: var(--text-primary); }
+
 .verify-icon {
   font-size: 64px;
   color: var(--purple);
