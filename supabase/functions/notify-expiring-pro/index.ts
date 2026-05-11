@@ -2,7 +2,7 @@
 //
 // Avisa usuários por push quando assinatura Pro está perto de vencer:
 //   - 7 dias antes
-//   - 1 dia antes (último aviso)
+//   - 1 dia antes
 //
 // Chamada por cron (pg_cron + pg_net) diariamente. Cron passa header
 // `x-cron-secret` que deve bater com env var CRON_NOTIFY_SECRET.
@@ -11,12 +11,7 @@
 // Tracking de "já avisado" via pro_subscriptions.metadata:
 //   - notify_7d_for: ISO date do expires_at quando 7d-warn foi enviado
 //   - notify_1d_for: ISO date do expires_at quando 1d-warn foi enviado
-// Se o usuário renova (expires_at muda), o "for" não bate mais e re-notifica
-// no próximo ciclo.
-//
-// Variáveis de ambiente:
-//   - CRON_NOTIFY_SECRET (secret pra autenticar a cron)
-//   - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
+// Se o usuário renova (expires_at muda), o "for" não bate mais e re-notifica.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -33,6 +28,11 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// JWT anon legacy hardcoded (público, mesmo de js/config.js). Necessário porque
+// SUPABASE_ANON_KEY no env atual vem em novo formato sb_publishable_xxx, que
+// send-push rejeita como Invalid JWT (UNAUTHORIZED_INVALID_JWT_FORMAT).
+const LEGACY_ANON_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqdGhscHRkZ3BtYnZmeGlmbm9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTYzMDcsImV4cCI6MjA5MTc3MjMwN30.n4OReYR6jxTdvtwaH6GvccEp8lvMNxc_H1w-ipNr9wA'
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
   if (!cronSecret) return json({ error: 'CRON_NOTIFY_SECRET não configurado' }, 500)
   if (reqSecret !== cronSecret) return json({ error: 'unauthorized' }, 401)
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://ajthlptdgpmbvfxifnon.supabase.co'
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, serviceKey)
 
@@ -49,7 +49,6 @@ Deno.serve(async (req) => {
   const in8d = new Date(now + 8 * 24 * 3600 * 1000).toISOString()
   const nowIso = new Date(now).toISOString()
 
-  // Pull assinaturas não-vitalício expirando em até 8 dias
   const { data: subs, error: subsErr } = await supabase
     .from('pro_subscriptions')
     .select('user_id, expires_at, is_lifetime, metadata')
@@ -69,7 +68,7 @@ Deno.serve(async (req) => {
   for (const sub of subs || []) {
     const expMs = new Date(sub.expires_at).getTime()
     const daysUntil = (expMs - now) / (24 * 3600 * 1000)
-    const expDate = sub.expires_at.split('T')[0] // "YYYY-MM-DD"
+    const expDate = sub.expires_at.split('T')[0]
     const meta = (sub.metadata as Record<string, any>) || {}
 
     if (daysUntil < 2 && meta.notify_1d_for !== expDate) {
@@ -79,11 +78,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  async function pushUser(userId: string, title: string, body: string): Promise<boolean> {
+  async function pushUser(userId: string, title: string, body: string): Promise<{ ok: boolean; status?: number; errBody?: string }> {
     const r = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${serviceKey}`,
+        'Authorization': `Bearer ${LEGACY_ANON_JWT}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -94,46 +93,48 @@ Deno.serve(async (req) => {
       }),
     })
     if (!r.ok) {
-      console.error('[notify-expiring-pro] push falhou', userId, r.status, await r.text())
-      return false
+      const errBody = await r.text()
+      console.error('[notify-expiring-pro] push falhou', userId, r.status, errBody)
+      return { ok: false, status: r.status, errBody }
     }
-    return true
+    return { ok: true }
   }
 
   let sent_7d = 0, sent_1d = 0, errors = 0
+  let lastErr: any = null
 
   for (const sub of notify_7d) {
-    const ok = await pushUser(
+    const r = await pushUser(
       sub.user_id,
       '⏰ Seu Pro vence em 7 dias',
       'Renove pra continuar com tudo desbloqueado no Meu Rachão.'
     )
-    if (ok) {
+    if (r.ok) {
       const newMeta = { ...sub.meta, notify_7d_for: sub.expDate, notify_7d_at: new Date().toISOString() }
       const { error } = await supabase
         .from('pro_subscriptions')
         .update({ metadata: newMeta })
         .eq('user_id', sub.user_id)
-      if (error) { errors++; console.error('[notify-expiring-pro] update meta 7d:', error) }
+      if (error) { errors++; lastErr = error.message }
       else sent_7d++
-    } else errors++
+    } else { errors++; lastErr = `push 7d ${r.status}: ${r.errBody}` }
   }
 
   for (const sub of notify_1d) {
-    const ok = await pushUser(
+    const r = await pushUser(
       sub.user_id,
       '⏰ Seu Pro vence amanhã',
       'Renove agora pra não perder o acesso.'
     )
-    if (ok) {
+    if (r.ok) {
       const newMeta = { ...sub.meta, notify_1d_for: sub.expDate, notify_1d_at: new Date().toISOString() }
       const { error } = await supabase
         .from('pro_subscriptions')
         .update({ metadata: newMeta })
         .eq('user_id', sub.user_id)
-      if (error) { errors++; console.error('[notify-expiring-pro] update meta 1d:', error) }
+      if (error) { errors++; lastErr = error.message }
       else sent_1d++
-    } else errors++
+    } else { errors++; lastErr = `push 1d ${r.status}: ${r.errBody}` }
   }
 
   return json({
@@ -143,5 +144,6 @@ Deno.serve(async (req) => {
     sent_7d,
     sent_1d,
     errors,
+    lastErr,
   })
 })
