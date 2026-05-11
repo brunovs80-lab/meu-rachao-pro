@@ -565,6 +565,7 @@ async function loadRachaoGameTab(rachao, user) {
 
   const createBtn = document.getElementById('btn-create-session');
   const activeArea = document.getElementById('session-active-area');
+  const editDateBtn = document.getElementById('btn-edit-session-date');
 
   if (currentSession) {
     currentSessionId = currentSession.id;
@@ -573,6 +574,7 @@ async function loadRachaoGameTab(rachao, user) {
     document.getElementById('session-info').textContent = currentSession.confirmed.length + ' confirmados';
     createBtn.style.display = 'none';
     activeArea.style.display = 'block';
+    if (editDateBtn) editDateBtn.style.display = currentSession.status === 'open' ? '' : 'none';
     await loadSessionPresence(currentSession, rachao, user);
     loadSessionTeams(currentSession);
   } else {
@@ -582,6 +584,7 @@ async function loadRachaoGameTab(rachao, user) {
     document.getElementById('session-info').textContent = 'Crie um jogo para o próximo ' + getDayName(rachao.dayOfWeek);
     createBtn.style.display = 'block';
     activeArea.style.display = 'none';
+    if (editDateBtn) editDateBtn.style.display = 'none';
   }
 
   const historyList = document.getElementById('sessions-history-list');
@@ -1435,14 +1438,58 @@ async function salvarConfigPix() {
 }
 
 // ===== SESSIONS =====
+let _sessionDateMode = null; // 'create' | 'edit'
+
 async function createSession() {
   const rachao = await apiGetRachaoById(currentRachaoId);
   if (!rachao) return;
-  const nextDate = getNextDayOfWeek(rachao.dayOfWeek);
-  const result = await apiCreateSession({ rachaoId: rachao.id, date: nextDate });
-  currentSessionId = result.id;
-  showToast('Jogo criado para ' + formatDateBR(nextDate));
-  await loadRachaoDetail();
+  _sessionDateMode = 'create';
+  document.getElementById('modal-session-date-title').innerHTML = '<i class="fas fa-calendar"></i> Criar jogo';
+  document.getElementById('modal-session-date-hint').textContent = 'Escolha a data do jogo. Sugestão: próximo ' + getDayName(rachao.dayOfWeek) + '.';
+  document.getElementById('session-date-input').value = getNextDayOfWeek(rachao.dayOfWeek);
+  document.getElementById('btn-save-session-date-label').textContent = 'CRIAR JOGO';
+  document.getElementById('modal-session-date').style.display = 'flex';
+}
+
+async function abrirEditarDataJogo() {
+  if (!currentSessionId) return;
+  const session = await apiGetSessionById(currentSessionId).catch(() => null);
+  if (!session) { showToast('Sessão não encontrada'); return; }
+  _sessionDateMode = 'edit';
+  document.getElementById('modal-session-date-title').innerHTML = '<i class="fas fa-pen"></i> Editar data';
+  document.getElementById('modal-session-date-hint').textContent = 'Altera a data deste jogo. Confirmações e times se mantêm.';
+  document.getElementById('session-date-input').value = session.date;
+  document.getElementById('btn-save-session-date-label').textContent = 'SALVAR';
+  document.getElementById('modal-session-date').style.display = 'flex';
+}
+
+function fecharModalSessionDate() {
+  document.getElementById('modal-session-date').style.display = 'none';
+  _sessionDateMode = null;
+}
+
+async function salvarDataJogo() {
+  const date = document.getElementById('session-date-input').value;
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { showToast('Selecione uma data válida'); return; }
+  const btn = document.getElementById('btn-save-session-date');
+  try {
+    setLoading(btn, true);
+    if (_sessionDateMode === 'create') {
+      const result = await apiCreateSession({ rachaoId: currentRachaoId, date });
+      currentSessionId = result.id;
+      showToast('Jogo criado para ' + formatDateBR(date));
+    } else if (_sessionDateMode === 'edit') {
+      await apiUpdateSession(currentSessionId, { date });
+      showToast('Data atualizada para ' + formatDateBR(date));
+    }
+    fecharModalSessionDate();
+    await loadRachaoDetail();
+  } catch (err) {
+    console.error('Erro ao salvar data:', err);
+    showToast(err.message || 'Erro ao salvar');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 async function togglePresence() {

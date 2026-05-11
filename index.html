@@ -399,7 +399,12 @@
       <div id="rachao-game-content">
         <div class="card card-highlight" id="session-card">
           <div class="card-badge" id="session-badge">PRÓXIMO JOGO</div>
-          <h3 id="session-date-display">Nenhuma sessão agendada</h3>
+          <div style="display:flex;align-items:center;gap:8px">
+            <h3 id="session-date-display" style="flex:1">Nenhuma sessão agendada</h3>
+            <button class="btn-icon" id="btn-edit-session-date" onclick="abrirEditarDataJogo()" title="Editar data" style="display:none">
+              <i class="fas fa-pen" style="font-size:14px"></i>
+            </button>
+          </div>
           <p class="text-muted" id="session-info"></p>
         </div>
 
@@ -1414,6 +1419,24 @@
 
       <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-save-values" onclick="salvarValores()">
         <i class="fas fa-save"></i> SALVAR
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL DATA DO JOGO (criar/editar) ========== -->
+  <div id="modal-session-date" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharModalSessionDate()">&times;</button>
+      <h3 id="modal-session-date-title"><i class="fas fa-calendar"></i> Data do jogo</h3>
+      <p class="text-muted" style="font-size:12px;margin:8px 0 16px" id="modal-session-date-hint">
+        Escolha a data do próximo jogo.
+      </p>
+
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Data</label>
+      <input type="date" class="input-field" id="session-date-input">
+
+      <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-save-session-date" onclick="salvarDataJogo()">
+        <i class="fas fa-save"></i> <span id="btn-save-session-date-label">SALVAR</span>
       </button>
     </div>
   </div>

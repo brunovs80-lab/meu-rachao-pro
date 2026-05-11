@@ -248,6 +248,7 @@ async function apiUpdateSession(id, fields) {
   if (fields.status) mapped.status = fields.status;
   if (fields.teams !== undefined) mapped.teams = fields.teams;
   if (fields.leftover !== undefined) mapped.leftover = fields.leftover;
+  if (fields.date !== undefined) mapped.date = fields.date;
 
   if (Object.keys(mapped).length > 0) {
     await initSupabase().from('sessions').update(mapped).eq('id', id);
