@@ -346,38 +346,81 @@ async function apiGetCashFlow(rachaoId) {
     .select('id, month, total_cost, per_person, venue_paid_at')
     .eq('rachao_id', rachaoId)
     .order('month', { ascending: true });
-  if (!billings || billings.length === 0) return { months: [], accumulated: 0 };
-
-  const ids = billings.map(b => b.id);
-  const { data: payments } = await initSupabase().from('billing_payments')
-    .select('billing_id, status')
-    .in('billing_id', ids);
-
-  const paidCountByBilling = {};
-  (payments || []).forEach(p => {
-    if (p.status === 'paid') paidCountByBilling[p.billing_id] = (paidCountByBilling[p.billing_id] || 0) + 1;
-  });
 
   let accumulated = 0;
-  const months = billings.map(b => {
-    const paidCount = paidCountByBilling[b.id] || 0;
-    const collected = paidCount * Number(b.per_person || 0);
-    const venuePaid = !!b.venue_paid_at;
-    const net = collected - (venuePaid ? Number(b.total_cost || 0) : 0);
-    if (venuePaid) accumulated += collected - Number(b.total_cost || 0);
-    return {
-      billingId: b.id,
-      month: b.month,
-      totalCost: Number(b.total_cost || 0),
-      perPerson: Number(b.per_person || 0),
-      paidCount,
-      collected,
-      venuePaid,
-      net,
-    };
-  });
+  let months = [];
 
-  return { months, accumulated };
+  if (billings && billings.length > 0) {
+    const ids = billings.map(b => b.id);
+    const { data: payments } = await initSupabase().from('billing_payments')
+      .select('billing_id, status')
+      .in('billing_id', ids);
+
+    const paidCountByBilling = {};
+    (payments || []).forEach(p => {
+      if (p.status === 'paid') paidCountByBilling[p.billing_id] = (paidCountByBilling[p.billing_id] || 0) + 1;
+    });
+
+    months = billings.map(b => {
+      const paidCount = paidCountByBilling[b.id] || 0;
+      const collected = paidCount * Number(b.per_person || 0);
+      const venuePaid = !!b.venue_paid_at;
+      const net = collected - (venuePaid ? Number(b.total_cost || 0) : 0);
+      if (venuePaid) accumulated += collected - Number(b.total_cost || 0);
+      return {
+        billingId: b.id,
+        month: b.month,
+        totalCost: Number(b.total_cost || 0),
+        perPerson: Number(b.per_person || 0),
+        paidCount,
+        collected,
+        venuePaid,
+        net,
+      };
+    });
+  }
+
+  // Despesas avulsas debitam do acumulado
+  const { data: expenses } = await initSupabase().from('rachao_expenses')
+    .select('amount').eq('rachao_id', rachaoId);
+  const totalExpenses = (expenses || []).reduce((s, e) => s + Number(e.amount || 0), 0);
+  accumulated -= totalExpenses;
+
+  return { months, accumulated, totalExpenses };
+}
+
+// ===== DESPESAS =====
+async function apiListExpenses(rachaoId) {
+  const { data, error } = await initSupabase().from('rachao_expenses')
+    .select('id, description, amount, created_by, created_at')
+    .eq('rachao_id', rachaoId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(e => ({ ...e, amount: Number(e.amount) }));
+}
+
+async function apiAddExpense(rachaoId, description, amount) {
+  const user = apiGetCurrentUser();
+  const { data, error } = await initSupabase().rpc('add_rachao_expense', {
+    p_rachao_id: rachaoId,
+    p_caller_id: user?.id || null,
+    p_description: description,
+    p_amount: Number(amount),
+  });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || 'Erro ao lançar despesa');
+  return data;
+}
+
+async function apiDeleteExpense(expenseId) {
+  const user = apiGetCurrentUser();
+  const { data, error } = await initSupabase().rpc('delete_rachao_expense', {
+    p_expense_id: expenseId,
+    p_caller_id: user?.id || null,
+  });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || 'Erro ao excluir despesa');
+  return data;
 }
 
 async function apiCreateBilling(billing) {

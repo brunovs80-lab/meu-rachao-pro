@@ -257,6 +257,9 @@ a {
   color: var(--text-primary);
 }
 
+.btn-icon-danger { color: var(--red); }
+.btn-icon-danger:hover { color: #ff6b6b; }
+
 .btn-back {
   background: none;
   border: none;

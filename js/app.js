@@ -951,12 +951,16 @@ async function removerCoAdmin() {
 
 let _currentBillingId = null;
 let _currentBillingValues = { totalCost: 0, perPerson: 0, venuePaidAt: null };
+let _currentFinanceRachaoId = null;
+let _currentFinanceCanMarkPaid = false;
 
 async function loadRachaoFinanceTab(rachao, user) {
   const isOwner = rachao.createdBy === user.id;
   const canEditValues = isOwner || await hasRachaoPermission(rachao, user, 'edit_values');
   const canMarkPaid = isOwner || await hasRachaoPermission(rachao, user, 'mark_venue_paid');
   const canManagePayments = isOwner || await hasRachaoPermission(rachao, user, 'manage_payments');
+  _currentFinanceRachaoId = rachao.id;
+  _currentFinanceCanMarkPaid = canMarkPaid;
   const defaultCost = rachao.monthlyVenueCost || 0;
   const members = rachao.participants.length;
 
@@ -1012,10 +1016,12 @@ async function loadRachaoFinanceTab(rachao, user) {
     netLabel.textContent = 'Quadra não paga';
   }
 
-  const cashFlow = await apiGetCashFlow(rachao.id).catch(() => ({ accumulated: 0 }));
+  const cashFlow = await apiGetCashFlow(rachao.id).catch(() => ({ accumulated: 0, totalExpenses: 0 }));
   const accEl = document.getElementById('finance-accumulated');
   accEl.textContent = formatCurrency(cashFlow.accumulated || 0);
   accEl.style.color = (cashFlow.accumulated || 0) >= 0 ? 'var(--green)' : 'var(--red)';
+
+  await renderExpenses(rachao.id, canMarkPaid);
 
   // Botão "marcar quadra paga" só pra admin
   const btnVenue = document.getElementById('btn-toggle-venue-paid');
@@ -1115,6 +1121,96 @@ async function toggleQuadraPaga() {
     showToast(err.message || 'Erro');
   } finally {
     setLoading(btn, false);
+  }
+}
+
+// ===== DESPESAS =====
+async function renderExpenses(rachaoId, canManage) {
+  const listEl = document.getElementById('finance-expenses-list');
+  const totalEl = document.getElementById('finance-expenses-total');
+  const btnNova = document.getElementById('btn-nova-despesa');
+  btnNova.style.display = canManage ? 'flex' : 'none';
+
+  let items = [];
+  try { items = await apiListExpenses(rachaoId); } catch (err) { console.error('[despesas] list', err); }
+  const total = items.reduce((s, e) => s + Number(e.amount || 0), 0);
+  totalEl.textContent = '−' + formatCurrency(total);
+  totalEl.style.color = total > 0 ? 'var(--red)' : 'var(--text-muted)';
+
+  if (!items.length) {
+    listEl.innerHTML = '<p class="text-muted" style="text-align:center;padding:12px;font-size:13px">Nenhuma despesa lançada</p>';
+    return;
+  }
+
+  // mapeia nomes dos criadores
+  const ids = [...new Set(items.map(e => e.created_by).filter(Boolean))];
+  const names = {};
+  await Promise.all(ids.map(async id => {
+    const p = await apiGetPlayerById(id).catch(() => null);
+    if (p) names[id] = p.name;
+  }));
+
+  listEl.innerHTML = items.map(e => {
+    const dt = new Date(e.created_at).toLocaleDateString('pt-BR');
+    const who = e.created_by ? (names[e.created_by] || '—') : '—';
+    const del = canManage ? `<button class="btn-icon btn-icon-danger" onclick="excluirDespesa('${e.id}')" title="Excluir"><i class="fas fa-trash"></i></button>` : '';
+    return `<div class="player-item">
+      <div class="player-info">
+        <div class="player-name">${escapeHtml(e.description)}</div>
+        <div class="player-detail">${escapeHtml(who)} · ${dt}</div>
+      </div>
+      <span style="color:var(--red);font-weight:700">−${formatCurrency(e.amount)}</span>
+      ${del}
+    </div>`;
+  }).join('');
+}
+
+function abrirNovaDespesa() {
+  document.getElementById('despesa-description').value = '';
+  document.getElementById('despesa-amount').value = '';
+  document.getElementById('modal-nova-despesa').style.display = 'flex';
+  setTimeout(() => document.getElementById('despesa-description')?.focus(), 50);
+}
+
+function fecharNovaDespesa() {
+  document.getElementById('modal-nova-despesa').style.display = 'none';
+}
+
+async function salvarDespesa() {
+  if (!_currentFinanceRachaoId) return;
+  const description = (document.getElementById('despesa-description').value || '').trim();
+  const amount = parseFloat(document.getElementById('despesa-amount').value);
+  if (!description) { showToast('Descreva a despesa'); return; }
+  if (isNaN(amount) || amount <= 0) { showToast('Valor inválido'); return; }
+
+  const btn = document.getElementById('btn-save-despesa');
+  try {
+    setLoading(btn, true);
+    await apiAddExpense(_currentFinanceRachaoId, description, amount);
+    showToast('Despesa lançada');
+    fecharNovaDespesa();
+    await loadRachaoDetail();
+  } catch (err) {
+    const map = {
+      SEM_PERMISSAO: 'Você não tem permissão',
+      DESCRICAO_OBRIGATORIA: 'Descrição obrigatória',
+      VALOR_INVALIDO: 'Valor inválido',
+    };
+    showToast(map[err.message] || err.message || 'Erro ao lançar');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function excluirDespesa(expenseId) {
+  if (!confirm('Excluir esta despesa? O valor volta pro caixa.')) return;
+  try {
+    await apiDeleteExpense(expenseId);
+    showToast('Despesa excluída');
+    await loadRachaoDetail();
+  } catch (err) {
+    const map = { SEM_PERMISSAO: 'Você não tem permissão' };
+    showToast(map[err.message] || err.message || 'Erro ao excluir');
   }
 }
 
