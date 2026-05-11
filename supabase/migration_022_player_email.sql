@@ -9,6 +9,9 @@
 
 ALTER TABLE players ADD COLUMN IF NOT EXISTS email TEXT;
 
+-- Drop versão antiga (4 args) pra evitar overload ambíguo com a nova
+DROP FUNCTION IF EXISTS register_user(TEXT, TEXT, TEXT, TEXT);
+
 -- ============================================================
 -- RPCs: register_user agora aceita email, login_with_password
 -- e check_phone retornam o email.
