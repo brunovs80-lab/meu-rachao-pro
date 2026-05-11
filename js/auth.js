@@ -139,6 +139,8 @@ async function loadProfile() {
   document.getElementById('profile-name').textContent = fresh.name;
   document.getElementById('profile-phone').textContent = formatPhone(fresh.phone);
   document.getElementById('profile-email').textContent = fresh.email || 'Adicionar email';
+  const menuEmail = document.getElementById('profile-menu-email');
+  if (menuEmail) menuEmail.textContent = fresh.email ? '· ' + fresh.email : '· adicionar';
   document.getElementById('profile-position').textContent = fresh.position;
   document.getElementById('profile-matches').textContent = fresh.matches || 0;
   document.getElementById('profile-goals').textContent = fresh.goals || 0;
@@ -186,9 +188,22 @@ function logout() {
 function abrirEditarEmail() {
   const user = apiGetCurrentUser();
   if (!user) return;
-  document.getElementById('editar-email-input').value = user.email || '';
-  document.getElementById('modal-editar-email').style.display = 'flex';
-  setTimeout(() => document.getElementById('editar-email-input')?.focus(), 50);
+  const modal = document.getElementById('modal-editar-email');
+  const input = document.getElementById('editar-email-input');
+  if (modal && input) {
+    input.value = user.email || '';
+    modal.style.display = 'flex';
+    setTimeout(() => input.focus(), 50);
+    return;
+  }
+  // Fallback: se o modal não estiver no HTML cacheado, usa prompt nativo
+  const novo = window.prompt('Email da sua conta Mercado Pago:', user.email || '');
+  if (novo === null) return;
+  const limpo = (novo || '').trim().toLowerCase();
+  if (limpo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpo)) { showToast('Email inválido'); return; }
+  apiUpdatePlayerEmail(user.id, limpo || null)
+    .then(r => { apiSetCurrentUser({ ...user, email: r.email }); showToast('Email salvo'); loadProfile(); })
+    .catch(err => showToast(err.message || 'Erro ao salvar'));
 }
 
 function fecharEditarEmail() {
