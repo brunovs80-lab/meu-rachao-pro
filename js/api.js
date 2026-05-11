@@ -23,7 +23,7 @@ async function apiGetPlayers() {
 }
 
 async function apiGetPlayerById(id) {
-  const { data, error } = await initSupabase().from('players').select('id, name, phone, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, blocked, is_admin, created_at').eq('id', id).single();
+  const { data, error } = await initSupabase().from('players').select('id, name, phone, email, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, blocked, is_admin, created_at').eq('id', id).single();
   if (error) throw error;
   return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
 }
@@ -77,12 +77,24 @@ async function apiLoginWithPassword(phone, password) {
   return data.user;
 }
 
-async function apiRegisterUser(phone, password, name, position) {
+async function apiRegisterUser(phone, password, name, position, email) {
   const cleanPhone = phone.replace(/\D/g, '');
-  const { data, error } = await initSupabase().rpc('register_user', { p_phone: cleanPhone, p_password: password, p_name: name, p_position: position || 'Meia' });
+  const { data, error } = await initSupabase().rpc('register_user', {
+    p_phone: cleanPhone, p_password: password, p_name: name,
+    p_position: position || 'Meia', p_email: email || null,
+  });
   if (error) throw new Error('Erro ao cadastrar');
   if (!data.success) throw new Error(data.error || 'Erro ao cadastrar');
   return data.user;
+}
+
+async function apiUpdatePlayerEmail(userId, email) {
+  const { data, error } = await initSupabase().rpc('update_player_email', {
+    p_user_id: userId, p_email: email,
+  });
+  if (error) throw new Error('Erro ao atualizar email');
+  if (!data.success) throw new Error(data.error || 'Erro ao atualizar email');
+  return data;
 }
 
 async function apiDeleteAccount(userId, password) {

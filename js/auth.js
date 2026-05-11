@@ -104,7 +104,9 @@ async function handlePasswordLogin() {
 document.getElementById('btn-register').addEventListener('click', async () => {
   const name = document.getElementById('register-name').value.trim().substring(0, 50);
   const position = document.getElementById('register-position').value;
+  const email = (document.getElementById('register-email').value || '').trim().toLowerCase();
   if (!name) { showToast('Digite seu nome'); return; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Digite um email válido'); return; }
   const password = getPasswordFromInputs(document.getElementById('page-register'));
   if (password.length < 6) { showToast('Crie uma senha de 6 dígitos'); return; }
   if (!/^\d{6}$/.test(password)) { showToast('Senha deve ter apenas números'); return; }
@@ -113,7 +115,7 @@ document.getElementById('btn-register').addEventListener('click', async () => {
 
   try {
     setLoading(btn, true);
-    const newUser = await apiRegisterUser(phone, password, name, position || 'Meia');
+    const newUser = await apiRegisterUser(phone, password, name, position || 'Meia', email);
     apiSetCurrentUser(newUser);
     ProManager.syncFromServer(newUser.id).catch(() => {});
     if (window.Billing) Billing.init(newUser.id).catch(err => console.warn('[Billing] init falhou:', err));
@@ -136,11 +138,15 @@ async function loadProfile() {
   const fresh = await apiGetPlayerById(user.id).catch(() => user);
   document.getElementById('profile-name').textContent = fresh.name;
   document.getElementById('profile-phone').textContent = formatPhone(fresh.phone);
+  document.getElementById('profile-email').textContent = fresh.email || 'Adicionar email';
   document.getElementById('profile-position').textContent = fresh.position;
   document.getElementById('profile-matches').textContent = fresh.matches || 0;
   document.getElementById('profile-goals').textContent = fresh.goals || 0;
   document.getElementById('profile-assists').textContent = fresh.assists || 0;
   document.getElementById('profile-desarmes').textContent = fresh.tackles || 0;
+
+  // Sincroniza email no cache local (caso usuário antigo tenha cadastrado depois)
+  if (fresh.email !== user.email) apiSetCurrentUser({ ...user, email: fresh.email || null });
 
   // Atualiza estado Pro (badge no menu + esconder CTA de upgrade)
   await ProManager.syncFromServer(user.id);
@@ -158,6 +164,8 @@ function clearAuthForms() {
   if (phone) phone.value = '';
   const name = document.getElementById('register-name');
   if (name) name.value = '';
+  const emailEl = document.getElementById('register-email');
+  if (emailEl) emailEl.value = '';
   const pos = document.getElementById('register-position');
   if (pos) pos.value = '';
   document.querySelectorAll('#page-password .code-digit, #page-register .code-digit')
@@ -172,6 +180,39 @@ function logout() {
   clearAuthForms();
   navigateTo('login');
   showToast('Até a próxima!');
+}
+
+// ===== EDITAR EMAIL DO PERFIL =====
+function abrirEditarEmail() {
+  const user = apiGetCurrentUser();
+  if (!user) return;
+  document.getElementById('editar-email-input').value = user.email || '';
+  document.getElementById('modal-editar-email').style.display = 'flex';
+  setTimeout(() => document.getElementById('editar-email-input')?.focus(), 50);
+}
+
+function fecharEditarEmail() {
+  document.getElementById('modal-editar-email').style.display = 'none';
+}
+
+async function salvarEmailPerfil() {
+  const user = apiGetCurrentUser();
+  if (!user) return;
+  const raw = (document.getElementById('editar-email-input').value || '').trim().toLowerCase();
+  if (raw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) { showToast('Email inválido'); return; }
+  const btn = document.getElementById('btn-salvar-email');
+  try {
+    setLoading(btn, true);
+    const result = await apiUpdatePlayerEmail(user.id, raw || null);
+    apiSetCurrentUser({ ...user, email: result.email });
+    fecharEditarEmail();
+    showToast('Email salvo');
+    await loadProfile();
+  } catch (err) {
+    showToast(err.message || 'Erro ao salvar');
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 // ===== ESQUECI MINHA SENHA =====

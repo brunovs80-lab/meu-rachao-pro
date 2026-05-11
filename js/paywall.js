@@ -190,8 +190,8 @@ async function paywallSelectPlan(plan) {
       if (!user) { showToast('Faça login para assinar'); return; }
 
       // MP exige que o email do payer bata com o email da conta MP do usuário.
-      // Pede o email (cache em localStorage pra próxima compra).
-      const payerEmail = await askMpEmail();
+      // Se o usuário cadastrou email, usa direto; senão pede via modal (cache localStorage).
+      const payerEmail = user.email || await askMpEmail();
       if (!payerEmail) return; // usuário cancelou
 
       const result = await apiCreateMpCheckout(plan, user.id, payerEmail);

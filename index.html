@@ -97,6 +97,7 @@
       <div class="avatar-placeholder"><i class="fas fa-user"></i></div>
       <h3>Como podemos te chamar?</h3>
       <input type="text" id="register-name" class="input-field" placeholder="Seu nome ou apelido">
+      <input type="email" id="register-email" class="input-field" placeholder="Email (necessário pra assinar o Pro)" autocomplete="email">
       <select id="register-position" class="input-field">
         <option value="">Posição preferida</option>
         <option value="Goleiro">Goleiro</option>
@@ -945,6 +946,11 @@
       <div class="profile-avatar"><i class="fas fa-user"></i></div>
       <h2 id="profile-name"></h2>
       <p class="text-muted" id="profile-phone"></p>
+      <p class="text-muted" style="cursor:pointer" onclick="abrirEditarEmail()" id="profile-email-line">
+        <i class="fas fa-envelope" style="margin-right:4px;font-size:12px"></i>
+        <span id="profile-email"></span>
+        <i class="fas fa-pen" style="margin-left:6px;font-size:11px;opacity:0.6"></i>
+      </p>
       <p class="badge" id="profile-position"></p>
       <div class="profile-stats">
         <div class="pstat"><span class="pstat-value" id="profile-matches">0</span><span class="pstat-label">Rachões</span></div>
@@ -1418,6 +1424,24 @@
       <input type="number" step="0.01" min="0" class="input-field" id="edit-per-person" placeholder="20.00">
 
       <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-save-values" onclick="salvarValores()">
+        <i class="fas fa-save"></i> SALVAR
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL EDITAR EMAIL DO PERFIL ========== -->
+  <div id="modal-editar-email" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharEditarEmail()">&times;</button>
+      <h3><i class="fas fa-envelope"></i> Email</h3>
+      <p class="text-muted" style="font-size:12px;margin:8px 0 16px">
+        Usado pra checkout Mercado Pago no PWA. Use o mesmo email da sua conta MP.
+      </p>
+
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Email</label>
+      <input type="email" class="input-field" id="editar-email-input" placeholder="voce@email.com" autocomplete="email">
+
+      <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-salvar-email" onclick="salvarEmailPerfil()">
         <i class="fas fa-save"></i> SALVAR
       </button>
     </div>
