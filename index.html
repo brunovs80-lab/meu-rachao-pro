@@ -966,10 +966,35 @@
         </div>
         <i class="fas fa-chevron-right"></i>
       </button>
-      <div class="profile-menu">
-        <div class="profile-menu-item" data-pro-badge style="display:none;cursor:default">
-          <i class="fas fa-crown" style="color:var(--orange)"></i><span>Você é Pro <span id="profile-pro-status" class="text-muted" style="font-size:12px;font-weight:400"></span></span>
+
+      <!-- Card de assinatura ativa (mostra quando Pro) -->
+      <div id="profile-subscription-card" class="profile-subscription-card" data-pro-badge style="display:none">
+        <div class="profile-subscription-header">
+          <i class="fas fa-crown"></i>
+          <div>
+            <strong>Você é Pro</strong>
+            <span id="sub-card-plan" class="text-muted">Plano</span>
+          </div>
         </div>
+        <div class="profile-subscription-body">
+          <div class="profile-subscription-row">
+            <span class="text-muted">Status</span>
+            <strong id="sub-card-status">—</strong>
+          </div>
+          <div class="profile-subscription-row" id="sub-card-expires-row">
+            <span class="text-muted">Expira em</span>
+            <strong id="sub-card-expires">—</strong>
+          </div>
+          <div class="profile-subscription-row">
+            <span class="text-muted">Origem</span>
+            <strong id="sub-card-source">—</strong>
+          </div>
+        </div>
+        <button class="btn-primary" id="sub-card-renew-btn" style="width:100%;margin-top:12px;display:none" onclick="navigateTo('paywall')">
+          <i class="fas fa-arrow-rotate-right"></i> RENOVAR AGORA
+        </button>
+      </div>
+      <div class="profile-menu">
         <button class="profile-menu-item" onclick="abrirEditarEmail()"><i class="fas fa-envelope"></i><span>Email <span id="profile-menu-email" class="text-muted" style="font-size:12px;font-weight:400"></span></span><i class="fas fa-chevron-right"></i></button>
         <button class="profile-menu-item" onclick="navigateTo('settings')"><i class="fas fa-gear"></i><span>Configurações</span><i class="fas fa-chevron-right"></i></button>
         <button class="profile-menu-item" onclick="navigateTo('admin')"><i class="fas fa-shield"></i><span>Painel Admin</span><i class="fas fa-chevron-right"></i></button>

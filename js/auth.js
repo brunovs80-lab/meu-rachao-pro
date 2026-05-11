@@ -150,14 +150,36 @@ async function loadProfile() {
   // Sincroniza email no cache local (caso usuário antigo tenha cadastrado depois)
   if (fresh.email !== user.email) apiSetCurrentUser({ ...user, email: fresh.email || null });
 
-  // Atualiza estado Pro (badge no menu + esconder CTA de upgrade)
+  // Atualiza estado Pro (card de assinatura + esconder CTA de upgrade)
   await ProManager.syncFromServer(user.id);
   const status = ProManager.getStatus();
-  const proInfoEl = document.getElementById('profile-pro-status');
-  if (proInfoEl) {
-    if (status.is_lifetime) proInfoEl.textContent = '· Vitalício';
-    else if (status.expires_at) proInfoEl.textContent = '· até ' + new Date(status.expires_at).toLocaleDateString('pt-BR');
-    else proInfoEl.textContent = '';
+  renderSubscriptionCard(status);
+}
+
+function renderSubscriptionCard(status) {
+  if (!status?.is_pro) return; // card fica hidden (display:none via data-pro-badge)
+
+  const planLabels = { monthly: '· 30 dias', yearly: '· 1 ano', lifetime: '· Vitalício', trial: '· Trial' };
+  const sourceLabels = { mp_web: 'Mercado Pago', coupon: 'Cupom', iap: 'App Store/Play', admin: 'Concedido pelo admin' };
+
+  document.getElementById('sub-card-plan').textContent = planLabels[status.plan_type] || '';
+  document.getElementById('sub-card-status').textContent = 'Ativo';
+  document.getElementById('sub-card-source').textContent = sourceLabels[status.source] || status.source || '—';
+
+  const expRow = document.getElementById('sub-card-expires-row');
+  const renewBtn = document.getElementById('sub-card-renew-btn');
+
+  if (status.is_lifetime) {
+    expRow.style.display = 'none';
+    renewBtn.style.display = 'none';
+  } else if (status.expires_at) {
+    expRow.style.display = '';
+    const exp = new Date(status.expires_at);
+    const daysLeft = Math.ceil((exp.getTime() - Date.now()) / (24 * 3600 * 1000));
+    const dateStr = exp.toLocaleDateString('pt-BR');
+    const suffix = daysLeft > 0 ? ` (em ${daysLeft} dia${daysLeft === 1 ? '' : 's'})` : '';
+    document.getElementById('sub-card-expires').textContent = dateStr + suffix;
+    renewBtn.style.display = '';
   }
 }
 
