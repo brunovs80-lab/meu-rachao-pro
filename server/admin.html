@@ -536,7 +536,11 @@ function confirmResetPassword(id, name) {
     <h2>Resetar senha</h2>
     <p style="margin-bottom:10px">Defina uma nova senha de 6 dígitos pra <strong>${escapeHtml(name)}</strong>.</p>
     <p class="text-muted" style="font-size:12px; margin-bottom:14px">Anote a senha e passe pro usuário — depois ele pode trocar pelo app.</p>
-    <input id="reset-new-password" class="input text-mono" type="text" inputmode="numeric" maxlength="6" placeholder="123456" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,6)">
+    <input id="reset-new-password" class="input text-mono" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456"
+           onkeypress="if(/\\D/.test(event.key))event.preventDefault()"
+           onbeforeinput="if(event.data &amp;&amp; /\\D/.test(event.data))event.preventDefault()"
+           onpaste="event.preventDefault();const t=(event.clipboardData||window.clipboardData).getData('text').replace(/\\D/g,'').slice(0,6);this.value=t"
+           oninput="this.value=this.value.replace(/\\D/g,'').slice(0,6)">
     <div class="footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="resetUserPassword('${id}')">Resetar</button>
