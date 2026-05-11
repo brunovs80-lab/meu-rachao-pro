@@ -222,16 +222,11 @@ function generateRachaoCode() {
 }
 
 function initRachaoForm() {
-  const playersInput = document.getElementById('rachao-players');
-  if (playersInput) playersInput.addEventListener('change', updateTotalPerTeam);
   const btn = document.getElementById('btn-create-rachao');
   if (btn) btn.addEventListener('click', createRachao);
 }
 
-function updateTotalPerTeam() {
-  const n = parseInt(document.getElementById('rachao-players').value) || 5;
-  document.getElementById('total-per-team').textContent = n + 1;
-}
+function updateTotalPerTeam() { /* no-op: hint de +1 goleiro removida */ }
 
 // ===== GEOLOCALIZAÇÃO =====
 async function getCurrentCoords() {
@@ -605,7 +600,6 @@ async function loadRachaoGameTab(rachao, user) {
 }
 
 async function loadSessionPresence(session, rachao, user) {
-  const teamSize = rachao.playersPerTeam + 1;
   const maxDisplay = rachao.participants.length;
   document.getElementById('confirmed-count').textContent = session.confirmed.length;
   document.getElementById('max-players').textContent = maxDisplay;
@@ -1587,19 +1581,53 @@ function _getDrawCount() { return parseInt(localStorage.getItem(_drawCountKey())
 function _incDrawCount() { localStorage.setItem(_drawCountKey(), String(_getDrawCount() + 1)); }
 
 async function drawTeams() {
-  const btn = document.getElementById('btn-draw-teams');
   // Gate Pro: usuário Free pode sortear apenas 1 vez (lifetime, por conta)
   if (!ProManager.isPro() && _getDrawCount() >= 1) {
     ProManager.requirePro('sortear-times');
     return;
   }
+  // Abre modal pra escolher quantos por time (pre-fill = config do rachão)
+  const rachaoForModal = await apiGetRachaoById(currentRachaoId);
+  if (!rachaoForModal) return;
+  const sessionForModal = await apiGetSessionById(currentSessionId);
+  if (!sessionForModal) return;
+  if (sessionForModal.confirmed.length < 4) {
+    showToast('Precisa de pelo menos 4 jogadores');
+    return;
+  }
+  _pendingDrawConfirmed = sessionForModal.confirmed.length;
+  document.getElementById('draw-team-size-input').value = rachaoForModal.playersPerTeam || 6;
+  document.getElementById('draw-team-size-confirmed').textContent = sessionForModal.confirmed.length;
+  document.getElementById('modal-draw-team-size').style.display = 'flex';
+}
+
+let _pendingDrawConfirmed = 0;
+
+function fecharModalDrawTeamSize() {
+  document.getElementById('modal-draw-team-size').style.display = 'none';
+}
+
+async function confirmarSorteioTimes() {
+  const sizeInput = parseInt(document.getElementById('draw-team-size-input').value, 10);
+  if (!sizeInput || sizeInput < 2 || sizeInput > 15) { showToast('Tamanho inválido (2-15)'); return; }
+  fecharModalDrawTeamSize();
+  await _executarSorteioTimes(sizeInput);
+}
+
+async function _executarSorteioTimes(teamSize) {
+  const btn = document.getElementById('btn-draw-teams');
   try {
   setLoading(btn, true);
   const session = await apiGetSessionById(currentSessionId);
   const rachao = await apiGetRachaoById(currentRachaoId);
   if (!session || !rachao) return;
 
-  const teamSize = rachao.playersPerTeam + 1; // jogadores de linha + 1 goleiro
+  // Persiste o tamanho escolhido no rachão pra próximas sessões e pra rotação usar
+  if (teamSize !== rachao.playersPerTeam) {
+    await apiUpdateRachao(rachao.id, { playersPerTeam: teamSize });
+    rachao.playersPerTeam = teamSize;
+  }
+
   if (session.confirmed.length < 4) {
     showToast('Precisa de pelo menos 4 jogadores');
     return;

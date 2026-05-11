@@ -89,7 +89,7 @@ async function finishRound() {
   // Usar nome digitado pelo usuário no campo, se disponível
   const customName = document.getElementById('rot-next-team-name')?.value?.trim();
   if (customName) nextTeamData.name = customName;
-  const fullTeamSize = state.playersPerTeam + 1;
+  const fullTeamSize = state.playersPerTeam;
 
   if (loser === 'both') {
     const losingPlayers = [];

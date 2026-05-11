@@ -240,13 +240,13 @@
         <input type="hidden" id="rachao-lng">
       </div>
       <div class="form-group">
-        <label>Jogadores de linha por time</label>
+        <label>Jogadores por time</label>
         <div class="number-input">
           <button onclick="adjustNumber('rachao-players', -1)">-</button>
-          <input type="number" id="rachao-players" value="5" min="3" max="11" class="input-field">
+          <input type="number" id="rachao-players" value="6" min="3" max="15" class="input-field">
           <button onclick="adjustNumber('rachao-players', 1)">+</button>
         </div>
-        <p class="text-muted hint">+ 1 goleiro dedicado por time = <strong id="total-per-team">6</strong> por time</p>
+        <p class="text-muted hint">Total por time, incluindo goleiro. Pode mudar na hora do sorteio.</p>
       </div>
       <div class="form-group">
         <label>Regra de Empate (Rotação)</label>
@@ -1451,6 +1451,29 @@
 
       <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-save-values" onclick="salvarValores()">
         <i class="fas fa-save"></i> SALVAR
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL TEAM SIZE NO SORTEIO ========== -->
+  <div id="modal-draw-team-size" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharModalDrawTeamSize()">&times;</button>
+      <h3><i class="fas fa-shuffle"></i> Sortear times</h3>
+      <p class="text-muted" style="font-size:13px;margin:8px 0 16px">
+        <span id="draw-team-size-confirmed">0</span> jogadores confirmados. Quantos por time?
+      </p>
+
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Jogadores por time</label>
+      <div class="number-input">
+        <button onclick="adjustNumber('draw-team-size-input', -1)">-</button>
+        <input type="number" id="draw-team-size-input" value="6" min="2" max="15" class="input-field">
+        <button onclick="adjustNumber('draw-team-size-input', 1)">+</button>
+      </div>
+      <p class="text-muted hint" style="margin-top:8px">Total incluindo goleiro. Vale pra esta sessão e fica como padrão do rachão.</p>
+
+      <button class="btn-primary btn-large" style="width:100%;margin-top:16px" onclick="confirmarSorteioTimes()">
+        <i class="fas fa-shuffle"></i> SORTEAR
       </button>
     </div>
   </div>
