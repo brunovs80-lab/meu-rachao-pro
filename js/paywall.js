@@ -1,4 +1,36 @@
 // ========== PAYWALL + ADMIN CUPONS ==========
+
+// ===== EMAIL DO COMPRADOR PRO MP =====
+const MP_EMAIL_STORAGE_KEY = 'rachao_mpEmail';
+let _mpEmailResolver = null;
+
+function askMpEmail() {
+  return new Promise(resolve => {
+    _mpEmailResolver = resolve;
+    const cached = localStorage.getItem(MP_EMAIL_STORAGE_KEY) || '';
+    const input = document.getElementById('mp-email-input');
+    input.value = cached;
+    document.getElementById('modal-mp-email').style.display = 'flex';
+    setTimeout(() => input.focus(), 50);
+  });
+}
+
+function fecharModalMpEmail() {
+  document.getElementById('modal-mp-email').style.display = 'none';
+  if (_mpEmailResolver) { _mpEmailResolver(null); _mpEmailResolver = null; }
+}
+
+function confirmarMpEmail() {
+  const email = (document.getElementById('mp-email-input').value || '').trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Digite um email válido');
+    return;
+  }
+  localStorage.setItem(MP_EMAIL_STORAGE_KEY, email);
+  document.getElementById('modal-mp-email').style.display = 'none';
+  if (_mpEmailResolver) { _mpEmailResolver(email); _mpEmailResolver = null; }
+}
+
 // Tela de assinatura Pro e administração de cupons promocionais.
 // IAP nativo (RevenueCat) será adicionado em fase posterior — por ora os botões
 // de plano mostram um placeholder explicando que a compra será habilitada na build mobile.
@@ -156,8 +188,11 @@ async function paywallSelectPlan(plan) {
       // ===== Caminho PWA/web: Mercado Pago =====
       const user = (typeof apiGetCurrentUser === 'function') ? apiGetCurrentUser() : null;
       if (!user) { showToast('Faça login para assinar'); return; }
-      const email = (user.email || user.phone || user.id) + '@meurachao.app';
-      const payerEmail = user.email || email;
+
+      // MP exige que o email do payer bata com o email da conta MP do usuário.
+      // Pede o email (cache em localStorage pra próxima compra).
+      const payerEmail = await askMpEmail();
+      if (!payerEmail) return; // usuário cancelou
 
       const result = await apiCreateMpCheckout(plan, user.id, payerEmail);
       if (!result?.init_point) {
