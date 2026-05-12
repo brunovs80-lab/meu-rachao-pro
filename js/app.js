@@ -589,7 +589,7 @@ async function loadRachaoGameTab(rachao, user) {
     historyList.innerHTML = doneSessions.slice(0, 10).map(s => {
       return `<div class="player-item" style="cursor:default">
         <div class="player-avatar" style="background:var(--text-muted);font-size:11px">${formatDateBR(s.date).substring(0,5)}</div>
-        <div class="player-info"><div class="player-name">${formatDateBR(s.date)}</div><div class="player-detail">${s.confirmed.length} jogadores • ${s.teams ? s.teams.filter(t => !t.isGoalkeepersList).length + ' times' : 'Sem sorteio'}</div></div>
+        <div class="player-info"><div class="player-name">${formatDateBR(s.date)}</div><div class="player-detail">${s.confirmed.length} jogadores • ${s.teams ? s.teams.length + ' times' : 'Sem sorteio'}</div></div>
         <span class="match-status status-done">Encerrado</span>
       </div>`;
     }).join('');
@@ -1691,37 +1691,23 @@ async function _executarSorteioTimes(teamSize) {
   const playerPromises = session.confirmed.map(id => apiGetPlayerById(id).catch(() => null));
   const players = (await Promise.all(playerPromises)).filter(Boolean);
 
-  // Goleiros ficam FORA do sorteio — lista separada
-  const goalkeepers = players.filter(p => p.position === 'Goleiro');
-  const field = players.filter(p => p.position !== 'Goleiro');
-
-  if (field.length < 4) {
-    showToast('Precisa de pelo menos 4 jogadores de linha (goleiros não entram no sorteio)');
-    return;
-  }
-
-  // Fisher-Yates shuffle só nos jogadores de linha
-  const shuffled = [...field];
+  // Fisher-Yates shuffle em TODOS os confirmados (goleiros são jogadores normais no sorteio)
+  const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
 
-  // Cada time completo tem exatamente teamSize jogadores de linha
+  // Cada time completo tem exatamente teamSize jogadores; sobra vira um time menor
   const numFullTeams = Math.floor(shuffled.length / teamSize);
   const leftoverCount = shuffled.length - (numFullTeams * teamSize);
   const totalTeams = numFullTeams + (leftoverCount > 0 ? 1 : 0);
   const teams = [];
 
-  let fieldIdx = 0;
+  let idx = 0;
   for (let t = 0; t < totalTeams; t++) {
     const isFullTeam = t < numFullTeams;
     const maxPlayers = isFullTeam ? teamSize : leftoverCount;
-    const teamPlayers = shuffled.slice(fieldIdx, fieldIdx + maxPlayers);
-    fieldIdx += maxPlayers;
+    const teamPlayers = shuffled.slice(idx, idx + maxPlayers);
+    idx += maxPlayers;
     teams.push({ goalkeeper: null, players: teamPlayers, name: getTeamName(t) });
-  }
-
-  // Marcador: lista de goleiros fora do sorteio (renderizada à parte, ignorada pela rotação)
-  if (goalkeepers.length > 0) {
-    teams.push({ isGoalkeepersList: true, name: 'Goleiros', players: goalkeepers, goalkeeper: null });
   }
 
   const numTeams = totalTeams;
@@ -1750,20 +1736,17 @@ function getTeamClass(idx) { return ['team-a','team-b','team-c','team-d'][idx % 
 function renderAllTeams(teams) {
   const container = document.getElementById('teams-container');
   const realTeams = teams.filter(t => !t.isGoalkeepersList);
-  const gkList = teams.find(t => t.isGoalkeepersList);
   const maxSize = Math.max(...realTeams.map(t => t.players.length));
-  let html = realTeams.map((t, i) => {
+  container.innerHTML = realTeams.map((t, i) => {
     const size = t.players.length;
     const isIncomplete = size < maxSize;
-    const inner = t.players.map(p => `<div class="team-player"><span class="jersey">👕</span> ${escapeHtml(p.name)}</div>`).join('');
-    const note = isIncomplete ? `<p class="text-muted" style="font-size:11px;margin-top:8px">Completa com perdedores (faltam ${maxSize - size})</p>` : '';
+    const inner = t.players.map(p => {
+      const icon = p.position === 'Goleiro' ? '🧤' : '👕';
+      return `<div class="team-player"><span class="jersey">${icon}</span> ${escapeHtml(p.name)}</div>`;
+    }).join('');
+    const note = isIncomplete ? `<p class="text-muted" style="font-size:11px;margin-top:8px">Time incompleto (${maxSize - size} a menos)</p>` : '';
     return `<div class="team-card ${getTeamClass(i)}"><h3><i class="fas fa-shirt"></i> ${t.name} <span style="font-size:12px;font-weight:400;color:var(--text-muted)">(${size})</span></h3>${inner}${note}</div>`;
   }).join('');
-  if (gkList && gkList.players.length > 0) {
-    const gkInner = gkList.players.map(p => `<div class="team-player"><span class="jersey">🧤</span> ${escapeHtml(p.name)}</div>`).join('');
-    html += `<div class="team-card" style="grid-column:1/-1;border-color:var(--orange)"><h3><i class="fas fa-hands"></i> Goleiros <span style="font-size:12px;font-weight:400;color:var(--text-muted)">(${gkList.players.length})</span></h3>${gkInner}<p class="text-muted" style="font-size:11px;margin-top:8px">Goleiros não entram no sorteio dos times</p></div>`;
-  }
-  container.innerHTML = html;
 }
 
 function showMatchMenu() { document.getElementById('modal-match-menu').style.display = 'flex'; }

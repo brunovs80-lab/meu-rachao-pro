@@ -19,8 +19,7 @@ async function loadRotation() {
 async function startRotation() {
   const session = await apiGetSessionById(currentSessionId);
   const rachao = await apiGetRachaoById(currentRachaoId);
-  const realTeams = (session?.teams || []).filter(t => !t.isGoalkeepersList);
-  if (!session || !rachao || realTeams.length < 2) {
+  if (!session || !rachao || !session.teams || session.teams.length < 2) {
     showToast('Sorteie os times primeiro');
     return;
   }
@@ -29,13 +28,13 @@ async function startRotation() {
     active: true, sessionId: session.id, rachaoId: rachao.id,
     matchName: rachao.name, tieRule: rachao.tieRule || 'playing_leaves',
     playersPerTeam: rachao.playersPerTeam, round: 1, scoreA: 0, scoreB: 0,
-    teamA: { name: realTeams[0].name, goalkeeper: realTeams[0].goalkeeper, players: realTeams[0].players },
-    teamB: { name: realTeams[1].name, goalkeeper: realTeams[1].goalkeeper, players: realTeams[1].players },
+    teamA: { name: session.teams[0].name, goalkeeper: session.teams[0].goalkeeper, players: session.teams[0].players },
+    teamB: { name: session.teams[1].name, goalkeeper: session.teams[1].goalkeeper, players: session.teams[1].players },
     queue: [], rounds: []
   };
 
-  for (let i = 2; i < realTeams.length; i++) {
-    const t = realTeams[i];
+  for (let i = 2; i < session.teams.length; i++) {
+    const t = session.teams[i];
     const teamPlayers = [];
     if (t.goalkeeper) teamPlayers.push(t.goalkeeper);
     teamPlayers.push(...t.players);
