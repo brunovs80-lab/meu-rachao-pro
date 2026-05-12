@@ -17,14 +17,13 @@
 /app/assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# JS/CSS sem hash no nome: cache curto com revalidação (CDN/browser checam Etag)
+# immutable estava cacheando 1 ano e quebrando deploys de mudanças nesses arquivos
 /app/css/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=300, must-revalidate
 
 /app/js/*
-  Cache-Control: public, max-age=31536000, immutable
-
-/app/js/*.bundle.js
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=300, must-revalidate
 
 # Manifest do app: cache curto (raramente muda mas precisa propagar rápido)
 /app/manifest.json
