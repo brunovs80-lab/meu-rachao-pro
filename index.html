@@ -420,6 +420,9 @@
             <button class="btn-orange btn-large" id="btn-draw-teams" onclick="drawTeams()">
               <i class="fas fa-shuffle"></i> SORTEAR TIMES
             </button>
+            <button class="btn-outline" id="btn-draw-manual" onclick="abrirSorteioManual()" style="width:100%;margin-top:8px">
+              <i class="fas fa-keyboard"></i> SORTEIO MANUAL
+            </button>
           </div>
 
           <div id="teams-result" style="display:none">
@@ -1470,11 +1473,41 @@
         <input type="number" id="draw-team-size-input" value="6" min="2" max="15" class="input-field">
         <button onclick="adjustNumber('draw-team-size-input', 1)">+</button>
       </div>
-      <p class="text-muted hint" style="margin-top:8px">Total incluindo goleiro. Vale pra esta sessão e fica como padrão do rachão.</p>
+      <p class="text-muted hint" style="margin-top:8px">Apenas jogadores de linha. Goleiros ficam separados, fora do sorteio. Vale pra esta sessão e fica como padrão do rachão.</p>
 
       <button class="btn-primary btn-large" style="width:100%;margin-top:16px" onclick="confirmarSorteioTimes()">
         <i class="fas fa-shuffle"></i> SORTEAR
       </button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL SORTEIO MANUAL ========== -->
+  <div id="modal-manual-draw" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="fecharModalManual()">&times;</button>
+      <h3><i class="fas fa-keyboard"></i> Sorteio manual</h3>
+      <p class="text-muted" style="font-size:13px;margin:8px 0 16px">
+        Digite um nome por linha. Sorteia em times sem salvar no rachão.
+      </p>
+
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nomes dos jogadores</label>
+      <textarea id="manual-draw-names" class="input-field" rows="8" placeholder="João&#10;Pedro&#10;Lucas&#10;..." style="font-family:inherit;resize:vertical"></textarea>
+
+      <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Jogadores por time</label>
+      <div class="number-input">
+        <button onclick="adjustNumber('manual-draw-size', -1)">-</button>
+        <input type="number" id="manual-draw-size" value="5" min="2" max="15" class="input-field">
+        <button onclick="adjustNumber('manual-draw-size', 1)">+</button>
+      </div>
+
+      <button class="btn-primary btn-large" style="width:100%;margin-top:16px" onclick="executarSorteioManual()">
+        <i class="fas fa-shuffle"></i> SORTEAR
+      </button>
+
+      <div id="manual-draw-result" style="display:none;margin-top:20px">
+        <h4 style="margin-bottom:12px"><i class="fas fa-shirt" style="color:var(--purple-light)"></i> Times sorteados</h4>
+        <div id="manual-draw-result-content"></div>
+      </div>
     </div>
   </div>
 
