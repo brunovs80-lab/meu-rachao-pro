@@ -6,12 +6,14 @@
 //   - lifetime -> vitalício (is_lifetime=true)
 //
 // Variáveis de ambiente:
-//   - MP_APP_ACCESS_TOKEN
+//   - MP_APP_ACCESS_TOKEN          (token do app pra chamar API do MP)
+//   - MP_WEBHOOK_SECRET            (chave secreta do webhook pra validar HMAC; opt-in)
 //   - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
 //
 // Setup no painel MP:
 //   Webhooks -> URL: https://<project>.supabase.co/functions/v1/mp-subscription-webhook
 //   Eventos: "Pagamentos" (payment)
+//   Chave secreta: gerar no MP, copiar e setar em MP_WEBHOOK_SECRET no Supabase.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -58,12 +60,72 @@ async function mpFetch(path: string, token: string) {
   return r.json()
 }
 
+// Validação HMAC-SHA256 da assinatura do MP.
+// Manifest: `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
+// Header:   `x-signature: ts=<ts>,v1=<hex>`
+// Doc: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+async function validateMPSignature(req: Request, secret: string): Promise<boolean> {
+  const sigHeader = req.headers.get('x-signature') || ''
+  if (!sigHeader) return false
+
+  const parts: Record<string, string> = {}
+  for (const seg of sigHeader.split(',')) {
+    const eq = seg.indexOf('=')
+    if (eq < 0) continue
+    const k = seg.slice(0, eq).trim()
+    const v = seg.slice(eq + 1).trim()
+    if (k && v) parts[k] = v
+  }
+  const ts = parts.ts
+  const v1 = parts.v1
+  if (!ts || !v1) return false
+
+  const url = new URL(req.url)
+  const dataId = url.searchParams.get('data.id') || ''
+  const requestId = req.headers.get('x-request-id') || ''
+  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`
+
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(manifest))
+  const computed = Array.from(new Uint8Array(sig))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+
+  // timing-safe compare
+  if (computed.length !== v1.length) return false
+  let diff = 0
+  for (let i = 0; i < computed.length; i++) {
+    diff |= computed.charCodeAt(i) ^ v1.charCodeAt(i)
+  }
+  return diff === 0
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST')   return json({ error: 'Method not allowed' }, 405)
 
   const mpToken = Deno.env.get('MP_APP_ACCESS_TOKEN')
   if (!mpToken) return json({ error: 'MP_APP_ACCESS_TOKEN não configurado' }, 500)
+
+  // Valida HMAC se MP_WEBHOOK_SECRET estiver configurado. Sem o secret, segue
+  // só com obscuridade da URL (estado anterior — log um aviso pra lembrar de setar).
+  const whSecret = Deno.env.get('MP_WEBHOOK_SECRET')
+  if (whSecret) {
+    const ok = await validateMPSignature(req, whSecret)
+    if (!ok) {
+      console.warn('[mp-subscription-webhook] assinatura inválida — rejeitando')
+      return json({ error: 'invalid signature' }, 401)
+    }
+  } else {
+    console.warn('[mp-subscription-webhook] MP_WEBHOOK_SECRET não setado — pulando validação HMAC')
+  }
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
