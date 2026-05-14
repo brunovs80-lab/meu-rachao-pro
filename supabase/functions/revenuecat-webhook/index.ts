@@ -162,7 +162,20 @@ Deno.serve(async (req) => {
       return json({ received: true, action: 'noted' })
     }
 
-    // Outros tipos (BILLING_ISSUE, REFUND, etc): apenas log
+    if (type === 'REFUND') {
+      // Revoga imediatamente: dinheiro estornado, acesso some agora.
+      const { error } = await supabase
+        .from('pro_subscriptions')
+        .update({
+          expires_at: new Date().toISOString(),
+          metadata: { last_event: type, raw: event },
+        })
+        .eq('user_id', userId)
+      if (error) throw error
+      return json({ received: true, action: 'revoked' })
+    }
+
+    // Outros tipos (BILLING_ISSUE, etc): apenas log
     console.log('[revenuecat-webhook] evento sem ação:', type)
     return json({ received: true, action: 'ignored', type })
   } catch (err) {
