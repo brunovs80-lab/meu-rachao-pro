@@ -197,6 +197,7 @@ function clearAuthForms() {
 }
 
 function logout() {
+  if (!confirm('Deseja realmente sair da conta?')) return;
   apiLogout();
   if (window.Billing) Billing.logout().catch(() => {});
   if (window.Push) Push.logout().catch(() => {});

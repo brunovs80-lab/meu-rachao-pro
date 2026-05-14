@@ -954,6 +954,17 @@ select.input-field {
   color: white;
 }
 
+.tabs.tabs-scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs.tabs-scroll::-webkit-scrollbar { display: none; }
+.tabs.tabs-scroll .tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 /* ========== PILLS ========== */
 .fantasy-period-toggle {
   display: flex;
