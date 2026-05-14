@@ -874,32 +874,8 @@ async function apiRedeemCoupon(code, userId) {
   return data || { ok: false, error: 'RPC_FAIL' };
 }
 
-async function apiCreateCoupon({ code, type, durationDays, maxUses, expiresAt, description }) {
-  const user = apiGetCurrentUser();
-  const { data, error } = await initSupabase().rpc('create_coupon', {
-    p_code: code,
-    p_type: type,
-    p_duration_days: durationDays || null,
-    p_max_uses: maxUses || null,
-    p_expires_at: expiresAt || null,
-    p_description: description || null,
-    p_created_by: user?.id || null,
-  });
-  if (error) throw error;
-  return data || { ok: false };
-}
-
-async function apiListCoupons() {
-  const { data, error } = await initSupabase().rpc('list_coupons');
-  if (error) throw error;
-  return data || [];
-}
-
-async function apiDeleteCoupon(id) {
-  const { error } = await initSupabase().rpc('delete_coupon', { p_id: id });
-  if (error) throw error;
-  return { ok: true };
-}
+// Cupons só são gerenciados pelo painel admin local (server/admin.html via
+// service_role). Cliente só usa apiRedeemCoupon acima pra resgatar.
 
 // ===== JOGADORES AVULSOS (sessões abertas para pagantes) =====
 async function apiUpdateSessionGuestConfig(sessionId, allowGuests, guestFee, guestSlots, neededPositions) {

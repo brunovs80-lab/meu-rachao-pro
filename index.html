@@ -1017,7 +1017,6 @@
         <button class="card admin-card" onclick="navigateTo('admin-stats')"><i class="fas fa-chart-bar"></i><div><h4>Validar Estatísticas</h4><p class="text-muted">Aprovar gols, assistências e desarmes</p></div><span class="admin-badge" id="admin-pending-count"></span></button>
         <button class="card admin-card" onclick="navigateTo('admin-payments')"><i class="fas fa-money-bill-wave"></i><div><h4>Gerenciar Pagamentos</h4><p class="text-muted">Confirmar e bloquear</p></div></button>
         <button class="card admin-card" onclick="navigateTo('admin-blocked')"><i class="fas fa-ban"></i><div><h4>Jogadores Bloqueados</h4><p class="text-muted">Inadimplentes e pedidos de liberação</p></div><span class="admin-badge" id="admin-release-count"></span></button>
-        <button class="card admin-card" onclick="navigateTo('admin-coupons')"><i class="fas fa-ticket"></i><div><h4>Cupons Pro</h4><p class="text-muted">Gerar cupons de teste grátis ou vitalício</p></div></button>
       </div>
     </div>
   </div>
@@ -1086,7 +1085,7 @@
   <!-- ========== CONFIGURAÇÕES ========== -->
   <div id="page-settings" class="page">
     <div class="page-header">
-      <button class="btn-back" onclick="navigateTo('profile')"><i class="fas fa-arrow-left"></i></button>
+      <button class="btn-back" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-left"></i></button>
       <h2>Configurações</h2>
     </div>
     <div class="page-body">
@@ -1332,49 +1331,6 @@
         <button class="btn-primary btn-large" style="width:100%;margin-top:16px" onclick="navigateTo('dashboard')">VOLTAR AO APP</button>
         <button id="paywall-cancel-mp" class="paywall-restore" style="display:none;margin-top:12px" onclick="paywallCancelMpSubscription()"><i class="fas fa-ban"></i> Cancelar assinatura</button>
       </div>
-    </div>
-  </div>
-
-  <!-- ========== ADMIN: CUPONS ========== -->
-  <div id="page-admin-coupons" class="page">
-    <div class="page-header">
-      <button class="btn-back" onclick="navigateTo('admin')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Cupons Pro</h2>
-    </div>
-    <div class="page-body">
-      <div class="card" style="margin-bottom:16px">
-        <h3 style="margin-bottom:12px"><i class="fas fa-plus-circle"></i> Gerar novo cupom</h3>
-
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Tipo</label>
-        <select id="coupon-type" class="input-field" onchange="onCouponTypeChange()">
-          <option value="trial">Teste grátis (libera Pro por X dias)</option>
-          <option value="lifetime">Vitalício (libera Pro para sempre)</option>
-        </select>
-
-        <div id="coupon-duration-wrap" style="margin-top:12px">
-          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Duração (dias)</label>
-          <input type="number" id="coupon-duration" class="input-field" placeholder="Ex: 30" min="1" max="3650" value="30">
-        </div>
-
-        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Código do cupom <span class="text-muted" style="font-weight:400">(deixe vazio para gerar automático)</span></label>
-        <input type="text" id="coupon-code" class="input-field" placeholder="EX: BETATESTER" maxlength="32" autocapitalize="characters">
-
-        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Máximo de usos <span class="text-muted" style="font-weight:400">(vazio = ilimitado)</span></label>
-        <input type="number" id="coupon-max-uses" class="input-field" placeholder="Ex: 100" min="1">
-
-        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Validade do cupom <span class="text-muted" style="font-weight:400">(opcional)</span></label>
-        <input type="date" id="coupon-expires" class="input-field">
-
-        <label style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Descrição interna <span class="text-muted" style="font-weight:400">(opcional)</span></label>
-        <input type="text" id="coupon-description" class="input-field" placeholder="Ex: Cupom para influencer X" maxlength="100">
-
-        <button class="btn-primary btn-large" style="width:100%;margin-top:16px" id="btn-create-coupon" onclick="adminCreateCoupon()">
-          <i class="fas fa-magic-wand-sparkles"></i> GERAR CUPOM
-        </button>
-      </div>
-
-      <h3 style="margin:8px 0 12px"><i class="fas fa-list"></i> Cupons existentes</h3>
-      <div id="admin-coupons-list"></div>
     </div>
   </div>
 

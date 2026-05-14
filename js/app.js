@@ -112,7 +112,6 @@ function onPageLoad(page) {
     'admin-stats': loadAdminStats,
     'admin-payments': loadAdminPayments,
     'admin-blocked': loadAdminBlocked,
-    'admin-coupons': loadAdminCoupons,
     'register-stats': loadRegisterStats,
     'notifications': loadNotifications,
     'admin': loadAdminBadges,
