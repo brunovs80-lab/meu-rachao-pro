@@ -74,7 +74,9 @@ app.post('/api/auth/login', async (req, res) => {
     const { phone, password } = req.body;
     if (!phone || !password) return res.status(400).json({ error: 'Telefone e senha obrigatorios' });
     const cleanPhone = phone.replace(/\D/g, '');
-    const { data } = await getSupabase().from('players').select('*').eq('phone', cleanPhone).maybeSingle();
+    // service_role: precisa ler password pra bcrypt.compare. Anon não pode mais (REVOKE column-level).
+    const sb = getSupabaseAdmin();
+    const { data } = await sb.from('players').select('*').eq('phone', cleanPhone).maybeSingle();
     if (!data) return res.status(401).json({ error: 'Usuario nao encontrado' });
 
     let passwordValid = false;
@@ -84,7 +86,7 @@ app.post('/api/auth/login', async (req, res) => {
       passwordValid = data.password === password;
       if (passwordValid) {
         const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-        await getSupabase().from('players').update({ password: hash }).eq('id', data.id);
+        await sb.from('players').update({ password: hash }).eq('id', data.id);
       }
     }
     if (!passwordValid) return res.status(401).json({ error: 'Senha incorreta' });
@@ -137,7 +139,9 @@ app.post('/api/auth/change-password', async (req, res) => {
     if (!userId || !oldPassword || !newPassword) return res.status(400).json({ error: 'Campos obrigatorios' });
     if (newPassword.length < 6) return res.status(400).json({ error: 'Senha deve ter pelo menos 6 digitos' });
 
-    const { data } = await getSupabase().from('players').select('password').eq('id', userId).single();
+    // service_role: precisa ler/escrever password. Anon não pode mais (REVOKE column-level).
+    const sb = getSupabaseAdmin();
+    const { data } = await sb.from('players').select('password').eq('id', userId).single();
     if (!data) return res.status(404).json({ error: 'Usuario nao encontrado' });
 
     let oldValid = false;
@@ -149,7 +153,7 @@ app.post('/api/auth/change-password', async (req, res) => {
     if (!oldValid) return res.status(401).json({ error: 'Senha atual incorreta' });
 
     const hash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-    await getSupabase().from('players').update({ password: hash }).eq('id', userId);
+    await sb.from('players').update({ password: hash }).eq('id', userId);
     return res.json({ success: true });
   } catch (err) {
     console.error('change-password error:', err);

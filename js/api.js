@@ -17,7 +17,10 @@ function initSupabase() {
 
 // ===== PLAYERS =====
 async function apiGetPlayers() {
-  const { data, error } = await initSupabase().from('players').select('*').order('name');
+  // ⚠️ Sem password/phone/email — esses são PII e nunca devem trafegar via anon.
+  const { data, error } = await initSupabase().from('players')
+    .select('id, name, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, blocked, is_admin, created_at, deleted_at')
+    .order('name');
   if (error) throw error;
   return data.map(p => ({ ...p, isAdmin: p.is_admin, cleanSheets: p.clean_sheets }));
 }
