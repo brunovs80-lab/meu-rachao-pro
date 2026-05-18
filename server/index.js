@@ -60,9 +60,9 @@ app.post('/api/auth/check-phone', async (req, res) => {
       return res.status(400).json({ error: 'Telefone invalido' });
     }
     const cleanPhone = phone.replace(/\D/g, '');
-    const { data } = await getSupabase().from('players').select('id, name, position, is_admin').eq('phone', cleanPhone).maybeSingle();
-    if (data) return res.json({ exists: true, id: data.id, name: data.name });
-    return res.json({ exists: false });
+    // Só retorna { exists } — não vaza id/name pra evitar enumeração.
+    const { data } = await getSupabase().from('players').select('id').eq('phone', cleanPhone).maybeSingle();
+    return res.json({ exists: !!data });
   } catch (err) {
     console.error('check-phone error:', err);
     return res.status(500).json({ error: 'Erro ao verificar telefone' });
