@@ -4,6 +4,10 @@
 # /app sem barra → /app/ (escopo do PWA é /app/, manifest exige a barra)
 /app  /app/  301
 
+# URLs descontinuadas → redireciona pra evitar servir cache antigo do CDN
+/guia-tester      /manual  301
+/guia-tester.html /manual  301
+
 # Atalhos amigáveis (descomentar conforme uso):
 # /baixar      /#download      302
 # /termos      /terms.html     301
