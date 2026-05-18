@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual do Usuário — Meu Rachão Pro</title>
+<meta name="description" content="Manual completo do Meu Rachão Pro: cadastro, criar rachão, sortear times, configurar PIX, estatísticas, Pro e tudo mais.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a2e; line-height: 1.7; }
+
+  .print-info { position: fixed; top: 0; left: 0; right: 0; background: #FF7A00; color: #000;
+    text-align: center; padding: 10px; font-weight: 700; font-size: 14px; z-index: 999; }
+  @media print { .print-info { display: none; } body { margin: 0; } }
+  @media print { .page-break { page-break-before: always; } }
+
+  .cover { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; background: linear-gradient(135deg, #0D0D1A 0%, #1a1a2e 100%);
+    color: #fff; text-align: center; page-break-after: always; padding: 24px; }
+  .cover .logo { width: 100px; height: 100px; border-radius: 24px;
+    background: linear-gradient(135deg, #FF7A00, #E06800); display: flex;
+    align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 42px;
+    box-shadow: 0 16px 48px rgba(255,122,0,0.4); }
+  .cover h1 { font-size: 48px; font-weight: 900; margin-bottom: 8px;
+    background: linear-gradient(135deg, #FF7A00, #A855F7);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.1; }
+  .cover .sub { font-size: 20px; color: #aaa; margin-top: 8px; }
+  .cover .version { margin-top: 32px; font-size: 14px; color: #666; }
+  .cover .url { margin-top: 8px; font-size: 13px; color: #FF7A00; font-weight: 700; }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+
+  .toc { page-break-after: always; }
+  .toc h2 { font-size: 28px; font-weight: 800; color: #FF7A00; margin-bottom: 24px;
+    padding-bottom: 12px; border-bottom: 3px solid #FF7A00; }
+  .toc-list { list-style: none; }
+  .toc-list li { padding: 10px 0; border-bottom: 1px solid #eee; }
+  .toc-list li a { color: #1a1a2e; text-decoration: none; font-weight: 600; font-size: 16px;
+    display: flex; align-items: baseline; }
+  .toc-list li a:hover { color: #FF7A00; }
+  .toc-list .toc-num { color: #FF7A00; font-weight: 800; margin-right: 12px;
+    min-width: 28px; display: inline-block; }
+
+  h2.section-title { font-size: 26px; font-weight: 800; color: #FF7A00; margin: 48px 0 8px;
+    padding-bottom: 8px; border-bottom: 3px solid #FF7A00; }
+  h3 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin: 28px 0 8px; }
+  h4 { font-size: 15px; font-weight: 700; color: #444; margin: 20px 0 6px; }
+
+  p { margin-bottom: 12px; color: #444; font-size: 15px; }
+  ul, ol { margin: 12px 0 12px 24px; color: #444; font-size: 14px; }
+  ul li, ol li { margin-bottom: 4px; }
+  .highlight { color: #FF7A00; font-weight: 700; }
+  .highlight-purple { color: #7B2CBF; font-weight: 700; }
+  code.kbd { background: #f3e8ff; color: #5b21b6; padding: 2px 8px; border-radius: 6px;
+    font-family: monospace; font-size: 13px; font-weight: 700; }
+
+  .step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+  .step-list li { counter-increment: step; padding: 12px 12px 12px 52px; margin-bottom: 8px;
+    background: #fff7ed; border-radius: 10px; position: relative; font-size: 14px; color: #444; }
+  .step-list li::before { content: counter(step); position: absolute; left: 12px; top: 12px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #FF7A00, #E06800);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; }
+  .step-list li strong { color: #1a1a2e; }
+
+  .info-box { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: 14px; }
+  .info-box-purple { background: #f3e8ff; border-left: 4px solid #7B2CBF; color: #5b21b6; }
+  .info-box-orange { background: #fff7ed; border-left: 4px solid #FF7A00; color: #c2410c; }
+  .info-box-green { background: #ecfdf5; border-left: 4px solid #00C853; color: #166534; }
+  .info-box-red { background: #fef2f2; border-left: 4px solid #FF5252; color: #991b1b; }
+  .info-box strong { display: block; margin-bottom: 4px; }
+
+  .pro-badge { display: inline-block; background: linear-gradient(135deg, #FF7A00, #E06800);
+    color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 800;
+    letter-spacing: 0.1em; vertical-align: middle; margin-left: 6px; }
+
+  .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .shortcut-card { padding: 16px; background: #fff7ed; border-radius: 10px; }
+  .shortcut-card .sc-icon { font-size: 24px; margin-bottom: 6px; }
+  .shortcut-card h4 { font-size: 14px; margin: 0 0 4px; color: #FF7A00; }
+  .shortcut-card p { font-size: 12px; color: #666; margin: 0; }
+
+  .table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  .table th { text-align: left; padding: 8px 12px; background: #fff7ed; color: #FF7A00;
+    font-weight: 700; border-bottom: 2px solid #FF7A00; }
+  .table td { padding: 8px 12px; border-bottom: 1px solid #eee; color: #444; }
+  .table .pts-pos { color: #00C853; font-weight: 700; }
+  .table .pts-neg { color: #FF5252; font-weight: 700; }
+
+  .footer { text-align: center; padding: 40px 24px; color: #999; font-size: 13px;
+    border-top: 1px solid #eee; margin-top: 40px; }
+  .footer a { color: #FF7A00; text-decoration: none; font-weight: 700; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .container { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-info">Para salvar como PDF: <strong>Ctrl+P</strong> (ou <strong>Cmd+P</strong> no Mac) → Destino: <strong>Salvar como PDF</strong> → Salvar</div>
+
+<!-- ==================== CAPA ==================== -->
+<div class="cover">
+  <div class="logo">&#9917;</div>
+  <h1>Manual do Usuário</h1>
+  <p class="sub">Meu Rachão Pro</p>
+  <p class="version">Versão 1.0 — Maio 2026</p>
+  <p class="url">meurachaopro.com.br/manual</p>
+</div>
+
+<!-- ==================== SUMÁRIO ==================== -->
+<div class="container toc">
+  <h2>Sumário</h2>
+  <ol class="toc-list">
+    <li><a href="#s1"><span class="toc-num">1</span> Bem-vindo ao Meu Rachão Pro</a></li>
+    <li><a href="#s2"><span class="toc-num">2</span> Primeiros passos: instalar e entrar</a></li>
+    <li><a href="#s3"><span class="toc-num">3</span> Esqueci minha senha</a></li>
+    <li><a href="#s4"><span class="toc-num">4</span> Conhecendo o Dashboard</a></li>
+    <li><a href="#s5"><span class="toc-num">5</span> Criar um rachão</a></li>
+    <li><a href="#s6"><span class="toc-num">6</span> Entrar em um rachão</a></li>
+    <li><a href="#s7"><span class="toc-num">7</span> Sessão de jogo</a></li>
+    <li><a href="#s8"><span class="toc-num">8</span> Sorteio de times</a></li>
+    <li><a href="#s9"><span class="toc-num">9</span> Financeiro e PIX</a></li>
+    <li><a href="#s10"><span class="toc-num">10</span> Estatísticas e ranking</a></li>
+    <li><a href="#s11"><span class="toc-num">11</span> Assinar o Pro</a></li>
+    <li><a href="#s12"><span class="toc-num">12</span> Recursos Pro</a></li>
+    <li><a href="#s13"><span class="toc-num">13</span> Notificações</a></li>
+    <li><a href="#s14"><span class="toc-num">14</span> Perfil e configurações</a></li>
+    <li><a href="#s15"><span class="toc-num">15</span> Excluir conta</a></li>
+    <li><a href="#s16"><span class="toc-num">16</span> Perguntas frequentes</a></li>
+  </ol>
+</div>
+
+<!-- ==================== 1. BEM-VINDO ==================== -->
+<div class="container">
+  <h2 class="section-title" id="s1">1. Bem-vindo ao Meu Rachão Pro</h2>
+
+  <p>O <span class="highlight">Meu Rachão Pro</span> é o app que organiza tudo do seu rachão semanal: presença, sorteio de times balanceados, divisão da quadra via PIX, estatísticas e ranking. Pensado pra quem joga toda semana com a mesma turma e quer parar de gerenciar tudo no grupo do WhatsApp.</p>
+
+  <h3>Como o app funciona</h3>
+  <p>O conceito principal é o <strong>rachão</strong> — um grupo permanente de jogadores que se encontram regularmente (ex: todo domingo às 19h). Cada rachão tem:</p>
+  <ul>
+    <li>Um <strong>administrador</strong> (quem criou) — gerencia configurações, valida estatísticas, confirma pagamentos</li>
+    <li>Uma lista de <strong>participantes</strong> fixos que entram via código de 6 dígitos</li>
+    <li><strong>Sessões</strong> — cada dia de jogo (uma por semana, normalmente)</li>
+    <li><strong>Financeiro</strong> com divisão automática da quadra</li>
+  </ul>
+
+  <h3>Onde usar</h3>
+  <p>O Meu Rachão Pro está disponível em três formatos:</p>
+  <ul>
+    <li><strong>App Android</strong> — instala da Play Store (recomendado pra Android)</li>
+    <li><strong>App iPhone</strong> — instala como PWA pelo Safari (ver passo a passo na seção 2)</li>
+    <li><strong>Navegador</strong> — usa direto em <a href="https://meurachaopro.com.br/app" style="color:#FF7A00;font-weight:700;text-decoration:none">meurachaopro.com.br/app</a> sem instalar nada</li>
+  </ul>
+
+  <div class="info-box info-box-green">
+    <strong>&#10003; Dados sincronizados na nuvem</strong>
+    Seus rachões, presenças e estatísticas ficam salvos com segurança e ficam disponíveis em qualquer dispositivo onde você fizer login com o mesmo telefone.
+  </div>
+</div>
+
+<!-- ==================== 2. PRIMEIROS PASSOS ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s2">2. Primeiros passos: instalar e entrar</h2>
+
+  <h3>2.1 Android</h3>
+  <ol class="step-list">
+    <li>Abra a <strong>Play Store</strong> e busque "Meu Rachão Pro".</li>
+    <li>Toque em <strong>INSTALAR</strong> (~30 MB). Toque em <strong>ABRIR</strong> quando terminar.</li>
+  </ol>
+
+  <h3>2.2 iPhone (PWA)</h3>
+  <p>A versão da App Store ainda não está disponível. Enquanto isso, dá pra usar todas as funções pelo Safari:</p>
+  <ol class="step-list">
+    <li>Abra <a href="https://meurachaopro.com.br/app" style="color:#FF7A00;font-weight:700;text-decoration:none">meurachaopro.com.br/app</a> no <strong>Safari</strong> (não funciona no Chrome do iOS).</li>
+    <li>Toque no botão <strong>Compartilhar</strong> (caixa com seta pra cima, na barra inferior).</li>
+    <li>Selecione <strong>Adicionar à Tela de Início</strong>.</li>
+    <li>Pronto — o ícone aparece na tela inicial e abre em fullscreen como um app.</li>
+  </ol>
+
+  <h3>2.3 Tela de entrada</h3>
+  <p>Logo de cara você vê um campo de telefone. Digite seu número com DDD (11 dígitos, só números) e toque em <strong>ENTRAR</strong>.</p>
+
+  <h3>2.4 Primeira vez? Cadastro</h3>
+  <p>Se o número não estiver cadastrado, o app abre a tela de cadastro automaticamente. Preencha:</p>
+  <ul>
+    <li><strong>Nome ou apelido</strong> — vai aparecer pros outros jogadores</li>
+    <li><strong>E-mail</strong> — pode pular agora, mas é obrigatório se for assinar o Pro depois</li>
+    <li><strong>Posição preferida</strong> — Goleiro, Zagueiro, Lateral, Volante, Meia ou Atacante</li>
+    <li><strong>Senha</strong> — <span class="highlight">6 dígitos numéricos</span>, tipo PIN do banco (não senha livre)</li>
+  </ul>
+
+  <h3>2.5 Já tem conta? Login</h3>
+  <p>Se o número já existir, o app vai pra tela de senha. Digite os 6 dígitos numéricos da sua senha e toque em <strong>ENTRAR</strong>.</p>
+
+  <div class="info-box info-box-purple">
+    <strong>&#128161; Sobre a senha de 6 dígitos</strong>
+    A senha é numérica de 6 dígitos (tipo PIN) — proposital, pra ser rápido digitar no celular. Não tente colocar letras ou símbolos. Anote ou memorize, porque o reset hoje é manual (ver seção 3).
+  </div>
+</div>
+
+<!-- ==================== 3. ESQUECI MINHA SENHA ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s3">3. Esqueci minha senha</h2>
+
+  <p>O reset de senha hoje é feito por <strong>solicitação manual</strong> via e-mail (em breve teremos reset automático).</p>
+
+  <ol class="step-list">
+    <li>Na tela de senha, toque em <strong>Esqueci minha senha</strong> (link abaixo do botão ENTRAR).</li>
+    <li>O app abre seu cliente de e-mail com mensagem pré-preenchida pra <code class="kbd">meurachaopro@gmail.com</code>. O telefone que você digitou já vem no corpo da mensagem.</li>
+    <li>Preencha o campo <strong>"Meu nome"</strong> com o nome cadastrado na conta e <strong>envie o e-mail</strong>.</li>
+    <li>Em até 24h você recebe uma resposta com uma <strong>senha provisória de 6 dígitos</strong>.</li>
+    <li>Volte ao app, faça login com a senha provisória, vá em <strong>Configurações &rarr; Trocar senha</strong> e defina uma nova.</li>
+  </ol>
+
+  <div class="info-box info-box-orange">
+    <strong>&#9888; Confirme seu nome no e-mail</strong>
+    Sem o nome certo, não conseguimos validar que você é o dono da conta. Se possível, mencione também o nome de algum rachão que você criou ou participa.
+  </div>
+</div>
+
+<!-- ==================== 4. DASHBOARD ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s4">4. Conhecendo o Dashboard</h2>
+
+  <p>Depois de logar, você cai no <strong>Dashboard</strong> — a tela principal. Ele tem:</p>
+
+  <h3>4.1 Topo da tela</h3>
+  <ul>
+    <li><strong>Saudação</strong> — "Olá, [seu nome]"</li>
+    <li><strong>Sino &#128276;</strong> — abre suas notificações (pagamentos, presenças, sorteios, etc.)</li>
+    <li><strong>Engrenagem &#9881;</strong> — abre Configurações (perfil, push, sair, excluir conta)</li>
+  </ul>
+
+  <h3>4.2 Centro da tela</h3>
+  <ul>
+    <li><strong>CTA "Torne-se Pro"</strong> — banner laranja com os recursos premium (some quando você assina)</li>
+    <li><strong>Lista de rachões</strong> — cada card mostra nome, próximo jogo, número de confirmados</li>
+    <li>Dois botões grandes: <strong>CRIAR RACHÃO</strong> e <strong>ENTRAR EM UM RACHÃO</strong></li>
+  </ul>
+
+  <h3>4.3 Barra inferior</h3>
+  <div class="shortcut-grid">
+    <div class="shortcut-card">
+      <div class="sc-icon">&#127968;</div>
+      <h4>Início</h4>
+      <p>Dashboard — visão geral dos seus rachões</p>
+    </div>
+    <div class="shortcut-card">
+      <div class="sc-icon">&#128205;</div>
+      <h4>Avulsos <span class="pro-badge">PRO</span></h4>
+      <p>Descobrir jogadores próximos pelo GPS</p>
+    </div>
+    <div class="shortcut-card">
+      <div class="sc-icon">&#128100;</div>
+      <h4>Perfil</h4>
+      <p>Suas estatísticas, conquistas e assinatura</p>
+    </div>
+    <div class="shortcut-card">
+      <div class="sc-icon">&#8629;</div>
+      <h4>Sair</h4>
+      <p>Faz logout (pede confirmação)</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 5. CRIAR RACHÃO ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s5">5. Criar um rachão</h2>
+
+  <p>Criar um rachão significa criar um grupo permanente de jogadores. Você será o <span class="highlight">administrador</span> e terá poder pra confirmar pagamentos, validar estatísticas, gerenciar membros etc.</p>
+
+  <div class="info-box info-box-orange">
+    <strong>&#9888; Plano Free: limite de 1 rachão ativo</strong>
+    Quem usa a versão grátis pode criar <strong>1 rachão ativo</strong> por vez. Pra criar mais de um (vários grupos, dias diferentes, locais diferentes), precisa assinar o Pro. Ver seção 11.
+  </div>
+
+  <h3>5.1 Passo a passo</h3>
+  <ol class="step-list">
+    <li>No Dashboard, toque em <strong>CRIAR RACHÃO</strong>.</li>
+    <li>Preencha os campos:
+      <br>&bull; <strong>Nome do rachão</strong> — ex: "Pelada de Quinta", "Rachão dos Amigos"
+      <br>&bull; <strong>Dia da semana</strong> — Domingo, Segunda, ..., Sábado
+      <br>&bull; <strong>Horário</strong> — ex: 19:30
+      <br>&bull; <strong>Local</strong> — nome ou endereço da quadra
+      <br>&bull; <strong>Localização GPS</strong> — toque em "Usar minha localização atual" enquanto está na quadra (opcional, mas habilita o recurso de Avulsos Pro)
+      <br>&bull; <strong>Jogadores de linha por time</strong> — 3 a 11 (padrão: 5) + 1 goleiro automaticamente
+      <br>&bull; <strong>Regra de empate (rotação)</strong> — quem sai quando dá empate
+      <br>&bull; <strong>Custo mensal da quadra</strong> — valor total, será dividido entre quem confirmar presença
+      <br>&bull; <strong>Chave PIX</strong> — pra receber os pagamentos da quadra
+    </li>
+    <li>Toque em <strong>CRIAR RACHÃO</strong>.</li>
+  </ol>
+
+  <h3>5.2 Código do rachão</h3>
+  <p>Ao criar, o app gera um <span class="highlight">código de 6 dígitos alfanuméricos</span> (ex: <code class="kbd">R4CH40</code>). É esse código que você compartilha pros outros entrarem.</p>
+
+  <p>Pra compartilhar, abra o rachão e toque no botão de compartilhar — o app monta uma mensagem com nome, dia, local e código pra você mandar no WhatsApp.</p>
+
+  <h3>5.3 Editar ou excluir</h3>
+  <p>Só o administrador pode editar. Abra o rachão, toque no ícone de edição no canto superior direito e ajuste o que quiser. Pra excluir, role até o fim do formulário de edição e toque em <strong>Excluir rachão</strong> (pede confirmação — não pode ser desfeito).</p>
+</div>
+
+<!-- ==================== 6. ENTRAR EM RACHÃO ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s6">6. Entrar em um rachão</h2>
+
+  <p>Pra entrar num rachão existente você precisa do <span class="highlight">código de 6 dígitos</span> que o administrador compartilha.</p>
+
+  <ol class="step-list">
+    <li>No Dashboard, toque em <strong>ENTRAR EM UM RACHÃO</strong>.</li>
+    <li>Digite o <strong>código de 6 dígitos</strong> (não diferencia maiúscula de minúscula).</li>
+    <li>Toque em <strong>ENTRAR</strong>.</li>
+    <li>Se o código for válido, você é adicionado como participante e cai direto na tela do rachão.</li>
+  </ol>
+
+  <div class="info-box info-box-green">
+    <strong>&#10003; Você é membro fixo</strong>
+    Agora você participa do grupo permanente. Toda semana o app vai te mostrar a próxima sessão e você decide se confirma presença ou não.
+  </div>
+
+  <div class="info-box info-box-purple">
+    <strong>&#128161; Sem limite de rachões pra entrar</strong>
+    Você pode estar em quantos rachões quiser (entrando com códigos diferentes). O limite de 1 rachão ativo no plano Free vale só pra rachões que você CRIA, não pros que você participa.
+  </div>
+</div>
+
+<!-- ==================== 7. SESSÃO DE JOGO ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s7">7. Sessão de jogo</h2>
+
+  <p>Uma <strong>sessão</strong> representa um dia específico de jogo dentro do rachão. Cada vez que o grupo se reúne pra jogar, existe uma sessão correspondente.</p>
+
+  <h3>7.1 Criar sessão (admin)</h3>
+  <ol class="step-list">
+    <li>Abra o rachão.</li>
+    <li>Na aba <strong>Jogo</strong>, toque em <strong>CRIAR JOGO</strong>.</li>
+    <li>A data é calculada automaticamente pro próximo dia da semana configurado no rachão.</li>
+    <li>Se quiser ajustar a data, toque no ícone de calendário ao lado da data.</li>
+  </ol>
+
+  <h3>7.2 Confirmar presença (qualquer membro)</h3>
+  <ol class="step-list">
+    <li>Abra o rachão.</li>
+    <li>Na aba <strong>Jogo</strong>, veja a próxima sessão.</li>
+    <li>Toque em <strong>CONFIRMAR PRESENÇA</strong>. Seu nome entra na lista.</li>
+    <li>Mudou de ideia? Toque em <strong>CANCELAR PRESENÇA</strong> a qualquer momento antes do jogo começar.</li>
+  </ol>
+
+  <h3>7.3 Encerrar sessão (admin)</h3>
+  <p>Depois do jogo, o admin abre a aba Jogo e toca em <strong>ENCERRAR JOGO</strong>. A sessão vai pro histórico de jogos anteriores e a próxima é criada automaticamente.</p>
+
+  <h3>7.4 Cancelar sessão (admin)</h3>
+  <p>Se o jogo foi cancelado (chuva, problema na quadra, etc.), use <strong>CANCELAR JOGO</strong>. Nesse caso, ninguém perde presença/estatística e a próxima sessão segue normal.</p>
+
+  <div class="info-box info-box-purple">
+    <strong>&#128161; Lista de espera</strong>
+    Quando o número de confirmados passa o dobro de jogadores por time (ex: mais de 10 com times de 5), os excedentes ficam em espera. Eles participam da rotação no jogo (entra-sai por rodada).
+  </div>
+</div>
+
+<!-- ==================== 8. SORTEIO ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s8">8. Sorteio de times</h2>
+
+  <p>Com pelo menos 4 jogadores confirmados, o admin pode sortear os times.</p>
+
+  <h3>8.1 Sorteio automático balanceado</h3>
+  <ol class="step-list">
+    <li>Na aba <strong>Jogo</strong> da sessão ativa, toque em <strong>SORTEAR TIMES</strong>.</li>
+    <li>Escolha o tamanho dos times (3v3 a 11v11).</li>
+    <li>O app distribui os jogadores tentando equilibrar:
+      <br>&bull; Goleiros — vão pra times diferentes
+      <br>&bull; Pontuação histórica dos jogadores (ranking)
+      <br>&bull; Posições — espalha atacantes/zagueiros
+    </li>
+    <li>Os times aparecem na tela. Pode usar como base ou pedir um novo sorteio.</li>
+  </ol>
+
+  <h3>8.2 Sorteio manual</h3>
+  <p>Se preferir montar os times na mão (pra fazer "tira-cara-coroa-time" ou ajustar manualmente):</p>
+  <ol class="step-list">
+    <li>Na aba Jogo, toque em <strong>SORTEAR TIMES</strong>.</li>
+    <li>Toque em <strong>Sorteio manual</strong> em vez do automático.</li>
+    <li>Arraste e solte os jogadores entre os times.</li>
+    <li>Toque em <strong>Salvar times</strong> quando terminar.</li>
+  </ol>
+
+  <h3>8.3 Goleiros</h3>
+  <p>Jogadores marcados como <strong>Goleiro</strong> na posição preferida são tratados separadamente:</p>
+  <ul>
+    <li>No sorteio automático, são distribuídos 1 por time se houver suficientes</li>
+    <li>Se houver mais goleiros que times, os excedentes entram como jogadores de linha</li>
+    <li>Se faltar goleiro, um jogador de linha vai pro gol (decidido pelo grupo)</li>
+  </ul>
+</div>
+
+<!-- ==================== 9. FINANCEIRO ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s9">9. Financeiro e PIX</h2>
+
+  <p>O Meu Rachão Pro divide automaticamente o custo da quadra entre quem participou. A aba <strong>Financeiro</strong> do rachão concentra tudo: cobrança mensal, despesas extras, status de pagamento e configuração do PIX.</p>
+
+  <h3>9.1 Como funciona a divisão</h3>
+  <p>O valor mensal da quadra (que você definiu na criação do rachão) é dividido pela quantidade de jogadores que confirmaram presença naquele mês. Quem participou de todas as sessões paga mais, quem foi só uma vez paga menos.</p>
+
+  <h3>9.2 Configurar chave PIX (admin)</h3>
+  <p>Se você não definiu o PIX na criação do rachão:</p>
+  <ol class="step-list">
+    <li>Aba <strong>Financeiro</strong> &rarr; ícone de engrenagem ao lado de "PIX".</li>
+    <li>Cole sua chave (CPF, e-mail, telefone ou chave aleatória).</li>
+    <li>Salvar.</li>
+  </ol>
+
+  <h3>9.3 Marcar pagamento (admin)</h3>
+  <p>Quando o jogador te transferir o PIX:</p>
+  <ol class="step-list">
+    <li>Aba <strong>Financeiro</strong> &rarr; lista de pagamentos.</li>
+    <li>Toque no nome do jogador e marque como <strong>Pago</strong>.</li>
+    <li>O jogador recebe uma notificação confirmando.</li>
+  </ol>
+
+  <h3>9.4 Notificar pagamento (jogador)</h3>
+  <p>Depois de pagar o PIX, o jogador pode:</p>
+  <ul>
+    <li>Tocar em <strong>Avisar que paguei</strong> &mdash; envia notificação pro admin confirmar</li>
+    <li>Copiar a chave PIX do rachão com um toque</li>
+  </ul>
+
+  <h3>9.5 Despesas extras</h3>
+  <p>Comprou bola, colete, água gelada? Adiciona como despesa:</p>
+  <ol class="step-list">
+    <li>Aba Financeiro &rarr; <strong>Adicionar despesa</strong>.</li>
+    <li>Descrição (ex: "Bola nova") + valor.</li>
+    <li>A despesa é dividida automaticamente entre os participantes do mês.</li>
+  </ol>
+
+  <h3>9.6 PIX automático <span class="pro-badge">PRO</span></h3>
+  <p>Com o Pro, o app pode gerar cobranças PIX automáticas (com QR Code e Pix Copia e Cola) usando integração com o Mercado Pago. Cada jogador paga direto no app — sem precisar você ficar conferindo se o PIX caiu.</p>
+  <p>Configuração: Aba Financeiro &rarr; <strong>Configurar PIX automático</strong> &rarr; cole o token do Mercado Pago.</p>
+</div>
+
+<!-- ==================== 10. ESTATÍSTICAS ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s10">10. Estatísticas e ranking</h2>
+
+  <p>Cada jogo gera estatísticas — gols, assistências, desarmes, faltas, cartões. Elas alimentam o ranking do rachão e o sistema Fantasy.</p>
+
+  <h3>10.1 Registrar estatísticas</h3>
+  <ol class="step-list">
+    <li>Após o jogo, qualquer participante abre a aba <strong>Stats</strong> da sessão.</li>
+    <li>Toca em <strong>Registrar estatísticas</strong>.</li>
+    <li>Marca gols, assistências, faltas, etc. de quem jogou.</li>
+    <li>Toca em <strong>Enviar pra validação</strong>.</li>
+  </ol>
+
+  <h3>10.2 Validar (admin)</h3>
+  <p>O administrador recebe as estatísticas pra aprovar:</p>
+  <ol class="step-list">
+    <li>Aba Stats &rarr; <strong>Pendentes</strong>.</li>
+    <li>Revisa as stats enviadas e aprova (ou rejeita).</li>
+    <li>Aprovadas viram ranking. Rejeitadas podem ser editadas e reenviadas.</li>
+  </ol>
+
+  <h3>10.3 Sistema de pontos</h3>
+  <table class="table">
+    <thead>
+      <tr><th>Ação</th><th>Pontos</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Gol</td><td class="pts-pos">+5</td></tr>
+      <tr><td>Assistência</td><td class="pts-pos">+3</td></tr>
+      <tr><td>Desarme</td><td class="pts-pos">+2</td></tr>
+      <tr><td>Vitória</td><td class="pts-pos">+2</td></tr>
+      <tr><td>Presença</td><td class="pts-pos">+1</td></tr>
+      <tr><td>Falta</td><td class="pts-neg">−1</td></tr>
+      <tr><td>Cartão amarelo</td><td class="pts-neg">−2</td></tr>
+      <tr><td>Cartão vermelho</td><td class="pts-neg">−4</td></tr>
+      <tr><td>Defesa (goleiro)</td><td class="pts-pos">+1</td></tr>
+      <tr><td>Jogo sem sofrer gol (goleiro)</td><td class="pts-pos">+5</td></tr>
+      <tr><td>Gol sofrido (goleiro)</td><td class="pts-neg">−0,5</td></tr>
+    </tbody>
+  </table>
+  <p>Goleiros ganham um <strong>multiplicador de 1,3</strong> no total final, pra compensar o fato de marcarem menos gols.</p>
+
+  <h3>10.4 Ranking</h3>
+  <p>A aba <strong>Ranking</strong> do rachão mostra:</p>
+  <ul>
+    <li>Top 5 jogadores por pontuação geral</li>
+    <li>Ranking do mês (zera todo mês)</li>
+    <li>Ranking geral (acumulado desde o início)</li>
+  </ul>
+</div>
+
+<!-- ==================== 11. PRO ASSINAR ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s11">11. Assinar o Pro</h2>
+
+  <p>O plano Pro libera todos os recursos premium do app. Vale a pena se você administra mais de 1 rachão, quer cobrar avulsos via PIX automático, ou quer estatísticas avançadas.</p>
+
+  <h3>11.1 Planos</h3>
+  <table class="table">
+    <thead>
+      <tr><th>Plano</th><th>Preço</th><th>Equivale a</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Mensal</td><td>R$ 14,90/mês</td><td>R$ 0,50/dia</td></tr>
+      <tr><td>Anual</td><td>R$ 99,90/ano</td><td>R$ 8,33/mês (5 meses grátis)</td></tr>
+      <tr><td>Vitalício</td><td>R$ 199,90 (1x)</td><td>Pagou, é seu pra sempre</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.2 Como assinar</h3>
+  <p>Depende de onde você está usando o app:</p>
+
+  <h4>No app Android (Play Store)</h4>
+  <ol class="step-list">
+    <li>Toque no banner <strong>"Torne-se Pro"</strong> no Dashboard (ou no Perfil &rarr; Assinar Pro).</li>
+    <li>Escolha o plano.</li>
+    <li>Confirme com o método de pagamento cadastrado na Google Play.</li>
+    <li>Pronto — recursos Pro liberados na hora.</li>
+  </ol>
+
+  <h4>No navegador (PWA) ou iPhone</h4>
+  <ol class="step-list">
+    <li>Toque no banner <strong>"Torne-se Pro"</strong>.</li>
+    <li>Escolha o plano.</li>
+    <li>Confira que seu <strong>e-mail está cadastrado</strong> no perfil (necessário pro Mercado Pago).</li>
+    <li>Você é redirecionado pro checkout do Mercado Pago — pague com PIX, cartão ou saldo MP.</li>
+    <li>Depois de pagar, volte pro app — os recursos Pro são liberados em até 1 minuto.</li>
+  </ol>
+
+  <h3>11.3 Cupons de desconto</h3>
+  <p>Se você recebeu um cupom (de campanha ou indicação):</p>
+  <ol class="step-list">
+    <li>Banner "Torne-se Pro" &rarr; role até o fim &rarr; <strong>Tenho um cupom</strong>.</li>
+    <li>Digite o código.</li>
+    <li>Confirme &mdash; se válido, o Pro é liberado direto (trial gratuito) ou aplicado como desconto no checkout.</li>
+  </ol>
+
+  <h3>11.4 Cancelar assinatura</h3>
+  <p><strong>Mensal/Anual via Play Store:</strong> Play Store &rarr; menu &rarr; Assinaturas &rarr; Meu Rachão Pro &rarr; Cancelar. Continua Pro até o fim do período pago.</p>
+  <p><strong>Mensal/Anual via Mercado Pago (PWA):</strong> Cada compra é única (one-shot). Não há renovação automática &mdash; quando expirar, basta comprar de novo se quiser continuar.</p>
+  <p><strong>Vitalício:</strong> Pagou uma vez, é seu pra sempre. Não há nada pra cancelar.</p>
+</div>
+
+<!-- ==================== 12. RECURSOS PRO ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s12">12. Recursos Pro</h2>
+
+  <p>Tudo o que o Pro libera:</p>
+
+  <h3>12.1 Rachões ilimitados</h3>
+  <p>No Free você cria 1 rachão. No Pro, quantos quiser — útil pra quem administra vários grupos (rachão de quinta + sábado + futsal do trabalho).</p>
+
+  <h3>12.2 Avulsos com PIX automático</h3>
+  <p>Quando falta jogador no rachão, o admin pode liberar a sessão pra <strong>avulsos</strong>:</p>
+  <ol class="step-list">
+    <li>Na aba Jogo da sessão, toque em <strong>Liberar avulsos</strong>.</li>
+    <li>Define o valor da diária (ex: R$ 25,00).</li>
+    <li>Jogadores avulsos veem a sessão na aba Avulsos (próximos via GPS) e pagam direto no app via PIX.</li>
+    <li>Confirmando o pagamento, eles aparecem na lista de confirmados automaticamente.</li>
+  </ol>
+
+  <h3>12.3 Descoberta por GPS</h3>
+  <p>Na aba <strong>Avulsos</strong> 📍 do app, jogadores podem ver rachões com vagas abertas no bairro. O app usa a localização cadastrada do rachão e o GPS do jogador pra mostrar só os próximos (até 5km).</p>
+
+  <h3>12.4 Co-administradores</h3>
+  <p>Em vez de você ser o único admin do rachão, pode dar permissões granulares pra outros membros:</p>
+  <ol class="step-list">
+    <li>Abra o rachão &rarr; aba <strong>Jogadores</strong>.</li>
+    <li>Toque no nome do jogador que vai virar co-admin.</li>
+    <li>Marque as permissões: validar stats, confirmar pagamento, criar sessão, editar configurações.</li>
+    <li>Salvar.</li>
+  </ol>
+
+  <h3>12.5 Fantasy League</h3>
+  <p>Cada participante do rachão monta um time fantasy com jogadores do próprio grupo. As pontuações reais (calculadas com base em gols, assistências, etc.) viram pontuação do fantasy. Tem ranking mensal e geral.</p>
+
+  <h3>12.6 Estatísticas avançadas</h3>
+  <p>Histórico completo de cada jogador, gráficos de evolução, MVP da rodada, comparação entre rachões.</p>
+
+  <h3>12.7 Posições necessárias customizadas</h3>
+  <p>Configure que cada time precisa de 1 goleiro + 1 zagueiro + 2 meias + 2 atacantes (em vez do padrão "qualquer um"). O sorteio respeita.</p>
+
+  <h3>12.8 Suporte prioritário</h3>
+  <p>Bugs e dúvidas reportados por assinantes Pro têm prioridade na fila.</p>
+</div>
+
+<!-- ==================== 13. NOTIFICAÇÕES ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s13">13. Notificações</h2>
+
+  <p>O sino &#128276; no Dashboard concentra suas notificações. Você recebe alertas quando:</p>
+  <ul>
+    <li>Entra num novo rachão</li>
+    <li>Uma nova sessão é criada</li>
+    <li>Confirma ou cancela presença</li>
+    <li>Times são sorteados</li>
+    <li>Pagamento é confirmado pelo admin</li>
+    <li>Estatísticas são aprovadas</li>
+    <li>Sua assinatura Pro está pra expirar (7 e 1 dia antes)</li>
+  </ul>
+
+  <h3>13.1 Push notifications</h3>
+  <p>Pra receber notificações <strong>fora do app</strong> (mesmo com ele fechado), ative o push:</p>
+  <ol class="step-list">
+    <li>Configurações &rarr; <strong>Notificações</strong>.</li>
+    <li>Ative o toggle de <strong>Push</strong>.</li>
+    <li>Aceite a permissão do sistema operacional.</li>
+  </ol>
+  <p>Disponível no Android (Play Store), iPhone PWA (iOS 16.4+) e PWA desktop.</p>
+</div>
+
+<!-- ==================== 14. PERFIL ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s14">14. Perfil e configurações</h2>
+
+  <h3>14.1 Perfil</h3>
+  <p>A aba <strong>Perfil</strong> 👤 mostra:</p>
+  <ul>
+    <li>Suas estatísticas totais (gols, assistências, jogos, vitórias)</li>
+    <li>Sua pontuação no ranking</li>
+    <li>Card "Minha assinatura" — status Pro, plano, próxima cobrança</li>
+    <li>Atalho pra Configurações</li>
+  </ul>
+
+  <h3>14.2 Editar e-mail</h3>
+  <p>Configurações &rarr; <strong>E-mail</strong> &rarr; digite e salve. Usado pra reset de senha e checkout Mercado Pago.</p>
+
+  <h3>14.3 Trocar senha</h3>
+  <p>Configurações &rarr; <strong>Trocar senha</strong>. Pede senha atual + nova senha de 6 dígitos.</p>
+
+  <h3>14.4 Sair</h3>
+  <p>Toque em <strong>Sair</strong> na barra inferior ou em Configurações. O app pede confirmação antes de deslogar.</p>
+</div>
+
+<!-- ==================== 15. EXCLUIR CONTA ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s15">15. Excluir conta</h2>
+
+  <p>Se quiser apagar sua conta permanentemente:</p>
+
+  <ol class="step-list">
+    <li>Configurações &rarr; role até <strong>Zona de perigo</strong>.</li>
+    <li>Toque em <strong>Excluir minha conta</strong>.</li>
+    <li>Leia o aviso (3 modais) e confirme em cada passo:
+      <br>1) Aviso geral
+      <br>2) Digite sua senha de 6 dígitos
+      <br>3) Digite a palavra <code class="kbd">EXCLUIR</code> em maiúsculas
+    </li>
+    <li>Pronto — sua conta é removida e você é deslogado.</li>
+  </ol>
+
+  <div class="info-box info-box-red">
+    <strong>&#9888; O que acontece quando você exclui</strong>
+    Suas estatísticas pessoais e histórico de presença são preservados (anonimizados como "Jogador removido") pra manter integridade dos rachões dos outros. Seu nome, e-mail, telefone e foto são apagados. Você não consegue mais logar — mas pode criar nova conta com o mesmo telefone se quiser voltar.
+  </div>
+
+  <p>Também dá pra solicitar exclusão por e-mail: mande pra <code class="kbd">meurachaopro@gmail.com</code> com o telefone cadastrado e seu nome. Mais detalhes em <a href="https://meurachaopro.com.br/delete-account" style="color:#FF7A00;font-weight:700;text-decoration:none">meurachaopro.com.br/delete-account</a>.</p>
+</div>
+
+<!-- ==================== 16. FAQ ==================== -->
+<div class="container">
+  <h2 class="section-title page-break" id="s16">16. Perguntas frequentes</h2>
+
+  <h3>Posso participar de vários rachões ao mesmo tempo?</h3>
+  <p>Sim, sem limite. O limite de 1 rachão no plano Free vale só pros que VOCÊ cria, não pros que você entra com código.</p>
+
+  <h3>Os dados ficam no celular ou na nuvem?</h3>
+  <p>Na nuvem. Você pode logar do celular, computador ou outro aparelho com o mesmo telefone que tudo fica sincronizado.</p>
+
+  <h3>O app funciona offline?</h3>
+  <p>Parcialmente. Você consegue abrir e ver dados já carregados, mas ações que mudam o estado (confirmar presença, criar sessão, sortear) precisam de internet.</p>
+
+  <h3>Posso mudar o dia da semana do rachão?</h3>
+  <p>Sim. Abra o rachão como administrador, toque no ícone de editar e ajuste o dia. Sessões futuras vão pro novo dia automaticamente.</p>
+
+  <h3>Como mudo meu nome ou posição?</h3>
+  <p>Configurações &rarr; Editar perfil. Mudanças aparecem em todos os rachões na hora.</p>
+
+  <h3>Quantos jogadores cabem num rachão?</h3>
+  <p>Não há limite. O custo mensal é dividido pelos que confirmam presença em cada mês.</p>
+
+  <h3>E se um jogador não confirmar presença num mês todo?</h3>
+  <p>Ele não entra no sorteio nem na divisão financeira daquele mês. Continua membro do rachão e pode confirmar nas sessões seguintes.</p>
+
+  <h3>O Fantasy pontua automaticamente?</h3>
+  <p>Sim, mas só <strong>depois que o admin valida as estatísticas</strong>. Stats pendentes não contam.</p>
+
+  <h3>Preciso pagar pra criar 1 rachão?</h3>
+  <p>Não. O plano Free permite 1 rachão ativo + participação ilimitada em rachões de outros + estatísticas + ranking + divisão manual da quadra.</p>
+
+  <h3>Posso assinar o Pro mensal e depois cancelar?</h3>
+  <p>Sim. No Android (Play Store), você cancela direto na Play Store e fica Pro até o fim do período. No PWA (Mercado Pago), cada compra é única — não há renovação, então simplesmente não compre de novo.</p>
+
+  <h3>Onde encontro suporte?</h3>
+  <p>E-mail: <code class="kbd">meurachaopro@gmail.com</code>. Assinantes Pro têm prioridade na fila.</p>
+
+  <div class="footer">
+    <p><strong>Meu Rachão Pro</strong> — Manual do Usuário v1.0</p>
+    <p>Maio 2026</p>
+    <p style="margin-top:12px">Site: <a href="https://meurachaopro.com.br">meurachaopro.com.br</a></p>
+  </div>
+</div>
+
+</body>
+</html>
