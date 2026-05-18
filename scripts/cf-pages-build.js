@@ -8,6 +8,7 @@
  *   /privacy.html        → URLs estáveis exigidos pela Play Store
  *   /terms.html
  *   /delete-account.html
+ *   /guia-tester.html    → guia pra beta testers (Internal Testing)
  *   /_headers, /_redirects
  *   /app/                → PWA (index.html, manifest.json, sw.js, css/, js/, assets/, data/)
  *
@@ -85,6 +86,7 @@ copyFile('landing/index.html', 'index.html')   && console.log('  + index.html (l
 copyFile('privacy.html', 'privacy.html')       && console.log('  + privacy.html');
 copyFile('terms.html', 'terms.html')           && console.log('  + terms.html');
 copyFile('delete-account.html', 'delete-account.html') && console.log('  + delete-account.html');
+copyFile('guia-tester.html', 'guia-tester.html') && console.log('  + guia-tester.html');
 copyFile('_headers', '_headers')               && console.log('  + _headers');
 copyFile('_redirects', '_redirects')           && console.log('  + _redirects');
 copyDir('assets', 'assets')                    && console.log('  + assets/');
