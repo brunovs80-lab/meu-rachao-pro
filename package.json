@@ -11,6 +11,7 @@
     "dev": "node server/index.js",
     "test": "jest --verbose",
     "test:coverage": "jest --coverage --verbose",
+    "test:e2e": "playwright test --reporter=line",
     "build": "node scripts/build-web.js",
     "cap:sync": "npm run build && npx cap sync",
     "cap:android": "npm run build && npx cap sync android && npx cap open android",
@@ -32,6 +33,7 @@
   },
   "homepage": "https://github.com/brunovs80-lab/meu-rachao-pro#readme",
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "esbuild": "^0.28.0",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",

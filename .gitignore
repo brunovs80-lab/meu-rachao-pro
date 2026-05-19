@@ -1,6 +1,8 @@
 .claude/
 node_modules/
 coverage/
+test-results/
+playwright-report/
 data/*.db
 data/*.db-wal
 data/*.db-shm
