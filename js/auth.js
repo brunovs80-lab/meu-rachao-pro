@@ -135,12 +135,17 @@ document.getElementById('btn-register').addEventListener('click', async () => {
 async function loadProfile() {
   const user = apiGetCurrentUser();
   if (!user) return;
-  const fresh = await apiGetPlayerById(user.id).catch(() => user);
+  const [fresh, profile] = await Promise.all([
+    apiGetPlayerById(user.id).catch(() => user),
+    apiGetMyProfile().catch(() => null),
+  ]);
+  const phone = profile?.phone || user.phone;
+  const email = profile?.email || user.email || null;
   document.getElementById('profile-name').textContent = fresh.name;
-  document.getElementById('profile-phone').textContent = formatPhone(fresh.phone);
-  document.getElementById('profile-email').textContent = fresh.email || 'Adicionar email';
+  document.getElementById('profile-phone').textContent = formatPhone(phone);
+  document.getElementById('profile-email').textContent = email || 'Adicionar email';
   const menuEmail = document.getElementById('profile-menu-email');
-  if (menuEmail) menuEmail.textContent = fresh.email ? '· ' + fresh.email : '· adicionar';
+  if (menuEmail) menuEmail.textContent = email ? '· ' + email : '· adicionar';
   document.getElementById('profile-position').textContent = fresh.position;
   document.getElementById('profile-matches').textContent = fresh.matches || 0;
   document.getElementById('profile-goals').textContent = fresh.goals || 0;
@@ -148,7 +153,7 @@ async function loadProfile() {
   document.getElementById('profile-desarmes').textContent = fresh.tackles || 0;
 
   // Sincroniza email no cache local (caso usuário antigo tenha cadastrado depois)
-  if (fresh.email !== user.email) apiSetCurrentUser({ ...user, email: fresh.email || null });
+  if (email !== user.email) apiSetCurrentUser({ ...user, email });
 
   // Atualiza estado Pro (card de assinatura + esconder CTA de upgrade)
   await ProManager.syncFromServer(user.id);

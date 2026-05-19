@@ -26,20 +26,31 @@ async function apiGetPlayers() {
 }
 
 async function apiGetPlayerById(id) {
-  const { data, error } = await initSupabase().from('players').select('id, name, phone, email, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, blocked, is_admin, created_at').eq('id', id).single();
+  // Sem phone/email — esses são PII e só vazam pelo próprio dono via apiGetMyProfile.
+  const { data, error } = await initSupabase().from('players').select('id, name, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, blocked, is_admin, created_at').eq('id', id).single();
   if (error) throw error;
   return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
 }
 
+async function apiGetMyProfile() {
+  const user = apiGetCurrentUser();
+  if (!user?.id) return null;
+  const { data, error } = await initSupabase().rpc('get_my_profile', { p_caller_id: user.id });
+  if (error) throw error;
+  if (!data?.ok) return null;
+  return data;
+}
+
 async function apiCreatePlayer(player) {
   const id = player.id || generateId();
+  // .select() restrito a colunas que anon pode ler — phone/email são revogados na Fase 2.
   const { data, error } = await initSupabase().from('players').insert({
     id, name: player.name, phone: player.phone,
     position: player.position || 'Meia',
     is_admin: player.isAdmin || false
-  }).select().single();
+  }).select('id, name, position, is_admin, created_at').single();
   if (error) throw error;
-  return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
+  return { ...data, isAdmin: data.is_admin };
 }
 
 async function apiUpdatePlayer(id, fields) {
@@ -59,7 +70,8 @@ async function apiUpdatePlayer(id, fields) {
   if (fields.blocked !== undefined) mapped.blocked = fields.blocked;
   if (fields.isAdmin !== undefined) mapped.is_admin = fields.isAdmin;
 
-  const { data, error } = await initSupabase().from('players').update(mapped).eq('id', id).select().single();
+  const { data, error } = await initSupabase().from('players').update(mapped).eq('id', id)
+    .select('id, name, position, goals, assists, tackles, fouls, yellows, reds, saves, clean_sheets, matches, blocked, is_admin, created_at').single();
   if (error) throw error;
   return { ...data, isAdmin: data.is_admin, cleanSheets: data.clean_sheets };
 }
