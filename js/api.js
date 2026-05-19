@@ -2,16 +2,39 @@
 // Usa @supabase/supabase-js via CDN (carregado no index.html)
 
 let _supabaseClient;
+let _supabaseClientToken = null; // token injetado no client atual
+
+function _getAuthToken() {
+  try { return localStorage.getItem('rachao_authToken') || null; } catch { return null; }
+}
+
+function _setAuthToken(token) {
+  try {
+    if (token) localStorage.setItem('rachao_authToken', token);
+    else localStorage.removeItem('rachao_authToken');
+  } catch {}
+  // Força reinit do client com novo header
+  _supabaseClient = null;
+  _supabaseClientToken = null;
+}
 
 function initSupabase() {
-  if (!_supabaseClient) {
-    // CDN UMD expõe window.supabase com createClient dentro
-    const lib = window.supabase;
-    if (!lib) { console.error('Supabase SDK não carregou'); return null; }
-    const createFn = lib.createClient || (lib.supabase && lib.supabase.createClient);
-    if (!createFn) { console.error('createClient não encontrado no SDK'); return null; }
-    _supabaseClient = createFn(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const currentToken = _getAuthToken();
+  if (_supabaseClient && _supabaseClientToken === currentToken) return _supabaseClient;
+
+  const lib = window.supabase;
+  if (!lib) { console.error('Supabase SDK não carregou'); return null; }
+  const createFn = lib.createClient || (lib.supabase && lib.supabase.createClient);
+  if (!createFn) { console.error('createClient não encontrado no SDK'); return null; }
+
+  const options = {};
+  if (currentToken) {
+    // Fase 3 da auditoria — JWT custom emitido por auth-login.
+    // PostgREST valida via JWT_SECRET e seta auth.jwt()->>'sub' = player_id.
+    options.global = { headers: { Authorization: `Bearer ${currentToken}` } };
   }
+  _supabaseClient = createFn(SUPABASE_URL, SUPABASE_ANON_KEY, options);
+  _supabaseClientToken = currentToken;
   return _supabaseClient;
 }
 
@@ -86,9 +109,21 @@ async function apiCheckPhone(phone) {
 
 async function apiLoginWithPassword(phone, password) {
   const cleanPhone = phone.replace(/\D/g, '');
-  const { data, error } = await initSupabase().rpc('login_with_password', { p_phone: cleanPhone, p_password: password });
-  if (error) throw new Error('Erro ao fazer login');
-  if (!data.success) throw new Error(data.error || 'Erro ao fazer login');
+  // Fase 3: passa pela edge function auth-login que valida e emite JWT custom 30d.
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/auth-login`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ phone: cleanPhone, password }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data?.ok) {
+    throw new Error(data?.error || 'Erro ao fazer login');
+  }
+  _setAuthToken(data.token);
   return data.user;
 }
 
@@ -100,6 +135,8 @@ async function apiRegisterUser(phone, password, name, position, email) {
   });
   if (error) throw new Error('Erro ao cadastrar');
   if (!data.success) throw new Error(data.error || 'Erro ao cadastrar');
+  // Auto-login após cadastro pra emitir JWT — ignora erro silenciosamente (modo legacy continua via p_caller_id).
+  try { await apiLoginWithPassword(cleanPhone, password); } catch {}
   return data.user;
 }
 
@@ -880,6 +917,7 @@ function apiSetCurrentUser(user) {
 function apiLogout() {
   localStorage.removeItem('rachao_currentUser');
   localStorage.removeItem('rachao_proStatus');
+  _setAuthToken(null);
 }
 
 // ===== PRO / ASSINATURA =====
