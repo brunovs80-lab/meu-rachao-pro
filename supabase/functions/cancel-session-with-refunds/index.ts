@@ -20,17 +20,24 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+// CORS restritivo (allowlist) em vez de '*'.
+const ALLOWED_ORIGINS = new Set([
+  'https://meurachaopro.com.br',
+  'https://www.meurachaopro.com.br',
+  'capacitor://localhost',
+  'http://localhost',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+])
+function cors(req: Request) {
+  const origin = req.headers.get('Origin') || ''
+  const allow = ALLOWED_ORIGINS.has(origin) ? origin : 'https://meurachaopro.com.br'
+  return {
+    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  }
 }
 
 interface PaidGuestRow {
@@ -56,6 +63,11 @@ function extractSubFromJwt(authHeader: string | null): string | null {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = cors(req)
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {

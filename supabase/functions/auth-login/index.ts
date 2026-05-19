@@ -12,17 +12,24 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { create, getNumericDate } from 'https://deno.land/x/djwt@v3.0.2/mod.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+// CORS restritivo (allowlist) em vez de '*'.
+const ALLOWED_ORIGINS = new Set([
+  'https://meurachaopro.com.br',
+  'https://www.meurachaopro.com.br',
+  'capacitor://localhost',
+  'http://localhost',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+])
+function cors(req: Request) {
+  const origin = req.headers.get('Origin') || ''
+  const allow = ALLOWED_ORIGINS.has(origin) ? origin : 'https://meurachaopro.com.br'
+  return {
+    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  }
 }
 
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30 // 30 dias
@@ -38,6 +45,11 @@ async function importJwtKey(secret: string): Promise<CryptoKey> {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = cors(req)
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ ok: false, error: 'METHOD_NOT_ALLOWED' }, 405)
 
@@ -51,10 +63,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     // Não pode ser SUPABASE_* — esse prefixo é reservado pela plataforma.
     const jwtSecret = Deno.env.get('JWT_SECRET')
-    if (!jwtSecret) {
-      const visibleKeys = Object.keys(Deno.env.toObject()).filter(k => !k.startsWith('SUPABASE_'))
-      return json({ ok: false, error: 'JWT_SECRET ausente', visible_env: visibleKeys }, 500)
-    }
+    if (!jwtSecret) return json({ ok: false, error: 'JWT_SECRET ausente' }, 500)
 
     const supabase = createClient(supabaseUrl, serviceRoleKey)
     const cleanPhone = String(phone).replace(/\D/g, '')
