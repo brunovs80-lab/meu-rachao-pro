@@ -37,6 +37,14 @@ function initOfflineDetection() {
 
 async function checkAuth() {
   const user = apiGetCurrentUser();
+  // Fase 4 da auditoria: sessões pré-JWT (sem rachao_authToken) caem em logout
+  // forçado. Usuário antigo refaz login com PIN e passa a usar JWT custom.
+  if (user && !localStorage.getItem('rachao_authToken')) {
+    apiLogout();
+    if (typeof showToast === 'function') showToast('Por segurança, faça login novamente.');
+    ProManager.updateProBadgeUI();
+    return;
+  }
   if (user) {
     ProManager.syncFromServer(user.id).catch(() => {});
     ProManager.updateProBadgeUI();

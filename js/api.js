@@ -983,15 +983,17 @@ async function apiUnregisterDeviceToken(fcmToken) {
 window.apiUnregisterDeviceToken = apiUnregisterDeviceToken;
 
 async function apiCancelSession(sessionId) {
-  const user = apiGetCurrentUser();
-  const callerId = user?.id || null;
+  // Fase 4: caller_id sai do JWT do usuário (Authorization). Sem JWT = NO_CALLER.
+  const token = _getAuthToken();
+  if (!token) return { ok: false, error: 'NO_CALLER' };
   const resp = await fetch(`${SUPABASE_URL}/functions/v1/cancel-session-with-refunds`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Authorization': `Bearer ${token}`,
+      apikey: SUPABASE_ANON_KEY,
     },
-    body: JSON.stringify({ session_id: sessionId, caller_id: callerId }),
+    body: JSON.stringify({ session_id: sessionId }),
   });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok && !data?.cancelled) {

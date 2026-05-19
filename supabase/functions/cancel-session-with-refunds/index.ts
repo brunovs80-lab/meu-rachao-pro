@@ -1,6 +1,10 @@
 // Edge Function: Cancela uma sessão e estorna avulsos pagos via API do Mercado Pago.
 //
-// POST { session_id, caller_id }
+// POST { session_id }
+//
+// Fase 4 da auditoria 2026-05-18: caller_id agora vem do JWT (Authorization
+// header). verify_jwt=true garante que a plataforma já validou o token antes
+// da função rodar. caller_id no body foi removido — era forjável (Crítico 2).
 //
 // Fluxo:
 //   1. Chama cancel_session(p_auto_refund=true) — sessão vira 'cancelled',
@@ -36,16 +40,34 @@ interface PaidGuestRow {
   pix_external_id: string | null
 }
 
+function extractSubFromJwt(authHeader: string | null): string | null {
+  if (!authHeader) return null
+  const m = authHeader.match(/^Bearer\s+(.+)$/i)
+  if (!m) return null
+  const parts = m[1].split('.')
+  if (parts.length !== 3) return null
+  try {
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const pad = b64.length % 4
+    const padded = pad ? b64 + '='.repeat(4 - pad) : b64
+    const payload = JSON.parse(atob(padded))
+    return typeof payload?.sub === 'string' && payload.sub ? payload.sub : null
+  } catch { return null }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    const caller_id = extractSubFromJwt(req.headers.get('Authorization'))
+    if (!caller_id) {
+      return json({ ok: false, error: 'NO_CALLER' }, 401)
+    }
+
     const body = await req.json()
     const session_id: string | undefined = body.session_id
-    const caller_id: string | undefined = body.caller_id
-
-    if (!session_id || !caller_id) {
-      return json({ ok: false, error: 'Campos obrigatórios: session_id, caller_id' }, 400)
+    if (!session_id) {
+      return json({ ok: false, error: 'Campo obrigatório: session_id' }, 400)
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
