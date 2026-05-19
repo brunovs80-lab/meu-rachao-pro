@@ -204,9 +204,14 @@ async function apiUpdateRachao(id, fields) {
     await initSupabase().from('rachaos').update(mapped).eq('id', id);
   }
   if (fields.participants) {
-    await initSupabase().from('rachao_participants').delete().eq('rachao_id', id);
-    const rows = fields.participants.map(pid => ({ rachao_id: id, player_id: pid }));
-    await initSupabase().from('rachao_participants').upsert(rows);
+    const user = apiGetCurrentUser();
+    const { data, error } = await initSupabase().rpc('set_rachao_participants', {
+      p_rachao_id: id,
+      p_participants: fields.participants,
+      p_caller_id: user?.id || null,
+    });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || 'Erro ao salvar participantes');
   }
 }
 
@@ -270,11 +275,15 @@ async function apiUpdateSession(id, fields) {
   }
 
   if (fields.confirmed !== undefined || fields.waiting !== undefined) {
-    await initSupabase().from('session_confirmations').delete().eq('session_id', id);
-    const rows = [];
-    if (fields.confirmed) fields.confirmed.forEach((pid, i) => rows.push({ session_id: id, player_id: pid, type: 'confirmed', position: i }));
-    if (fields.waiting) fields.waiting.forEach((pid, i) => rows.push({ session_id: id, player_id: pid, type: 'waiting', position: i }));
-    if (rows.length > 0) await initSupabase().from('session_confirmations').insert(rows);
+    const user = apiGetCurrentUser();
+    const { data, error } = await initSupabase().rpc('set_session_confirmations', {
+      p_session_id: id,
+      p_confirmed: fields.confirmed || [],
+      p_waiting: fields.waiting || [],
+      p_caller_id: user?.id || null,
+    });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || 'Erro ao salvar confirmações');
   }
 }
 
@@ -288,26 +297,14 @@ async function apiTogglePresence(sessionId, playerId, action) {
       session_id: sessionId, player_id: playerId, type: 'confirmed', position: pos
     });
   } else if (action === 'cancel') {
-    await initSupabase().from('session_confirmations').delete()
-      .eq('session_id', sessionId).eq('player_id', playerId);
-
-    // Promote from waiting list (non-blocked player)
-    const { data: waiting } = await initSupabase().from('session_confirmations')
-      .select('player_id').eq('session_id', sessionId).eq('type', 'waiting')
-      .order('position').limit(10);
-
-    if (waiting && waiting.length > 0) {
-      for (const w of waiting) {
-        const { data: player } = await initSupabase().from('players')
-          .select('blocked').eq('id', w.player_id).single();
-        if (!player || !player.blocked) {
-          await initSupabase().from('session_confirmations')
-            .update({ type: 'confirmed' })
-            .eq('session_id', sessionId).eq('player_id', w.player_id);
-          break;
-        }
-      }
-    }
+    const user = apiGetCurrentUser();
+    const { data, error } = await initSupabase().rpc('cancel_presence', {
+      p_session_id: sessionId,
+      p_player_id: playerId,
+      p_caller_id: user?.id || null,
+    });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || 'Erro ao cancelar presença');
   } else if (action === 'wait') {
     const { data: maxPos } = await initSupabase().from('session_confirmations')
       .select('position').eq('session_id', sessionId).eq('type', 'waiting')
@@ -807,8 +804,13 @@ async function apiBlockPlayer(playerId) {
 }
 
 async function apiUnblockPlayer(playerId) {
-  await initSupabase().from('blocked_players').delete().eq('player_id', playerId);
-  await initSupabase().from('players').update({ blocked: false }).eq('id', playerId);
+  const user = apiGetCurrentUser();
+  const { data, error } = await initSupabase().rpc('unblock_player', {
+    p_player_id: playerId,
+    p_caller_id: user?.id || null,
+  });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || 'Erro ao desbloquear');
 }
 
 async function apiGetReleaseRequests() {
@@ -823,7 +825,13 @@ async function apiCreateReleaseRequest(playerId, message) {
 }
 
 async function apiDeleteReleaseRequest(id) {
-  await initSupabase().from('release_requests').delete().eq('id', id);
+  const user = apiGetCurrentUser();
+  const { data, error } = await initSupabase().rpc('delete_release_request', {
+    p_id: id,
+    p_caller_id: user?.id || null,
+  });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.error || 'Erro ao excluir pedido');
 }
 
 // ===== PRIZES =====
